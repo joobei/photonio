@@ -1,0 +1,62 @@
+cmake_minimum_required(VERSION 2.8)
+
+IF(WIN32)
+	link_directories(C:/dev/glfw-2.7.2/support/msvc100/Debug)
+	link_directories(C:/dev/glew-1.7.0/lib)
+	link_directories(C:/dev/boost_1_48_0/bin.v2/libs/system/build/msvc-10.0/debug/link-static/threading-multi)
+	link_directories(C:/dev/boost_1_48_0/bin.v2/libs/thread/build/msvc-10.0/debug/link-static/threading-multi)
+	link_directories(C:/dev/boost_1_48_0/bin.v2/libs/date_time/build/msvc-10.0/debug/link-static/threading-multi)
+	link_directories(C:/dev/boost_1_48_0/bin.v2/libs/regex/build/msvc-10.0/debug/link-static/threading-multi)
+	include_directories(C:/dev/glew-1.7.0/include)
+	include_directories(C:/dev/glfw-2.7.2/include)
+ENDIF()
+
+########## Dependencies ############
+SET(Boost_USE_STATIC_LIBS   ON)
+SET(Boost_USE_MULTITHREADED ON)
+FIND_PACKAGE( Boost 1.48 COMPONENTS system thread)
+IF(Boost_FOUND)
+      INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+ENDIF()
+
+FIND_PACKAGE(OpenGL REQUIRED)
+FIND_LIBRARY(glfw REQUIRED)
+
+FIND_PACKAGE(Protobuf REQUIRED)
+IF(PROTOBUF_FOUND)
+    INCLUDE_DIRECTORIES(${PROTOBUF_INCLUDE_DIRS})
+    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
+    PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS data.proto)
+ENDIF()
+####################################
+
+if(APPLE)
+    SET (CMAKE_CXX_COMPILER "/opt/local/bin/gcc-mp-4.6")
+    SET(EXTRA_LIBS "-iframework Cocoa -iframework OpenGL")
+    include_directories(/opt/local/include)
+    include_directories(/usr/local/include)
+    link_directories(/opt/local/lib)
+    link_directories(/usr/local/lib)
+endif()
+
+
+
+add_executable(${PROJECTNAME} main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} arcball.h arcball.cpp assets.h assets.cpp)
+
+if(APPLE)
+target_link_libraries(${PROJECTNAME} stdc++ GLEW glfw Xrandr boost_system boost_thread ${PROTOBUF_LIBRARIES})
+endif()
+
+if(WIN32)
+target_link_libraries(${PROJECTNAME} opengl32 GLEW32d glfw libboost_system-vc100-mt-gd-1_48 libboost_thread-vc100-mt-gd-1_48 ${PROTOBUF_LIBRARIES})
+endif()
+
+IF(UNIX)
+target_link_libraries(${PROJECTNAME} GLEW glfw boost_system boost_thread ${PROTOBUF_LIBRARIES})
+endif()
+
+ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
+          POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/src/shaders
+          COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/shaders ${PROJECT_BINARY_DIR}/src/shaders
+)

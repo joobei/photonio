@@ -1,0 +1,2 @@
+protoc data.proto --java_out=../../java-elenhos/Elenhos/src
+

@@ -1,0 +1,193 @@
+Change Log
+
+Spuc 2.3
+----------------------------------------------------------------
+Mostly documentation improvements
+Fixes for compiler problems
+Checked with GCC 4.0.1
+Additional makefiles.
+
+----------------------------------------------------------------
+Spuc 2.2
+
+
+It's been almost 3 years since last release
+The biggest change was to include functionality from IT++ 3.7.0
+mainly allowing use of Matrix/Vector classes and adding some ECC
+classes
+However, IT++ 3.7.0 code had to be changed significantly to allow
+compile under VC++ 6.0 and to be included as part of SPUC namespace
+Also tried to avoid conflict of filename with Matlab.
+Hopefully newer releases of IT++ could be more seamlessly integrated.
+
+Also documentation is now done with Doxygen
+There has also been changes in where files are stored in the directory
+structure
+
+New Source files for Spuc 2.2
+
+New Files
+--------------------------------------------------------------
+allpass_1aq1.h
+allpass_1aq2.h
+base_demod.h
+baud_eq_env.cpp
+baud_eq_env.h
+baud_equalizer_sim.cpp
+bit.h
+bpsk_ber_test.cpp
+bpsk_ber_test.h
+carrier_nco.cpp
+cmplx_allpass_halfband.h
+cmplx_csd_allpass_halfband.h
+create_remez_fir.cpp
+csd_allpass_halfband.h
+data_conv_encoder.cpp
+data_conv_encoder.h
+debug.h
+debugf.h
+debugfc.h
+equalizer.h
+equalizers_sim.cpp
+iir_hp1.h
+iir_hpc.h
+lagrange_extra.h
+main_equalizer.cpp
+mle.h
+mlse_test.cpp
+ofdm_data_encoder.cpp
+ofdm_data_encoder.h
+qam_mod.cpp
+qam_mod.h
+qam_soft_decision.cpp
+qam_tx.cpp
+qam_tx.h
+reference_main.cpp
+remez_files.cpp
+rls_test.cpp
+running_sum.h
+rv_stat.h
+sim_qam.cpp
+sim_qam.h
+slicer_type.h
+test_remez.cpp
+viterbi.cpp
+viterbi.h
+
+--------------------------------------------------------------
+From IT 3.7.0
+--------------------------------------------------------------
+
+bch.cpp
+bch.h
+binary.cpp
+binary.h
+cblas.h
+cholesky.cpp
+commfunc.cpp
+commfunc.h
+convcode.cpp
+convcode.h
+converters.cpp
+converters.h
+crc.cpp
+crc.h
+det.cpp
+det.h
+egolay.cpp
+egolay.h
+eigen.cpp
+eigen.h
+fastmath.cpp
+fastmath.h
+gf.cpp
+gf.h
+gfx.cpp
+gfx.h
+hammcode.cpp
+hammcode.h
+interleave.h
+inv.cpp
+inv.h
+lapack.h
+ls_solve.cpp
+ls_solve.h
+lu.cpp
+matfunc.h
+matlab_engine.cpp
+matlab_engine.h
+matrix
+matrix.cpp
+matrix.h
+modulator.cpp
+modulator.h
+punct_convcode.cpp
+punct_convcode.h
+random.cpp
+random.h
+rec_syst_conv_code.cpp
+rec_syst_conv_code.h
+reed_solomon.cpp
+reed_solomon.h
+rv_stat.h
+scalfunc.cpp
+scalfunc.h
+sequence.cpp
+sequence.h
+specmat.cpp
+specmat.h
+spucassert.cpp
+spucassert.h
+spucconfig.h
+spucmex.h
+svd.cpp
+svd.h
+turbo.cpp
+turbo.h
+vector.cpp
+vector.h
+
+
+--------------------------------------------------------------
+From TNT
+--------------------------------------------------------------
+
+array.h
+array1d.h
+array1d_functions.cpp
+array2d.h
+array2d_functions.cpp
+array3d.h
+tnt_cholesky.h
+tnt_lu.h
+tnt_qr.h
+tnt_transv.h
+tnt_triang.h
+tnt_trisolve.h
+
+--------------------------------------------------------------
+
+Changes in Version 2.1
+		MAJOR CHANGE - Everything now in namespace SPUC
+		cmplx template class now renamed to complex
+		added New Template Matrix & Vector classes. 
+		These are from template numerical toolbox TNT but have been modified 
+		added iir_comb filter
+		added incoming directory with several new modules
+
+
+
+Changes in Version 2.0.1 from 2.0
+		Added remez_fir class + test_remez.cpp for Remez FIR filter design
+		Added mlsd class 
+		Added dvb_conv_encoder - Convolution encoder for rate 1/2 DVB generators
+		Modified qpsk_ber_test, cmplx_allpass_halfband, cmplx.h and
+		makefile for qpsk and qpsk_vr to compile without errors under g++ and visual c++.
+
+	   Version 1.1.1.1 is now the old version 1.8.2
+	   Older versions are no longer available.
+	   Cmplx.h added recriprical function, fixed norm.
+	   Added better ptr error handling for delay and fir
+	   Added function for max_pn.
+	   Changed lms_dfe and added implementation file lms_dfe.cpp
+	   New example

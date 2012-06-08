@@ -1,0 +1,14 @@
+/baud_equalizer_sim.cpp/1.1/Mon Feb  3 14:50:40 2003//
+/equalizer.h/1.2/Sun Sep  4 16:01:50 2005//
+/equalizers_sim.cpp/1.2/Tue Oct  5 23:21:47 2004//
+/examples.h/1.1/Sat Sep  3 20:46:46 2005//
+/main_equalizer.cpp/1.1/Mon Feb  3 14:50:41 2003//
+/reference_main.cpp/1.1/Mon Feb  3 14:50:42 2003//
+D/ddfse////
+D/filters////
+D/libspuc////
+D/mlse////
+D/qpsk////
+D/remez////
+D/test_ls////
+D/test_rls////
