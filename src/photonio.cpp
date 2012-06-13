@@ -15,11 +15,12 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 #include "photonio.h"
-//#define _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
 #include <math.h>
 #include <boost/math/special_functions/round.hpp>
 #include "data.pb.h"
 #include "glm/gtc/matrix_transform.hpp"
+#include <cmath>
 
 using namespace std;
 
@@ -95,7 +96,7 @@ calibrate(false),
 
 	appInputState = idle;
 	appMode = rayCasting;
-	rotTechnique = singleAxis;
+	rotTechnique = screenSpace;
 
 	grabbing=false;
 
@@ -103,6 +104,11 @@ calibrate(false),
 
 	prevMouseWheel = 0;
 	gyroData = false;
+
+	axisChange[0][0] = 1; axisChange[0][1] =  0;  axisChange[0][2] =  0;
+	axisChange[1][0] = 0; axisChange[1][1] =  0;  axisChange[1][2] =  1;
+	axisChange[2][0] = 0; axisChange[2][1] =  -1;  axisChange[2][2] = 0;
+
 }
 
 /*void set_float4(float f[4], float a, float b, float c, float d)
@@ -343,7 +349,7 @@ void Engine::initResources() {
 	//projectionMatrix = glm::mat4();
 
 	heartMatrix = mat4();
-	heartMatrix = glm::scale(vec3(2.0f,2.0f,2.0f));
+	//heartMatrix = glm::scale(vec3(2.0f,2.0f,2.0f));
 
 	viewMatrix = mat4();
 	viewMatrix = glm::translate(viewMatrix,vec3(0,0,-25)); //translate camera back (i.e. world forward)
@@ -397,11 +403,11 @@ void Engine::checkEvents() {
 	}
 	if (glfwGetKey('2') == GLFW_PRESS) {
 		rotTechnique = screenSpace;
-		std::cout << "Screen Space Rotation" << endl;
+		std::cout << "Screen Space Rotation" << '\n';
 	}
 	if (glfwGetKey('1') == GLFW_PRESS) {
 		rotTechnique = singleAxis;
-		std::cout << "Single Axis Rotation" << endl;
+		std::cout << "Single Axis Rotation" << '\n';
 	}
 	int wheel = glfwGetMouseWheel();
 	if (wheel != prevMouseWheel) {
@@ -460,6 +466,14 @@ void Engine::checkEvents() {
 				}
 
 				break;
+			case 3:
+				if (appInputState != trackball ) {
+					printf("idle-->trackball");
+					appInputState = trackball; }
+				else
+					{ appInputState = idle; 
+					printf("trackball-->idle");
+				}
 			default:
 				calibrate = true;
 				break;
@@ -467,9 +481,9 @@ void Engine::checkEvents() {
 
 		};
 		if (computeRotationMatrix() && (!gyroData)) {
-			plane.modelMatrix[0][0] = orientation[0][0]; plane.modelMatrix[0][1] = orientation[0][1]; 
-			plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; 
-			plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; 
+			plane.modelMatrix[0][0] = orientation[0][0]; plane.modelMatrix[0][1] = orientation[0][1]; plane.modelMatrix[0][2] = orientation[0][2]; 
+			plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; plane.modelMatrix[1][2] = orientation[1][2]; 
+			plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2]; 
 		}
 	}
 
@@ -680,12 +694,12 @@ void Engine::render() {
 	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));*/
 
 	
-	/*CALL_GL(glUseProgram(colorShader));
+	CALL_GL(glUseProgram(colorShader));
 	//draw plane
 	pvm = projectionMatrix*viewMatrix*plane.modelMatrix*glm::scale(vec3(8,8,8));
 	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 	CALL_GL(glBindVertexArray(plane.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));*/
+	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
 
 
 	//glUseProgram(textureShader);
@@ -745,6 +759,38 @@ bool Engine::computeRotationMatrix() {
 
 	return true;
 }
+
+/*bool Engine::computeRotationMatrix() {
+		//change = orientation;
+		vec3 H = glm::cross(ma,acc);
+
+		float normH = (float) H.length();
+
+		if (normH<0.1f) return false;
+
+		float invH = 1.0f / normH;
+
+		H *= invH;
+
+		float invA = 1.0f / (float) acc.length();
+
+		acc *= invA;
+
+		vec3 M = glm::cross(acc,H);
+
+		orientation[0][0] = H.x;   orientation[0][1] = H.y;   orientation[0][2] = H.z;
+		orientation[1][0] = M.x;   orientation[1][1] = M.y;   orientation[1][2] = M.z;
+		orientation[2][0] = acc.x; orientation[2][1] = acc.y; orientation[2][2] = acc.z;
+
+		glm::mat4 pitch = glm::mat4();
+		pitch = glm::rotate(pitch,glm::degrees((float)M_PI_2),vec3(1,0,0));
+
+		if(calibrate) { calibration = glm::inverse(orientation);
+		calibrate = !calibrate; }
+
+		orientation = mat4(axisChange)*calibration*orientation*pitch;
+		return true;
+	}*/
 
 void Engine::mouseButtonCallback(int button, int state) {
 	if ((button == 0) && (state == GLFW_PRESS)) {
@@ -814,6 +860,8 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 	//TUIO variables
 	short numberOfCursors = tuioClient->getTuioCursors().size();
+	std::list<TUIO::TuioCursor*> cursorList;
+	cursorList = tuioClient->getTuioCursors();
 	//std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
 	switch (appInputState) {
@@ -837,6 +885,29 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 		}
 		break;
 	case rotate:
+		switch (rotTechnique) {
+		case screenSpace:
+			if (rotTechnique !=pinch && (numberOfCursors > 1)) {
+				rotTechnique = pinch;
+				trackedCursorId = tcur->getCursorID();
+				trackedCursorPrevPoint.x = tcur->getX();
+				trackedCursorPrevPoint.y = tcur->getY();
+
+				short i=0;
+				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
+					cursorsTouchPointPair[i].x = (float)(*list_iter)->getScreenX(TOUCH_SCREEN_SIZE_X);
+					cursorsTouchPointPair[i].y = (float)(*list_iter)->getScreenY(TOUCH_SCREEN_SIZE_Y);
+
+					i++;	
+				}
+
+
+				referenceAngle = atan2((cursorsTouchPointPair[1].y - cursorsTouchPointPair[0].y) ,(cursorsTouchPointPair[1].x - cursorsTouchPointPair[0].x)); 
+
+				std::cout << "pinch rotate" << '\n';
+				
+			}
+		}
 		break;
 	}
 	if (verbose)
@@ -848,61 +919,137 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	float x,y;
 	glm::mat3 tempMat;
 	glm::mat4 newLocationMatrix;
+	glm::mat4 rotation;
 
 	//TUIO variables
 	short numberOfCursors = tuioClient->getTuioCursors().size();
+	std::list<TUIO::TuioCursor*> cursorList;
+	cursorList = tuioClient->getTuioCursors();
 
 
 	switch (appInputState) {
 	case translate:
 		//********************* TRANSLATE ****************************
 		tempMat = glm::mat3(orientation);
-#define TFACTOR 5
+#define TFACTOR 3
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
 		newLocationVector = tempMat*glm::vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-		newLocationMatrix = glm::translate(target.modelMatrix,newLocationVector);  //Calculate new location by translating object by motion vector
+		//newLocationMatrix = glm::translate(target.modelMatrix,newLocationVector);  //Calculate new location by translating object by motion vector
+		newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);
 
-		plane.modelMatrix[3][0] = newLocationMatrix[3][0]; //move plane to new location
+		plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
+		target.modelMatrix = newLocationMatrix*target.modelMatrix;
+		
+
+
+		/*plane.modelMatrix[3][0] = newLocationMatrix[3][0]; //move plane to new location
 		plane.modelMatrix[3][1] = newLocationMatrix[3][1];
 		plane.modelMatrix[3][2] = newLocationMatrix[3][2];
 
 		target.modelMatrix[3][0] = newLocationMatrix[3][0]; //move object there too
 		target.modelMatrix[3][1] = newLocationMatrix[3][1];
-		target.modelMatrix[3][2] = newLocationMatrix[3][2];
+		target.modelMatrix[3][2] = newLocationMatrix[3][2];*/
+
+
+
 		break;
 
 	case trackball:
 		//********************* TRACKBALL  *************************
+		x = tcur->getX();
+		y = tcur->getY();
 
-		if (tcur == trackedCursor) {
-
-			x = trackedCursor->getX();
-			y = trackedCursor->getY();
-
-			target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
-			glm::mat4 rotation;
-			rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
-			target.modelMatrix = rotation*target.modelMatrix;
-			target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
-			arcBallPreviousPoint[0] = x;
-			arcBallPreviousPoint[1] = y;
-		}
-
+		target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
+		
+		rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
+		target.modelMatrix = rotation*target.modelMatrix;
+		target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
+		arcBallPreviousPoint[0] = x;
+		arcBallPreviousPoint[1] = y;
 		break;
 	case rotate:
 		switch (rotTechnique) {
 		case singleAxis:
-			//vec4 tempRotVec = glm::vec4(0,1,0,0);
-			//tempRotVec = plane.modelMatrix*tempRotVec;
-			//vec4 tempRotVec2 = glm::vec4(1,0,0,0);
-			//tempRotVec2 = plane.modelMatrix*tempRotVec;
-			target.modelMatrix = glm::rotate(target.modelMatrix, tcur->getXSpeed()*3.0f,vec3(0,1,0));
-			target.modelMatrix = glm::rotate(target.modelMatrix, tcur->getYSpeed()*3.0f,vec3(1,0,0));
+			//todo: add code for aligned axis
 			break;
 		case screenSpace:
-			target.modelMatrix = target.modelMatrix*glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0));
-			target.modelMatrix = target.modelMatrix*glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0));
+			//********************* screenSpace  *************************
+			if (numberOfCursors == 1) {
+
+				vec3 location;
+				location.x = target.modelMatrix[3][0];
+				location.y = target.modelMatrix[3][1];
+				location.z = target.modelMatrix[3][2];
+
+				target.modelMatrix[3][0] = 0;
+				target.modelMatrix[3][1] = 0;
+				target.modelMatrix[3][2] = 0;
+
+				target.modelMatrix = glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0))*target.modelMatrix;
+				target.modelMatrix = glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0))*target.modelMatrix;
+
+				target.modelMatrix[3][0] = location.x;
+				target.modelMatrix[3][1] = location.y;
+				target.modelMatrix[3][2] = location.z;
+			}
+			break;
+		case pinch:
+			if (tcur->getCursorID() == trackedCursorId) {
+				x = tcur->getX();
+				y = tcur->getY();
+
+				glm::vec2 newPair[2];
+
+				short i=0;
+				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
+					newPair[i].x = (float)(*list_iter)->getScreenX(TOUCH_SCREEN_SIZE_X);
+					newPair[i].y = (float)(*list_iter)->getScreenY(TOUCH_SCREEN_SIZE_Y);
+					i++;	
+				}
+				float newAngle = atan2((newPair[1].y - newPair[0].y),(newPair[1].x - newPair[0].x));
+
+				/*std::cout << "Difference " << newAngle;
+				std::cout << "new angle in Radians " << newAngle;
+				std::cout << "\t old angle in Radians " << referenceAngle << '\n';*/
+
+				vec3 location;
+				location.x = target.modelMatrix[3][0];
+				location.y = target.modelMatrix[3][1];
+				location.z = target.modelMatrix[3][2];
+
+				target.modelMatrix[3][0] = 0;
+				target.modelMatrix[3][1] = 0;
+				target.modelMatrix[3][2] = 0;
+
+				target.modelMatrix = glm::rotate((newAngle-referenceAngle)*80*(-1),vec3(0,0,1))*target.modelMatrix;
+
+				target.modelMatrix[3][0] = location.x;
+				target.modelMatrix[3][1] = location.y;
+				target.modelMatrix[3][2] = location.z;
+
+				//glm::vec2 b;
+				//b.x = x;
+				//b.y = y;
+
+				//std::cout << "tracked cursor x " << tcur->getX();
+				//std::cout << "\t tracked cursor y " << tcur->getY() << '\n';
+				
+				/*float sign;
+				sign = glm::cross(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),
+					glm::vec3(b.x,b.y,0)).z;
+				
+				if ( sign < 0) { sign = -1.0f; }
+				else {sign = 1.0f; }
+				
+				float angle = sssTriangleC(trackedCursorPrevPoint,b,glm::vec2(0.5f,0.5f));
+				//float angle = glm::dot(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),glm::vec3(b.x,b.y,0));
+				target.modelMatrix = glm::rotate(angle*sign*100,vec3(0,0,1))*target.modelMatrix;*/
+
+				referenceAngle = newAngle;
+				
+				//trackedCursorPrevPoint = b;
+			}
 			break;
 		}
 	}
@@ -924,7 +1071,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 		std::cout << "translate-->idle" << std::endl;
 		break;
 	case trackball:
-		if (numberOfCursors == 2) {
+		/*if (numberOfCursors == 2) {
 			trackedCursor = tuioClient->getTuioCursors().back();
 			arcBallPreviousPoint[0] = tcur->getX();
 			arcBallPreviousPoint[1] = tcur->getY();
@@ -939,9 +1086,15 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 		if (numberOfCursors == 0) {
 			appInputState = idle;
 			std::cout << "trackball --> idle " << std::endl;
-		}
+		}*/
 
 		break;
+	case rotate:
+		switch (rotTechnique) {
+		case pinch:
+			rotTechnique = screenSpace;
+			std::cout << "pinch --> screenSpace" << '\n';
+		}
 	}
 
 	if (verbose)
@@ -1329,7 +1482,6 @@ void Engine::initSimpleGeometry() {
 	quad.modelMatrix = glm::translate(quad.modelMatrix,glm::vec3(-2.2,-2.2,0));
 }
 
-
 bool Engine::LoadGLTextures(const aiScene* scene)
 {
 	ILboolean success;
@@ -1402,4 +1554,3 @@ bool Engine::LoadGLTextures(const aiScene* scene)
 
 	return true;
 }
-

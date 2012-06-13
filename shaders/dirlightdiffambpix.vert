@@ -15,7 +15,10 @@ out vec3 Normal;
 
 void main()
 {
+
+
 	Normal = normalize(vec3(vm * vec4(in_Normal,0.0)));	
 	TexCoord = vec2(in_TexCoord);
+	
 	gl_Position = projection * vm * vec4(in_Position,1.0);
 } 

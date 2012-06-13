@@ -8,6 +8,7 @@
 #include <streambuf>
 #include <sstream>
 #include "box.h"
+#include "glm\glm.hpp"
 
 namespace pho {
 
@@ -81,6 +82,17 @@ namespace pho {
 		}
 		return program;
 
+	}
+
+	//return the angle C of a triangle formed by 3 points
+	inline float sssTriangleC(glm::vec2 pa, glm::vec2 pb, glm::vec2 pc) {
+		float a = glm::distance(pc,pb);
+		float b = glm::distance(pc,pa);
+		float c = glm::distance(pa,pb);
+
+		float cosC = (a*a+b*b-c*c)/(2*a*b);
+
+		return glm::acos(cosC);
 	}
 
 	inline std::string readTextFile(const char* filename) {

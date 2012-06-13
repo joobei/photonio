@@ -83,14 +83,14 @@ namespace pho {
 	enum InputState { //appInputState
 		idle,
 		translate,
-		pinch,
 		trackball,
 		rotate
 	};
 
 	enum RotateTechnique { //rotTechnique
 		singleAxis,
-		screenSpace
+		screenSpace,
+		pinch
 	};
 
 	enum AppMode {  //appmode
@@ -111,8 +111,8 @@ namespace pho {
 		void shutdown();
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
-		static const int WINDOW_SIZE_X = 1280;
-		static const int WINDOW_SIZE_Y = 800;
+		static const int WINDOW_SIZE_X = 800;
+		static const int WINDOW_SIZE_Y = 600;
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
 
@@ -146,6 +146,7 @@ namespace pho {
 		GLenum error;
 
 		mat4 orientation,calibration;
+		mat3 axisChange;
 		mat4 trackerMatrix;
 		mat3 orientation3;
 		mat4 projectionMatrix, viewMatrix, pvm;
@@ -246,7 +247,14 @@ namespace pho {
 		glm::vec2 xyOrigin;
 		glm::vec3 tempOrigin;
 		TUIO::TuioCursor* trackedCursor;
+		int trackedCursorId;
+		glm::vec2 trackedCursorPrevPoint;
+
 		bool verbose;
+		glm::vec2 cursorsTouchPointPair[2];
+		glm::vec3 cursor1;
+		glm::vec3 cursor2;
+		float referenceAngle;
 
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;
