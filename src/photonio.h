@@ -83,14 +83,14 @@ namespace pho {
 	enum InputState { //appInputState
 		idle,
 		translate,
-		trackball,
 		rotate
 	};
 
 	enum RotateTechnique { //rotTechnique
 		singleAxis,
 		screenSpace,
-		pinch
+		pinch,
+		trackBall
 	};
 
 	enum AppMode {  //appmode

@@ -409,6 +409,10 @@ void Engine::checkEvents() {
 		rotTechnique = singleAxis;
 		std::cout << "Single Axis Rotation" << '\n';
 	}
+	if (glfwGetKey('3') == GLFW_PRESS) {
+		rotTechnique = trackBall;
+		std::cout << "Virtual Trackball Rotation" << '\n';
+	}
 	int wheel = glfwGetMouseWheel();
 	if (wheel != prevMouseWheel) {
 		int amount = wheel - prevMouseWheel;
@@ -467,13 +471,7 @@ void Engine::checkEvents() {
 
 				break;
 			case 3:
-				if (appInputState != trackball ) {
-					printf("idle-->trackball");
-					appInputState = trackball; }
-				else
-					{ appInputState = idle; 
-					printf("trackball-->idle");
-				}
+				break;
 			default:
 				calibrate = true;
 				break;
@@ -545,48 +543,48 @@ void Engine::checkEvents() {
 	if (wii) {
 		remote.RefreshState();
 
-		switch(appMode)  {
-		case rayCasting:
-			if (appInputState == idle && remote.Button.B()) {   
-				appInputState = translate;
-				grabbedDistance = rayLength;
+		//switch(appMode)  {
+		//case rayCasting:
+		//	if (appInputState == idle && remote.Button.B()) {   
+		//		appInputState = translate;
+		//		grabbedDistance = rayLength;
 
-				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
+		//		mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
 
-				target.modelMatrix[3][0] = newMat[3][0];
-				target.modelMatrix[3][1] = newMat[3][1];
-				target.modelMatrix[3][2] = newMat[3][2];
-				std::cout << "translate" << '\n';
-			}
-			if (appInputState == translate && remote.Button.B()) {
-				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
-				target.modelMatrix[3][0] = newMat[3][0];
-				target.modelMatrix[3][1] = newMat[3][1];
-				target.modelMatrix[3][2] = newMat[3][2];
-			}
-			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
-				grabbedDistance+=0.5;
-			}
-			if (appInputState == translate && remote.Button.Up()) {
-				grabbedDistance-=0.5;
-			}
-			if (appInputState == translate && !remote.Button.B()) {
-				appInputState = idle;
-				std::cout << "idle" << '\n';
-				break;
-			}
-			if (appInputState == idle && remote.Button.A()) {
-				appInputState = trackball;
-				std::cout << "trackball" << '\n';
-				break;
-			}
-			if (appInputState == trackball && remote.Button.A()) {
-				//trackball rotate
-				break;
-			}
-		default:
-			break;
-		}
+		//		target.modelMatrix[3][0] = newMat[3][0];
+		//		target.modelMatrix[3][1] = newMat[3][1];
+		//		target.modelMatrix[3][2] = newMat[3][2];
+		//		std::cout << "translate" << '\n';
+		//	}
+		//	if (appInputState == translate && remote.Button.B()) {
+		//		mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
+		//		target.modelMatrix[3][0] = newMat[3][0];
+		//		target.modelMatrix[3][1] = newMat[3][1];
+		//		target.modelMatrix[3][2] = newMat[3][2];
+		//	}
+		//	if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
+		//		grabbedDistance+=0.5;
+		//	}
+		//	if (appInputState == translate && remote.Button.Up()) {
+		//		grabbedDistance-=0.5;
+		//	}
+		//	if (appInputState == translate && !remote.Button.B()) {
+		//		rotTechnique = idle;
+		//		std::cout << "idle" << '\n';
+		//		break;
+		//	}
+		//	if (appInputState == idle && remote.Button.A()) {
+		//		rotTechnique = trackBall;
+		//		std::cout << "trackball" << '\n';
+		//		break;
+		//	}
+		//	if (appInputState == trackBall && remote.Button.A()) {
+		//		//trackball rotate
+		//		break;
+		//	}
+		//default:
+		//	break;
+		//}
 	}
 
 }
@@ -870,8 +868,8 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 		std::cout << "idle --> translate" << std::endl;
 		break;
 	case translate:
-		if (numberOfCursors == 2) {
-			appInputState = trackball;
+		/*if (numberOfCursors == 2) {
+			appInputState = trackBall;
 
 			trackedCursor = tcur;
 
@@ -882,7 +880,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 			arcBallPreviousPoint[0] = x;
 			arcBallPreviousPoint[1] = y;
 			tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
-		}
+		}*/
 		break;
 	case rotate:
 		switch (rotTechnique) {
@@ -920,6 +918,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	glm::mat3 tempMat;
 	glm::mat4 newLocationMatrix;
 	glm::mat4 rotation;
+	tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
 
 	//TUIO variables
 	short numberOfCursors = tuioClient->getTuioCursors().size();
@@ -955,19 +954,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 		break;
 
-	case trackball:
-		//********************* TRACKBALL  *************************
-		x = tcur->getX();
-		y = tcur->getY();
-
-		target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
-		
-		rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
-		target.modelMatrix = rotation*target.modelMatrix;
-		target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
-		arcBallPreviousPoint[0] = x;
-		arcBallPreviousPoint[1] = y;
-		break;
+	
 	case rotate:
 		switch (rotTechnique) {
 		case singleAxis:
@@ -1051,6 +1038,19 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				//trackedCursorPrevPoint = b;
 			}
 			break;
+		case trackBall:
+		//********************* TRACKBALL  *************************
+		x = tcur->getX();
+		y = tcur->getY();
+
+		target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
+		
+		rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
+		target.modelMatrix = rotation*target.modelMatrix;
+		target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
+		arcBallPreviousPoint[0] = x;
+		arcBallPreviousPoint[1] = y;
+		break;
 		}
 	}
 	if (verbose)
@@ -1070,7 +1070,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 		appInputState = idle;
 		std::cout << "translate-->idle" << std::endl;
 		break;
-	case trackball:
+	case trackBall:
 		/*if (numberOfCursors == 2) {
 			trackedCursor = tuioClient->getTuioCursors().back();
 			arcBallPreviousPoint[0] = tcur->getX();
