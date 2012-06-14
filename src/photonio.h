@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #define PHOTONIO_H
 #define WIN32_LEAN_AND_MEAN
 #include <GL/glew.h>
-#include <GL/glfw.h>
+
 #include <iostream>
 #include <stdio.h>
 #include <vector>
@@ -50,6 +50,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "box.h"
 
 #include "IL/il.h"
+#include <GL/glfw.h>
 
 using namespace std;
 using namespace TUIO;
@@ -248,6 +249,7 @@ namespace pho {
 		glm::vec3 tempOrigin;
 		TUIO::TuioCursor* trackedCursor;
 		int trackedCursorId;
+		glm::vec2 trackedMidpoint;
 		glm::vec2 trackedCursorPrevPoint;
 
 		bool verbose;

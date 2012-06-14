@@ -394,18 +394,15 @@ void Engine::checkEvents() {
 	if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,FACTOR,0));
 	}
-	if (glfwGetKey(GLFW_KEY_DEL)) {
-		//modelMatrix = glm::rotate(modelMatrix,M_PI/2,vec3(1,0,0));
-	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		plane.modelMatrix = glm::mat4();
 		target.modelMatrix = glm::mat4();
 	}
-	if (glfwGetKey('2') == GLFW_PRESS) {
+	if (glfwGetKey('1') == GLFW_PRESS) {
 		rotTechnique = screenSpace;
 		std::cout << "Screen Space Rotation" << '\n';
 	}
-	if (glfwGetKey('1') == GLFW_PRESS) {
+	if (glfwGetKey('2') == GLFW_PRESS) {
 		rotTechnique = singleAxis;
 		std::cout << "Single Axis Rotation" << '\n';
 	}
@@ -893,12 +890,14 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 				short i=0;
 				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
-					cursorsTouchPointPair[i].x = (float)(*list_iter)->getScreenX(TOUCH_SCREEN_SIZE_X);
-					cursorsTouchPointPair[i].y = (float)(*list_iter)->getScreenY(TOUCH_SCREEN_SIZE_Y);
+					cursorsTouchPointPair[i].x = (float)(*list_iter)->getX();
+					cursorsTouchPointPair[i].y = (float)(*list_iter)->getY();
 
 					i++;	
 				}
 
+				trackedMidpoint.x = cursorsTouchPointPair[1].x-cursorsTouchPointPair[0].x;
+				trackedMidpoint.y = cursorsTouchPointPair[1].y-cursorsTouchPointPair[0].y;
 
 				referenceAngle = atan2((cursorsTouchPointPair[1].y - cursorsTouchPointPair[0].y) ,(cursorsTouchPointPair[1].x - cursorsTouchPointPair[0].x)); 
 
@@ -999,10 +998,18 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 				short i=0;
 				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
-					newPair[i].x = (float)(*list_iter)->getScreenX(TOUCH_SCREEN_SIZE_X);
-					newPair[i].y = (float)(*list_iter)->getScreenY(TOUCH_SCREEN_SIZE_Y);
+					newPair[i].x = (float)(*list_iter)->getX();
+					newPair[i].y = (float)(*list_iter)->getY();
 					i++;	
 				}
+				glm::vec2 trackedNewPoint;
+				trackedNewPoint.x = newPair[1].x-newPair[0].x;
+				trackedNewPoint.y = newPair[1].y-newPair[0].y;
+				
+				glm::vec2 translation = trackedNewPoint-trackedMidpoint;
+
+				//std::cout << "Translation: \t" << translation.x << std::endl;
+
 				float newAngle = atan2((newPair[1].y - newPair[0].y),(newPair[1].x - newPair[0].x));
 
 				/*std::cout << "Difference " << newAngle;
@@ -1019,6 +1026,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				target.modelMatrix[3][2] = 0;
 
 				target.modelMatrix = glm::rotate((newAngle-referenceAngle)*80*(-1),vec3(0,0,1))*target.modelMatrix;
+
+				//target.modelMatrix = glm::rotate(translation.x*300.0f,vec3(0,1,0))*target.modelMatrix;
+				//target.modelMatrix = glm::rotate(translation.y*300.0f,vec3(1,0,0))*target.modelMatrix;
 
 				target.modelMatrix[3][0] = location.x;
 				target.modelMatrix[3][1] = location.y;
@@ -1043,6 +1053,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				target.modelMatrix = glm::rotate(angle*sign*100,vec3(0,0,1))*target.modelMatrix;*/
 
 				referenceAngle = newAngle;
+				trackedMidpoint = trackedNewPoint;
+
+				cursorsTouchPointPair[0] = newPair[0];
+				cursorsTouchPointPair[1] = newPair[1];
 				
 				//trackedCursorPrevPoint = b;
 			}
