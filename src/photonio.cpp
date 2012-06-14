@@ -905,6 +905,15 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 				std::cout << "pinch rotate" << '\n';
 				
 			}
+		case trackBall:
+			trackedCursorId = tcur->getCursorID();
+
+			float x = tcur->getX();
+			float y = tcur->getY();
+
+			arcBallPreviousPoint[0] = x;
+			arcBallPreviousPoint[1] = y;
+			tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
 		}
 		break;
 	}
@@ -1039,18 +1048,18 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			}
 			break;
 		case trackBall:
-		//********************* TRACKBALL  *************************
-		x = tcur->getX();
-		y = tcur->getY();
+			//********************* TRACKBALL  *************************
+			x = tcur->getX();
+			y = tcur->getY();
 
-		target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
-		
-		rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
-		target.modelMatrix = rotation*target.modelMatrix;
-		target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
-		arcBallPreviousPoint[0] = x;
-		arcBallPreviousPoint[1] = y;
-		break;
+			target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
+
+			rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
+			target.modelMatrix = rotation*target.modelMatrix;
+			target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
+			arcBallPreviousPoint[0] = x;
+			arcBallPreviousPoint[1] = y;
+			break;
 		}
 	}
 	if (verbose)
