@@ -907,6 +907,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 				std::cout << "pinch rotate" << '\n';
 				
 			}
+		   break;
 		case trackBall:
 			trackedCursorId = tcur->getCursorID();
 
@@ -934,7 +935,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
 	glm::vec2 ftranslation;
 
-	glm::vec2 translation[2];
+	glm::vec2 f1translationVec,f2translationVec;
 	glm::vec2 f1curr,f2curr;
 	vec3 location;
 	float newAngle;
@@ -1003,23 +1004,22 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			}
 			
 			//calculate translation for both pointers
-			translation[0].x = f1curr.x-f1prev.x;
-			translation[0].y = f1curr.y-f1prev.y;
+			f1translationVec.x = f1curr.x-f1prev.x;
+			f1translationVec.y = f1curr.y-f1prev.y;
 
-			translation[1].x = f2curr.x-f2prev.x;
-			translation[1].y = f2curr.y-f2prev.y;
+			f2translationVec.x = f2curr.x-f2prev.x;
+			f2translationVec.y = f2curr.y-f2prev.y;
 
-			
+			std::cout.precision(9);
+			std::cout << "Translation: \t" << f1translationVec.x << '\t' << f1translationVec.y << '\t' << f2translationVec.x << '\t' << f2translationVec.y << std::endl;
 
 			newAngle = atan2((f2curr.y - f1curr.y),(f2curr.x - f1curr.x));
 			
 			//	X = max(0, min(v1.x, v2.x)) + min(0, max(v1.x, v2.x));
 			//	Y = max(0, min(v1.y, v2.y)) + min(0, max(v1.y, v2.y));
 
-			ftranslation.x = std::max(0.0f, std::min(translation[0].x, translation[1].x)) + std::min(0.0f, std::max(translation[0].x,translation[1].x));
-			ftranslation.y = std::max(0.0f, std::min(translation[0].y, translation[1].y)) + std::min(0.0f, std::max(translation[0].y,translation[1].y));
-
-			std::cout << "Translation: \t" << ftranslation.x << '\t' << ftranslation.y << std::endl;
+			ftranslation.x = std::max(0.0f, std::min(f1translationVec.x, f2translationVec.x)) + std::min(0.0f, std::max(f1translationVec.x,f2translationVec.x));
+			ftranslation.y = std::max(0.0f, std::min(f1translationVec.y, f2translationVec.y)) + std::min(0.0f, std::max(f1translationVec.y,f2translationVec.y));
 
 			location.x = target.modelMatrix[3][0];
 			location.y = target.modelMatrix[3][1];
