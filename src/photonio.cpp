@@ -1031,37 +1031,20 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 			target.modelMatrix = glm::rotate((newAngle-referenceAngle)*180*(-1),vec3(0,0,1))*target.modelMatrix;
 
-			target.modelMatrix = glm::rotate(ftranslation.x,vec3(0,1,0))*target.modelMatrix;
-			target.modelMatrix = glm::rotate(ftranslation.y,vec3(1,0,0))*target.modelMatrix;
+			target.modelMatrix = glm::rotate(ftranslation.x*100,vec3(0,1,0))*target.modelMatrix;
+			target.modelMatrix = glm::rotate(ftranslation.y*100,vec3(1,0,0))*target.modelMatrix;
 
 			target.modelMatrix[3][0] = location.x;
 			target.modelMatrix[3][1] = location.y;
 			target.modelMatrix[3][2] = location.z;
 
-			//glm::vec2 b;
-			//b.x = x;
-			//b.y = y;
-
-			//std::cout << "tracked cursor x " << tcur->getX();
-			//std::cout << "\t tracked cursor y " << tcur->getY() << '\n';
-
-			/*float sign;
-			sign = glm::cross(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),
-			glm::vec3(b.x,b.y,0)).z;
-
-			if ( sign < 0) { sign = -1.0f; }
-			else {sign = 1.0f; }
-
-			float angle = sssTriangleC(trackedCursorPrevPoint,b,glm::vec2(0.5f,0.5f));
-			//float angle = glm::dot(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),glm::vec3(b.x,b.y,0));
-			target.modelMatrix = glm::rotate(angle*sign*100,vec3(0,0,1))*target.modelMatrix;*/
-
+			
+			//update to latest values
 			referenceAngle = newAngle;
-
 			f1prev = f1curr;
 			f2prev = f2curr;
 
-			//trackedCursorPrevPoint = b;
+			
 
 			break;
 		case trackBall:
