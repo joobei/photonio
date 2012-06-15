@@ -249,13 +249,12 @@ namespace pho {
 		glm::vec3 tempOrigin;
 		TUIO::TuioCursor* trackedCursor;
 		int trackedCursorId;
-		glm::vec2 trackedMidpoint;
 		glm::vec2 trackedCursorPrevPoint;
 
 		bool verbose;
-		glm::vec2 cursorsTouchPointPair[2];
-		glm::vec3 cursor1;
-		glm::vec3 cursor2;
+		
+		int f1id,f2id;
+		glm::vec2 f1prev,f2prev;
 		float referenceAngle;
 
 		//Wii-Mote Stuff

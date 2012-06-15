@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "data.pb.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -884,22 +885,24 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 		case screenSpace:
 			if (rotTechnique !=pinch && (numberOfCursors > 1)) {
 				rotTechnique = pinch;
-				trackedCursorId = tcur->getCursorID();
-				trackedCursorPrevPoint.x = tcur->getX();
-				trackedCursorPrevPoint.y = tcur->getY();
-
+				
 				short i=0;
 				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
-					cursorsTouchPointPair[i].x = (float)(*list_iter)->getX();
-					cursorsTouchPointPair[i].y = (float)(*list_iter)->getY();
-
+					if (i==0) {
+					f1prev.x = (*list_iter)->getX();
+					f1prev.y = (*list_iter)->getY();
+					f1id = (*list_iter)->getCursorID();
 					i++;	
+					}
+					else {
+					f2prev.x = (*list_iter)->getX();
+					f2prev.y = (*list_iter)->getY();
+					f2id = (*list_iter)->getCursorID();
+					}
+					
 				}
 
-				trackedMidpoint.x = cursorsTouchPointPair[1].x-cursorsTouchPointPair[0].x;
-				trackedMidpoint.y = cursorsTouchPointPair[1].y-cursorsTouchPointPair[0].y;
-
-				referenceAngle = atan2((cursorsTouchPointPair[1].y - cursorsTouchPointPair[0].y) ,(cursorsTouchPointPair[1].x - cursorsTouchPointPair[0].x)); 
+				referenceAngle = atan2((f2prev.y - f1prev.y) ,(f2prev.x - f1prev.x)); 
 
 				std::cout << "pinch rotate" << '\n';
 				
@@ -923,12 +926,20 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 void Engine::updateTuioCursor(TuioCursor *tcur) {
 	glm::vec3 newLocationVector;
 	float x,y;
+	x = tcur->getX();
+	y = tcur->getY();
 	glm::mat3 tempMat;
 	glm::mat4 newLocationMatrix;
 	glm::mat4 rotation;
 	tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
+	glm::vec2 ftranslation;
 
-	//TUIO variables
+	glm::vec2 translation[2];
+	glm::vec2 f1curr,f2curr;
+	vec3 location;
+	float newAngle;
+
+
 	short numberOfCursors = tuioClient->getTuioCursors().size();
 	std::list<TUIO::TuioCursor*> cursorList;
 	cursorList = tuioClient->getTuioCursors();
@@ -947,21 +958,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 		plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
 		target.modelMatrix = newLocationMatrix*target.modelMatrix;
-		
-
-
-		/*plane.modelMatrix[3][0] = newLocationMatrix[3][0]; //move plane to new location
-		plane.modelMatrix[3][1] = newLocationMatrix[3][1];
-		plane.modelMatrix[3][2] = newLocationMatrix[3][2];
-
-		target.modelMatrix[3][0] = newLocationMatrix[3][0]; //move object there too
-		target.modelMatrix[3][1] = newLocationMatrix[3][1];
-		target.modelMatrix[3][2] = newLocationMatrix[3][2];*/
-
-
 
 		break;
-
+		  
 	
 	case rotate:
 		switch (rotTechnique) {
@@ -975,7 +974,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				vec3 location;
 				location.x = target.modelMatrix[3][0];
 				location.y = target.modelMatrix[3][1];
-				location.z = target.modelMatrix[3][2];
+				location.z = target.modelMatrix[3][2];  
 
 				target.modelMatrix[3][0] = 0;
 				target.modelMatrix[3][1] = 0;
@@ -990,76 +989,80 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			}
 			break;
 		case pinch:
-			if (tcur->getCursorID() == trackedCursorId) {
-				x = tcur->getX();
-				y = tcur->getY();
+			//********************* PINCH  *************************
 
-				glm::vec2 newPair[2];
-
-				short i=0;
-				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
-					newPair[i].x = (float)(*list_iter)->getX();
-					newPair[i].y = (float)(*list_iter)->getY();
-					i++;	
+			for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
+				if ((*list_iter)->getCursorID() == f1id) {
+					f1curr.x = (*list_iter)->getX();
+					f1curr.y = (*list_iter)->getY();
 				}
-				glm::vec2 trackedNewPoint;
-				trackedNewPoint.x = newPair[1].x-newPair[0].x;
-				trackedNewPoint.y = newPair[1].y-newPair[0].y;
-				
-				glm::vec2 translation = trackedNewPoint-trackedMidpoint;
-
-				//std::cout << "Translation: \t" << translation.x << std::endl;
-
-				float newAngle = atan2((newPair[1].y - newPair[0].y),(newPair[1].x - newPair[0].x));
-
-				/*std::cout << "Difference " << newAngle;
-				std::cout << "new angle in Radians " << newAngle;
-				std::cout << "\t old angle in Radians " << referenceAngle << '\n';*/
-
-				vec3 location;
-				location.x = target.modelMatrix[3][0];
-				location.y = target.modelMatrix[3][1];
-				location.z = target.modelMatrix[3][2];
-
-				target.modelMatrix[3][0] = 0;
-				target.modelMatrix[3][1] = 0;
-				target.modelMatrix[3][2] = 0;
-
-				target.modelMatrix = glm::rotate((newAngle-referenceAngle)*80*(-1),vec3(0,0,1))*target.modelMatrix;
-
-				//target.modelMatrix = glm::rotate(translation.x*300.0f,vec3(0,1,0))*target.modelMatrix;
-				//target.modelMatrix = glm::rotate(translation.y*300.0f,vec3(1,0,0))*target.modelMatrix;
-
-				target.modelMatrix[3][0] = location.x;
-				target.modelMatrix[3][1] = location.y;
-				target.modelMatrix[3][2] = location.z;
-
-				//glm::vec2 b;
-				//b.x = x;
-				//b.y = y;
-
-				//std::cout << "tracked cursor x " << tcur->getX();
-				//std::cout << "\t tracked cursor y " << tcur->getY() << '\n';
-				
-				/*float sign;
-				sign = glm::cross(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),
-					glm::vec3(b.x,b.y,0)).z;
-				
-				if ( sign < 0) { sign = -1.0f; }
-				else {sign = 1.0f; }
-				
-				float angle = sssTriangleC(trackedCursorPrevPoint,b,glm::vec2(0.5f,0.5f));
-				//float angle = glm::dot(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),glm::vec3(b.x,b.y,0));
-				target.modelMatrix = glm::rotate(angle*sign*100,vec3(0,0,1))*target.modelMatrix;*/
-
-				referenceAngle = newAngle;
-				trackedMidpoint = trackedNewPoint;
-
-				cursorsTouchPointPair[0] = newPair[0];
-				cursorsTouchPointPair[1] = newPair[1];
-				
-				//trackedCursorPrevPoint = b;
+				if ((*list_iter)->getCursorID() == f2id) {
+					f2curr.x = (*list_iter)->getX();
+					f2curr.y = (*list_iter)->getY();
+				}
 			}
+			
+			//calculate translation for both pointers
+			translation[0].x = f1curr.x-f1prev.x;
+			translation[0].y = f1curr.y-f1prev.y;
+
+			translation[1].x = f2curr.x-f2prev.x;
+			translation[1].y = f2curr.y-f2prev.y;
+
+			
+
+			newAngle = atan2((f2curr.y - f1curr.y),(f2curr.x - f1curr.x));
+			
+			//	X = max(0, min(v1.x, v2.x)) + min(0, max(v1.x, v2.x));
+			//	Y = max(0, min(v1.y, v2.y)) + min(0, max(v1.y, v2.y));
+
+			ftranslation.x = std::max(0.0f, std::min(translation[0].x, translation[1].x)) + std::min(0.0f, std::max(translation[0].x,translation[1].x));
+			ftranslation.y = std::max(0.0f, std::min(translation[0].y, translation[1].y)) + std::min(0.0f, std::max(translation[0].y,translation[1].y));
+
+			std::cout << "Translation: \t" << ftranslation.x << '\t' << ftranslation.y << std::endl;
+
+			location.x = target.modelMatrix[3][0];
+			location.y = target.modelMatrix[3][1];
+			location.z = target.modelMatrix[3][2];
+
+			target.modelMatrix[3][0] = 0;
+			target.modelMatrix[3][1] = 0;
+			target.modelMatrix[3][2] = 0;
+
+			target.modelMatrix = glm::rotate((newAngle-referenceAngle)*180*(-1),vec3(0,0,1))*target.modelMatrix;
+
+			target.modelMatrix = glm::rotate(ftranslation.x,vec3(0,1,0))*target.modelMatrix;
+			target.modelMatrix = glm::rotate(ftranslation.y,vec3(1,0,0))*target.modelMatrix;
+
+			target.modelMatrix[3][0] = location.x;
+			target.modelMatrix[3][1] = location.y;
+			target.modelMatrix[3][2] = location.z;
+
+			//glm::vec2 b;
+			//b.x = x;
+			//b.y = y;
+
+			//std::cout << "tracked cursor x " << tcur->getX();
+			//std::cout << "\t tracked cursor y " << tcur->getY() << '\n';
+
+			/*float sign;
+			sign = glm::cross(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),
+			glm::vec3(b.x,b.y,0)).z;
+
+			if ( sign < 0) { sign = -1.0f; }
+			else {sign = 1.0f; }
+
+			float angle = sssTriangleC(trackedCursorPrevPoint,b,glm::vec2(0.5f,0.5f));
+			//float angle = glm::dot(glm::vec3(trackedCursorPrevPoint.x,trackedCursorPrevPoint.y,0),glm::vec3(b.x,b.y,0));
+			target.modelMatrix = glm::rotate(angle*sign*100,vec3(0,0,1))*target.modelMatrix;*/
+
+			referenceAngle = newAngle;
+
+			f1prev = f1curr;
+			f2prev = f2curr;
+
+			//trackedCursorPrevPoint = b;
+
 			break;
 		case trackBall:
 			//********************* TRACKBALL  *************************
