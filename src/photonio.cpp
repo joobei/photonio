@@ -10,7 +10,7 @@ This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
-
+ 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
@@ -892,11 +892,13 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 					f1prev.x = (*list_iter)->getX();
 					f1prev.y = (*list_iter)->getY();
 					f1id = (*list_iter)->getCursorID();
+					p1p=f1prev;
 					i++;	
 					}
 					else {
 					f2prev.x = (*list_iter)->getX();
 					f2prev.y = (*list_iter)->getY();
+					p2p=f2prev;
 					f2id = (*list_iter)->getCursorID();
 					}
 					
@@ -939,7 +941,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	glm::vec2 f1curr,f2curr;
 	vec3 location;
 	float newAngle;
-
+	glm::vec2 ft;
 
 	short numberOfCursors = tuioClient->getTuioCursors().size();
 	std::list<TUIO::TuioCursor*> cursorList;
@@ -996,12 +998,55 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				if ((*list_iter)->getCursorID() == f1id) {
 					f1curr.x = (*list_iter)->getX();
 					f1curr.y = (*list_iter)->getY();
+					f1speed.x = (*list_iter)->getXSpeed();
+					f1speed.y = (*list_iter)->getYSpeed();
+					
 				}
 				if ((*list_iter)->getCursorID() == f2id) {
 					f2curr.x = (*list_iter)->getX();
 					f2curr.y = (*list_iter)->getY();
+					f2speed.x = (*list_iter)->getXSpeed();
+					f2speed.y = (*list_iter)->getYSpeed();
+					
+					
 				}
 			}
+
+			if (tcur->getCursorID() == f1id) {
+
+				p1p=p1c;
+
+				p1c.x = tcur->getX();
+				p1c.y = tcur->getY();
+
+				both=false;
+
+			}
+
+
+
+
+			if (tcur->getCursorID() == f2id) {
+
+				p2p=p2c;
+
+				p2c.x = tcur->getX();
+				p2c.y = tcur->getY();
+
+				p1t = p1c-p1p;
+				p2t = p2c-p2p;
+
+				//	X = max(0, min(v1.x, v2.x)) + min(0, max(v1.x, v2.x));
+				//	Y = max(0, min(v1.y, v2.y)) + min(0, max(v1.y, v2.y));
+
+				ft.x=std::max(0.0f,std::min(p1t.x,p2t.y)) + std::min(0.0f,std::max(p1t.x,p2t.x));
+				ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
+
+				both=true;
+				
+			}
+
+
 			
 			//calculate translation for both pointers
 			f1translationVec.x = f1curr.x-f1prev.x;
@@ -1010,17 +1055,12 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			f2translationVec.x = f2curr.x-f2prev.x;
 			f2translationVec.y = f2curr.y-f2prev.y;
 
-			std::cout.precision(9);
-			std::cout << "Translation: \t" << f1translationVec.x << '\t' << f1translationVec.y << '\t' << f2translationVec.x << '\t' << f2translationVec.y << std::endl;
-
 			newAngle = atan2((f2curr.y - f1curr.y),(f2curr.x - f1curr.x));
 			
 			//	X = max(0, min(v1.x, v2.x)) + min(0, max(v1.x, v2.x));
 			//	Y = max(0, min(v1.y, v2.y)) + min(0, max(v1.y, v2.y));
 
-			ftranslation.x = std::max(0.0f, std::min(f1translationVec.x, f2translationVec.x)) + std::min(0.0f, std::max(f1translationVec.x,f2translationVec.x));
-			ftranslation.y = std::max(0.0f, std::min(f1translationVec.y, f2translationVec.y)) + std::min(0.0f, std::max(f1translationVec.y,f2translationVec.y));
-
+			
 			location.x = target.modelMatrix[3][0];
 			location.y = target.modelMatrix[3][1];
 			location.z = target.modelMatrix[3][2];
@@ -1031,9 +1071,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 			target.modelMatrix = glm::rotate((newAngle-referenceAngle)*180*(-1),vec3(0,0,1))*target.modelMatrix;
 
-			target.modelMatrix = glm::rotate(ftranslation.x*100,vec3(0,1,0))*target.modelMatrix;
-			target.modelMatrix = glm::rotate(ftranslation.y*100,vec3(1,0,0))*target.modelMatrix;
-
+			if (both) {
+				target.modelMatrix = glm::rotate(ft.x*230.0f,vec3(0,1,0))*target.modelMatrix;
+				target.modelMatrix = glm::rotate(ft.y*130.0f,vec3(1,0,0))*target.modelMatrix;
+			}
+						
 			target.modelMatrix[3][0] = location.x;
 			target.modelMatrix[3][1] = location.y;
 			target.modelMatrix[3][2] = location.z;
@@ -1043,8 +1085,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			referenceAngle = newAngle;
 			f1prev = f1curr;
 			f2prev = f2curr;
-
-			
 
 			break;
 		case trackBall:
