@@ -1036,30 +1036,14 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				p1t = p1c-p1p;
 				p2t = p2c-p2p;
 
-				//	X = max(0, min(v1.x, v2.x)) + min(0, max(v1.x, v2.x));
-				//	Y = max(0, min(v1.y, v2.y)) + min(0, max(v1.y, v2.y));
-
-				ft.x=std::max(0.0f,std::min(p1t.x,p2t.y)) + std::min(0.0f,std::max(p1t.x,p2t.x));
+				ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
 				ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
 
 				both=true;
 				
 			}
 
-
-			
-			//calculate translation for both pointers
-			f1translationVec.x = f1curr.x-f1prev.x;
-			f1translationVec.y = f1curr.y-f1prev.y;
-
-			f2translationVec.x = f2curr.x-f2prev.x;
-			f2translationVec.y = f2curr.y-f2prev.y;
-
-			newAngle = atan2((f2curr.y - f1curr.y),(f2curr.x - f1curr.x));
-			
-			//	X = max(0, min(v1.x, v2.x)) + min(0, max(v1.x, v2.x));
-			//	Y = max(0, min(v1.y, v2.y)) + min(0, max(v1.y, v2.y));
-
+			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 			
 			location.x = target.modelMatrix[3][0];
 			location.y = target.modelMatrix[3][1];
