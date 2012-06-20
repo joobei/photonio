@@ -889,22 +889,21 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 				short i=0;
 				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
 					if (i==0) {
-					f1prev.x = (*list_iter)->getX();
-					f1prev.y = (*list_iter)->getY();
-					f1id = (*list_iter)->getCursorID();
-					p1p=f1prev;
-					i++;	
+						p1p.x = (*list_iter)->getX();
+						p1p.y = (*list_iter)->getY();
+						f1id = (*list_iter)->getCursorID();
+						i++;	
 					}
 					else {
-					f2prev.x = (*list_iter)->getX();
-					f2prev.y = (*list_iter)->getY();
-					p2p=f2prev;
-					f2id = (*list_iter)->getCursorID();
+						p2p.x = (*list_iter)->getX();
+						p2p.y = (*list_iter)->getY();
+						f2id = (*list_iter)->getCursorID();
+						i++;	
 					}
-					
+
 				}
 
-				referenceAngle = atan2((f2prev.y - f1prev.y) ,(f2prev.x - f1prev.x)); 
+				
 
 				std::cout << "pinch rotate" << '\n';
 				
@@ -913,12 +912,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 		case trackBall:
 			trackedCursorId = tcur->getCursorID();
 
-			float x = tcur->getX();
-			float y = tcur->getY();
-
-			arcBallPreviousPoint[0] = x;
-			arcBallPreviousPoint[1] = y;
+			arcBallPreviousPoint[0] = tcur->getX();
+			arcBallPreviousPoint[1] = tcur->getY();
 			tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
+			break;
 		}
 		break;
 	}
@@ -994,24 +991,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		case pinch:
 			//********************* PINCH  *************************
 
-			for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
-				if ((*list_iter)->getCursorID() == f1id) {
-					f1curr.x = (*list_iter)->getX();
-					f1curr.y = (*list_iter)->getY();
-					f1speed.x = (*list_iter)->getXSpeed();
-					f1speed.y = (*list_iter)->getYSpeed();
-					
-				}
-				if ((*list_iter)->getCursorID() == f2id) {
-					f2curr.x = (*list_iter)->getX();
-					f2curr.y = (*list_iter)->getY();
-					f2speed.x = (*list_iter)->getXSpeed();
-					f2speed.y = (*list_iter)->getYSpeed();
-					
-					
-				}
-			}
-
 			if (tcur->getCursorID() == f1id) {
 
 				p1p=p1c;
@@ -1019,12 +998,13 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
 
+				p1t = p1c-p1p;
+				
+				
+
 				both=false;
 
 			}
-
-
-
 
 			if (tcur->getCursorID() == f2id) {
 
@@ -1033,7 +1013,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				p2c.x = tcur->getX();
 				p2c.y = tcur->getY();
 
-				p1t = p1c-p1p;
+				
 				p2t = p2c-p2p;
 
 				ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
@@ -1043,7 +1023,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				
 			}
 
-			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
+			referenceAngle  = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
+			newAngle		  =  atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 			
 			location.x = target.modelMatrix[3][0];
 			location.y = target.modelMatrix[3][1];
@@ -1063,12 +1044,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			target.modelMatrix[3][0] = location.x;
 			target.modelMatrix[3][1] = location.y;
 			target.modelMatrix[3][2] = location.z;
-
-			
-			//update to latest values
-			referenceAngle = newAngle;
-			f1prev = f1curr;
-			f2prev = f2curr;
 
 			break;
 		case trackBall:
@@ -1094,9 +1069,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 void Engine::removeTuioCursor(TuioCursor *tcur) {
 
-	short numberOfCursors = tuioClient->getTuioCursors().size()-1;
-
-	//std::cout << "Removed cursor, Current NoOfCursors " << numberOfCursors << std::endl;
+	short numberOfCursors = tuioClient->getTuioCursors().size();
 
 	switch (appInputState) {
 	case translate:
