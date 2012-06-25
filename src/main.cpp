@@ -37,7 +37,7 @@ int main()
     }
 
 #if defined(_DEBUG)
-	glfwSetWindowPos(800,200);
+	glfwSetWindowPos(400,250);
 #endif
     glfwSetWindowTitle("KeiMote");
 

@@ -95,7 +95,7 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 
-	appInputState = idle;
+	appInputState = rotate;
 	appMode = rayCasting;
 	rotTechnique = screenSpace;
 
@@ -889,21 +889,17 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 				short i=0;
 				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
 					if (i==0) {
-						p1p.x = (*list_iter)->getX();
-						p1p.y = (*list_iter)->getY();
-						f1id = (*list_iter)->getCursorID();
-						i++;	
+					p1p.x = (*list_iter)->getX();
+					p1p.y = (*list_iter)->getY();
+					f1id = (*list_iter)->getCursorID();
 					}
-					else {
-						p2p.x = (*list_iter)->getX();
-						p2p.y = (*list_iter)->getY();
-						f2id = (*list_iter)->getCursorID();
-						i++;	
+					if (i==1) {
+					p2p.x = (*list_iter)->getX();
+					p2p.y = (*list_iter)->getY();
+					f2id = (*list_iter)->getCursorID();
 					}
-
+					i++;	
 				}
-
-				
 
 				std::cout << "pinch rotate" << '\n';
 				
@@ -912,10 +908,12 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 		case trackBall:
 			trackedCursorId = tcur->getCursorID();
 
-			arcBallPreviousPoint[0] = tcur->getX();
-			arcBallPreviousPoint[1] = tcur->getY();
+			float x = tcur->getX();
+			float y = tcur->getY();
+
+			arcBallPreviousPoint[0] = x;
+			arcBallPreviousPoint[1] = y;
 			tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
-			break;
 		}
 		break;
 	}
@@ -991,40 +989,31 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		case pinch:
 			//********************* PINCH  *************************
 
+
 			if (tcur->getCursorID() == f1id) {
-
-				p1p=p1c;
-
+				//p1p=p1c;
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
-
 				p1t = p1c-p1p;
-				
-				
-
-				both=false;
 
 			}
 
 			if (tcur->getCursorID() == f2id) {
-
-				p2p=p2c;
-
 				p2c.x = tcur->getX();
 				p2c.y = tcur->getY();
 
 				
 				p2t = p2c-p2p;
 
-				ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
-				ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
-
-				both=true;
+				
 				
 			}
 
-			referenceAngle  = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
-			newAngle		  =  atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
+			ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
+			ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
+
+			referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
+			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 			
 			location.x = target.modelMatrix[3][0];
 			location.y = target.modelMatrix[3][1];
@@ -1034,17 +1023,18 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			target.modelMatrix[3][1] = 0;
 			target.modelMatrix[3][2] = 0;
 
-			target.modelMatrix = glm::rotate((newAngle-referenceAngle)*180*(-1),vec3(0,0,1))*target.modelMatrix;
-
-			if (both) {
-				target.modelMatrix = glm::rotate(ft.x*230.0f,vec3(0,1,0))*target.modelMatrix;
-				target.modelMatrix = glm::rotate(ft.y*130.0f,vec3(1,0,0))*target.modelMatrix;
-			}
-						
+			target.modelMatrix = glm::rotate((newAngle-referenceAngle)*(-1),vec3(0,0,1))*target.modelMatrix;
+			
+			target.modelMatrix = glm::rotate(ft.x,vec3(0,1,0))*target.modelMatrix;
+			target.modelMatrix = glm::rotate(ft.y,vec3(1,0,0))*target.modelMatrix;
+				
 			target.modelMatrix[3][0] = location.x;
 			target.modelMatrix[3][1] = location.y;
 			target.modelMatrix[3][2] = location.z;
 
+			
+			//update to latest values
+			referenceAngle = newAngle;
 			break;
 		case trackBall:
 			//********************* TRACKBALL  *************************
@@ -1069,7 +1059,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 void Engine::removeTuioCursor(TuioCursor *tcur) {
 
-	short numberOfCursors = tuioClient->getTuioCursors().size();
+	short numberOfCursors = tuioClient->getTuioCursors().size()-1;
+
+	//std::cout << "Removed cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
 	switch (appInputState) {
 	case translate:

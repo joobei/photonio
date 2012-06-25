@@ -250,10 +250,13 @@ namespace pho {
 		TUIO::TuioCursor* trackedCursor;
 		int trackedCursorId;
 		glm::vec2 trackedCursorPrevPoint;
+		bool f1,f2;
 
 		bool verbose;
 		
 		int f1id,f2id;
+		glm::vec2 f1prev,f2prev;
+		glm::vec2 f1speed,f2speed;
 		float referenceAngle;
 
 		glm::vec2 p1p,p2p,p1c,p2c;
