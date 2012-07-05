@@ -991,7 +991,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 
 			if (tcur->getCursorID() == f1id) {
-				//p1p=p1c;
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
 				p1t = p1c-p1p;
@@ -1001,7 +1000,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			if (tcur->getCursorID() == f2id) {
 				p2c.x = tcur->getX();
 				p2c.y = tcur->getY();
-
 				
 				p2t = p2c-p2p;
 
