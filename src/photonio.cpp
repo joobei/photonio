@@ -110,6 +110,7 @@ calibrate(false),
 	axisChange[1][0] = 0; axisChange[1][1] =  0;  axisChange[1][2] =  1;
 	axisChange[2][0] = 0; axisChange[2][1] =  -1;  axisChange[2][2] = 0;
 
+	
 }
 
 /*void set_float4(float f[4], float a, float b, float c, float d)
@@ -369,6 +370,8 @@ void Engine::initResources() {
 
 	CALL_GL(glLineWidth(3.5));
 
+	selectedObjectMatrix = &heartMatrix;
+
 	restoreRay=false;
 }
 
@@ -541,48 +544,48 @@ void Engine::checkEvents() {
 	if (wii) {
 		remote.RefreshState();
 
-		//switch(appMode)  {
-		//case rayCasting:
-		//	if (appInputState == idle && remote.Button.B()) {   
-		//		appInputState = translate;
-		//		grabbedDistance = rayLength;
+		switch(appMode)  {
+		case rayCasting:
+			if (appInputState == idle && remote.Button.B()) {   
+				appInputState = translate;
+				grabbedDistance = rayLength;
 
-		//		mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
+				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
 
-		//		target.modelMatrix[3][0] = newMat[3][0];
-		//		target.modelMatrix[3][1] = newMat[3][1];
-		//		target.modelMatrix[3][2] = newMat[3][2];
-		//		std::cout << "translate" << '\n';
-		//	}
-		//	if (appInputState == translate && remote.Button.B()) {
-		//		mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
-		//		target.modelMatrix[3][0] = newMat[3][0];
-		//		target.modelMatrix[3][1] = newMat[3][1];
-		//		target.modelMatrix[3][2] = newMat[3][2];
-		//	}
-		//	if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
-		//		grabbedDistance+=0.5;
-		//	}
-		//	if (appInputState == translate && remote.Button.Up()) {
-		//		grabbedDistance-=0.5;
-		//	}
-		//	if (appInputState == translate && !remote.Button.B()) {
-		//		rotTechnique = idle;
-		//		std::cout << "idle" << '\n';
-		//		break;
-		//	}
-		//	if (appInputState == idle && remote.Button.A()) {
-		//		rotTechnique = trackBall;
-		//		std::cout << "trackball" << '\n';
-		//		break;
-		//	}
-		//	if (appInputState == trackBall && remote.Button.A()) {
-		//		//trackball rotate
-		//		break;
-		//	}
-		//default:
-		//	break;
-		//}
+				selectedObject.modelMatrix[3][0] = newMat[3][0];
+				selectedObject.modelMatrix[3][1] = newMat[3][1];
+				selectedObject.modelMatrix[3][2] = newMat[3][2];
+				std::cout << "translate" << '\n';
+			}
+			if (appInputState == translate && remote.Button.B()) {
+				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
+				selectedObject.modelMatrix[3][0] = newMat[3][0];
+				selectedObject.modelMatrix[3][1] = newMat[3][1];
+				selectedObject.modelMatrix[3][2] = newMat[3][2];
+			}
+			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
+				grabbedDistance+=0.5;
+			}
+			if (appInputState == translate && remote.Button.Up()) {
+				grabbedDistance-=0.5;
+			}
+			if (appInputState == translate && !remote.Button.B()) {
+				rotTechnique = idle;
+				std::cout << "idle" << '\n';
+				break;
+			}
+			if (appInputState == idle && remote.Button.A()) {
+				rotTechnique = trackBall;
+				std::cout << "trackball" << '\n';
+				break;
+			}
+			if (appInputState == trackBall && remote.Button.A()) {
+				//trackball rotate
+				break;
+			}
+		default:
+			break;
+		}
 	}
 
 }
@@ -638,7 +641,7 @@ void Engine::render() {
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	//render off-screen for picking
-	/*picked = picking();
+	picked = picking();
 	
 	if(picked !=0) {
 
@@ -670,24 +673,24 @@ void Engine::render() {
 		restoreRay=false;
 	}
 
-	*/
+	
 	CALL_GL(glEnable(GL_DEPTH_TEST));
 	 
 
-	/*draw target
+	//draw target
 	CALL_GL(glUseProgram(colorShader));
-	pvm = projectionMatrix*viewMatrix*target.modelMatrix;
+	/*pvm = projectionMatrix*viewMatrix*target.modelMatrix;
 	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 	CALL_GL(glBindVertexArray(target.getVaoId()));
 	CALL_GL(glDrawRangeElements(GL_TRIANGLES,0,42,42,GL_UNSIGNED_SHORT,NULL));*/
 
 
 	//draw plane for ray
-	/*pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
+	pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
 	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 	CALL_GL(glLineWidth(3.5));
 	CALL_GL(glBindVertexArray(plane.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));*/
+	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
 
 	
 	CALL_GL(glUseProgram(colorShader));
@@ -705,11 +708,11 @@ void Engine::render() {
 	//glBindVertexArray(quad.getVaoId());
 	//glDrawRangeElements(GL_TRIANGLES,0,24,24,GL_UNSIGNED_SHORT,NULL);
 
-	/*draw RAY
+	//draw RAY
 	pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
 	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 	CALL_GL(glBindVertexArray(ray.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_LINES,0,6,2,GL_UNSIGNED_SHORT,NULL));*/
+	CALL_GL(glDrawRangeElements(GL_LINES,0,6,2,GL_UNSIGNED_SHORT,NULL));
 
 	//CALL_GL(glUseProgram(dirLight));
 	
@@ -994,17 +997,13 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
 				p1t = p1c-p1p;
-
 			}
 
 			if (tcur->getCursorID() == f2id) {
 				p2c.x = tcur->getX();
 				p2c.y = tcur->getY();
 				
-				p2t = p2c-p2p;
-
-				
-				
+				p2t = p2c-p2p;				
 			}
 
 			ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));

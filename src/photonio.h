@@ -191,6 +191,7 @@ namespace pho {
 		float rayLength;
 		bool grabbing;
 		float grabbedDistance;
+		glm::mat4* selectedObjectMatrix;
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
