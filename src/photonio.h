@@ -59,7 +59,7 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
-#define GLDEBUG
+//#define GLDEBUG
 
 
 
@@ -157,6 +157,8 @@ namespace pho {
 		bool calibrate;
 		bool gyroData;
 		
+		glm::vec3 cameraPosition;
+
 		//Shaders
 		GLuint colorShader;
 		GLuint colorShaderPvm;
@@ -170,6 +172,7 @@ namespace pho {
 		GLuint textureShaderTexture;
 
 		GLuint dirLight;
+		GLuint dirLightView;
 		GLuint dirLightVM;
 		GLuint dirLightP;
 		GLuint dirLightMaterial;

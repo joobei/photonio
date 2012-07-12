@@ -2,6 +2,8 @@
 
 #version 330
 
+uniform vec3 view;
+
 layout (std140) uniform Material {
 	vec4 diffuse;
 	vec4 ambient;
@@ -18,26 +20,39 @@ in vec3 Normal;
 in vec2 TexCoord;
 out vec4 output;
 
+
+float CalcAttenuation(in vec3 cameraSpacePosition, out vec3 lightDirection)
+{
+	vec3 lightDifference =  view - cameraSpacePosition;
+	float lightDistanceSqr = dot(lightDifference, lightDifference);
+	lightDirection = lightDifference * inversesqrt(lightDistanceSqr);
+	
+	return (1 / ( 1.0 + lightAttenuation * sqrt(lightDistanceSqr)));
+}
+
 void main()
-{ 
-	vec4 color;
-	vec4 amb;
-	float intensity;
-	vec3 lightDir;
-	vec3 n;
+{
+	shininessFactor = shininess;
+	specularColor = specular;
+	lightAttenuation = 
+
+	vec3 lightDir = vec3(0.0);
+	float atten = CalcAttenuation(cameraSpacePosition, lightDir);
+	vec4 attenIntensity = atten * lightIntensity;
 	
-	lightDir = normalize(vec3(0.5,0.0,1.0));
-	n = normalize(Normal);	
-	intensity = max(dot(lightDir,n),0.0);
+	vec3 surfaceNormal = normalize(vertexNormal);
+	float cosAngIncidence = dot(surfaceNormal, lightDir);
+	cosAngIncidence = clamp(cosAngIncidence, 0, 1);
 	
-	if (texCount == 0) {
-		color = diffuse;
-		amb = ambient;
-	}
-	else {
-		color = texture2D(texUnit, TexCoord);
-		amb = color * 0.33;
-	}
-	output = (color * intensity) + amb;
-	//output = normalize(vec4(Normal,1.0)) * 0.5 + 0.5;
+	vec3 viewDirection = normalize(-cameraSpacePosition);
+	
+	vec3 halfAngle = normalize(lightDir + viewDirection);
+	float blinnTerm = dot(surfaceNormal, halfAngle);
+	blinnTerm = clamp(blinnTerm, 0, 1);
+	blinnTerm = cosAngIncidence != 0.0 ? blinnTerm : 0.0;
+	blinnTerm = pow(blinnTerm, shininessFactor);
+
+	outputColor = (texture2D(texUnit, TexCoord) * attenIntensity * cosAngIncidence) +
+		(specularColor * attenIntensity * blinnTerm) +
+		(diffuseColor * ambientIntensity);
 }

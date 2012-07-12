@@ -340,6 +340,7 @@ void Engine::initResources() {
 	shaderList.push_back(CreateShader(GL_FRAGMENT_SHADER,readTextFile("shaders/dirlightdiffambpix.frag")));
 	dirLight = CreateProgram(shaderList);
 	dirLightTexUnit = glGetUniformLocation(dirLight,"texUnit");
+	dirLightView = glGetUniformLocation(dirLight,"view");
 	dirLightVM = glGetUniformLocation(dirLight,"vm");
 	dirLightP = glGetUniformLocation(dirLight,"projection");
 
@@ -353,8 +354,10 @@ void Engine::initResources() {
 	heartMatrix = mat4();
 	//heartMatrix = glm::scale(vec3(2.0f,2.0f,2.0f));
 
+	cameraPosition = glm::vec3(0,0,-25); //translate camera back (i.e. world forward)
+
 	viewMatrix = mat4();
-	viewMatrix = glm::translate(viewMatrix,vec3(0,0,-25)); //translate camera back (i.e. world forward)
+	viewMatrix = glm::translate(viewMatrix,cameraPosition); 
 
 	initSimpleGeometry();
 
@@ -552,16 +555,16 @@ void Engine::checkEvents() {
 
 				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
 
-				selectedObject.modelMatrix[3][0] = newMat[3][0];
-				selectedObject.modelMatrix[3][1] = newMat[3][1];
-				selectedObject.modelMatrix[3][2] = newMat[3][2];
+				(*selectedObjectMatrix)[3][0] = newMat[3][0];
+				(*selectedObjectMatrix)[3][1] = newMat[3][1];
+				(*selectedObjectMatrix)[3][2] = newMat[3][2];
 				std::cout << "translate" << '\n';
 			}
 			if (appInputState == translate && remote.Button.B()) {
 				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
-				selectedObject.modelMatrix[3][0] = newMat[3][0];
-				selectedObject.modelMatrix[3][1] = newMat[3][1];
-				selectedObject.modelMatrix[3][2] = newMat[3][2];
+				(*selectedObjectMatrix)[3][0] = newMat[3][0];
+				(*selectedObjectMatrix)[3][1] = newMat[3][1];
+				(*selectedObjectMatrix)[3][2] = newMat[3][2];
 			}
 			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
 				grabbedDistance+=0.5;
@@ -570,7 +573,7 @@ void Engine::checkEvents() {
 				grabbedDistance-=0.5;
 			}
 			if (appInputState == translate && !remote.Button.B()) {
-				rotTechnique = idle;
+				appInputState = idle;
 				std::cout << "idle" << '\n';
 				break;
 			}
@@ -614,7 +617,10 @@ void Engine::recursive_render (const struct aiScene *sc, const struct aiNode* nd
 	CALL_GL(glUseProgram(dirLight));
 	
 	CALL_GL(glUniformMatrix4fv(dirLightVM, 1, GL_FALSE, glm::value_ptr(viewMatrix*target.modelMatrix*heartMatrix)));
+	CALL_GL(glUniform3fv(dirLightView, 1, GL_FALSE, glm::value_ptr(cameraPosition)));
 	CALL_GL(glUniformMatrix4fv(dirLightP, 1, GL_FALSE, glm::value_ptr(projectionMatrix)));
+	
+
 
 	// draw all meshes assigned to this node
 	for (unsigned int n=0; n < nd->mNumMeshes; ++n){
@@ -633,7 +639,7 @@ void Engine::recursive_render (const struct aiScene *sc, const struct aiNode* nd
 		recursive_render(sc, nd->mChildren[n]);
 	}
 	
-	glEC("recursive");
+	//glEC("recursive");
 }
 
 void Engine::render() {
@@ -663,7 +669,7 @@ void Engine::render() {
 		CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
 
 
-		glEC("outline");
+		//glEC("outline");
 		restoreRay = true;
 	}
 	if (picked == 0 && restoreRay == true) {
@@ -718,7 +724,7 @@ void Engine::render() {
 	
 	recursive_render(scene,scene->mRootNode);
 
-	glEC("mainloop");
+	//glEC("mainloop");
 
 	glfwSwapBuffers();
 }
@@ -1151,7 +1157,7 @@ void Engine::generate_frame_buffer_texture()
 	/* return to the default frame buffer */ 
 	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0)); 
 
-	CALL_GL(glEC("Texture Generation"));
+	//CALL_GL(glEC("Texture Generation"));
 }
 
 GLuint Engine::picking() 
@@ -1167,7 +1173,6 @@ GLuint Engine::picking()
 
 	/* select the shader program */ 
 	CALL_GL(glUseProgram(flatShader)); 
-	CALL_GL(glEC("0"));
 	GLuint tempVao = target.getVaoId();
 
 	alpha = tempVao & 0xFF; 
@@ -1196,7 +1201,7 @@ GLuint Engine::picking()
 	temp = get_object_id();
 
 
-	glEC("off screen");
+	//glEC("off screen");
 
 	/* return to the default frame buffer */
 	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0)); 
