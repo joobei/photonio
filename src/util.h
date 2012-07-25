@@ -16,7 +16,7 @@ namespace pho {
 	const GLuint vertexLoc=0, normalLoc=1, texCoordLoc=2, colorLoc=3;
 
 	// Uniform Bindings Points
-	const GLuint matricesUniLoc = 1, materialUniLoc = 2;
+	const GLuint matricesUniLoc = 1, materialUniLoc = 2, lightUniLoc = 3;
 
 	// The sampler uniform for textured models
 	// we are assuming a single texture so this will

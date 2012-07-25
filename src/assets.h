@@ -44,7 +44,7 @@ namespace pho {
 	};
 
 
-	// This is for a shader uniform block
+	// Shader uniform block stuff *******************
 	struct MyMaterial{
 
 		float diffuse[4];
@@ -53,6 +53,15 @@ namespace pho {
 		float emissive[4];
 		float shininess;
 		int texCount;
+	};
+
+	struct LightSource {
+		glm::vec4 color;
+		float attenuation;
+		glm::vec3 direction;
+		glm::vec3 position;
+		float range;
+		GLuint uniformBlockIndex;
 	};
 
 }

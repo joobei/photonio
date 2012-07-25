@@ -158,6 +158,7 @@ namespace pho {
 		bool gyroData;
 		
 		glm::vec3 cameraPosition;
+		glm::vec3 cameraDirection;
 
 		//Shaders
 		GLuint colorShader;
@@ -172,11 +173,15 @@ namespace pho {
 		GLuint textureShaderTexture;
 
 		GLuint dirLight;
-		GLuint dirLightView;
-		GLuint dirLightVM;
-		GLuint dirLightP;
+		GLuint dirLightCamera;
+		GLuint dirLightPVM;
+		GLuint dirLightNM;
 		GLuint dirLightMaterial;
 		GLuint dirLightTexUnit;
+
+		//Lights
+		GLuint lightSource;
+		pho::LightSource pointLight;
 
 		//Picking
 		GLuint picking();

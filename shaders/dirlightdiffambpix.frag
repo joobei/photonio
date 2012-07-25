@@ -19,7 +19,10 @@ uniform	sampler2D bumpMap;
 in vec3 Normal;
 in vec2 TexCoord;
 out vec4 output;
-
+float lightAttenuation = 0.5;
+shininessFactor :: shininess;
+specularColor :: specular;
+cameraSpacePosition :: view;
 
 float CalcAttenuation(in vec3 cameraSpacePosition, out vec3 lightDirection)
 {
@@ -32,9 +35,6 @@ float CalcAttenuation(in vec3 cameraSpacePosition, out vec3 lightDirection)
 
 void main()
 {
-	shininessFactor = shininess;
-	specularColor = specular;
-	lightAttenuation = 
 
 	vec3 lightDir = vec3(0.0);
 	float atten = CalcAttenuation(cameraSpacePosition, lightDir);

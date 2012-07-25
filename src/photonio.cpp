@@ -317,6 +317,15 @@ void Engine::initResources() {
 
 	//*********** END   ASSIMP LOADING CODE****************/
 
+	pointLight.color = glm::vec4(1.0,1.0,1.0,1.0);
+	//pointLight.direction  = glm::vec3(-0.5,-0.5,-0.5);
+	pointLight.direction  = glm::vec3(-1.0,0.0,0.0);
+	pointLight.position = glm::vec3(0,150,150);
+
+	glGenBuffers(1,&(pointLight.uniformBlockIndex)); //generate buffer and store it's location in pointLight's member variable
+	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
+
 	//Prepare our shaders
 	std::vector<GLuint> shaderList;
 
@@ -340,11 +349,12 @@ void Engine::initResources() {
 	shaderList.push_back(CreateShader(GL_FRAGMENT_SHADER,readTextFile("shaders/dirlightdiffambpix.frag")));
 	dirLight = CreateProgram(shaderList);
 	dirLightTexUnit = glGetUniformLocation(dirLight,"texUnit");
-	dirLightView = glGetUniformLocation(dirLight,"view");
-	dirLightVM = glGetUniformLocation(dirLight,"vm");
-	dirLightP = glGetUniformLocation(dirLight,"projection");
+	dirLightCamera = glGetUniformLocation(dirLight,"cameraPosition");
+	dirLightPVM = glGetUniformLocation(dirLight,"pvm");
+	dirLightNM = glGetUniformLocation(dirLight,"nm"); //normal matrix
 
 	glUniformBlockBinding(dirLight, glGetUniformBlockIndex(dirLight,"Material"), materialUniLoc); 
+	glUniformBlockBinding(dirLight, glGetUniformBlockIndex(dirLight,"Light"), lightUniLoc); 
 
 
 	//Calculate the matrices
@@ -396,14 +406,23 @@ void Engine::checkEvents() {
 		viewMatrix = glm::translate(viewMatrix, vec3(-FACTOR,0,0));
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0));
+		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0))*glm::lookAt(cameraPosition,glm::vec3((*selectedObjectMatrix)[0][3],(*selectedObjectMatrix)[1][3],(*selectedObjectMatrix)[2][3]),glm::vec3(0,1,0));
+		
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,FACTOR,0));
 	}
+	if (glfwGetKey(GLFW_KEY_HOME)) {
+		cameraDirection = glm::rotate(cameraDirection, (float)0.001, vec3(0,1,0));
+		viewMatrix = glm::lookAt(cameraPosition,cameraPosition+cameraDirection,glm::vec3(0,1,0));
+		
+	}
+	if (glfwGetKey(GLFW_KEY_END)) {
+	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		plane.modelMatrix = glm::mat4();
 		target.modelMatrix = glm::mat4();
+		viewMatrix = glm::translate(glm::mat4(),cameraPosition);
 	}
 	if (glfwGetKey('1') == GLFW_PRESS) {
 		rotTechnique = screenSpace;
@@ -616,11 +635,10 @@ void Engine::recursive_render (const struct aiScene *sc, const struct aiNode* nd
 {
 	CALL_GL(glUseProgram(dirLight));
 	
-	CALL_GL(glUniformMatrix4fv(dirLightVM, 1, GL_FALSE, glm::value_ptr(viewMatrix*target.modelMatrix*heartMatrix)));
-	CALL_GL(glUniform3fv(dirLightView, 1, GL_FALSE, glm::value_ptr(cameraPosition)));
-	CALL_GL(glUniformMatrix4fv(dirLightP, 1, GL_FALSE, glm::value_ptr(projectionMatrix)));
+	CALL_GL(glUniformMatrix4fv(dirLightPVM, 1, GL_FALSE, glm::value_ptr(projectionMatrix*viewMatrix*selectedObjectMatrix)));
+	CALL_GL(glUniform3fv(dirLightView, 1, glm::value_ptr(cameraPosition)));
 	
-
+	CALL_GL(glBindBufferRange(GL_UNIFORM_BUFFER, lightUniLoc, pointLight.uniformBlockIndex, 0, sizeof(struct pho::LightSource)));
 
 	// draw all meshes assigned to this node
 	for (unsigned int n=0; n < nd->mNumMeshes; ++n){
