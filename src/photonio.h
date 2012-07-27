@@ -112,14 +112,14 @@ namespace pho {
 		void shutdown();
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
-		static const int WINDOW_SIZE_X = 800;
-		static const int WINDOW_SIZE_Y = 600;
+		static const int WINDOW_SIZE_X = 1920;
+		static const int WINDOW_SIZE_Y = 1200;
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
 
 
 		void addTuioObject(TuioObject *tobj);
-		void updateTuioObject(TuioObject *tobj);
+		void updateTuioObject(TuioObject *tobj); 
 		void removeTuioObject(TuioObject *tobj);
 
 		void addTuioCursor(TuioCursor *tcur);
@@ -151,7 +151,6 @@ namespace pho {
 		mat4 trackerMatrix;
 		mat3 orientation3;
 		mat4 projectionMatrix, viewMatrix, pvm;
-		mat4 heartMatrix;
 		vec3 acc,ma,gyro;
 		float arcBallPreviousPoint[2];
 		bool calibrate;
@@ -199,7 +198,7 @@ namespace pho {
 		float rayLength;
 		bool grabbing;
 		float grabbedDistance;
-		glm::mat4* selectedObjectMatrix;
+		pho::Asset* selectedObject;
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
@@ -226,6 +225,7 @@ namespace pho {
 		pho::Asset plane;
 		pho::Asset ray;
 		pho::Asset quad;
+		pho::Asset heart;
 
 		// the global Assimp scene object
 		const aiScene* scene;

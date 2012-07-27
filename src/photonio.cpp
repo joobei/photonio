@@ -113,22 +113,6 @@ calibrate(false),
 	
 }
 
-/*void set_float4(float f[4], float a, float b, float c, float d)
-{
-f[0] = a;
-f[1] = b;
-f[2] = c;
-f[3] = d;
-}
-
-void color4_to_float4(const struct aiColor4D *c, float f[4])
-{
-f[0] = c->r;
-f[1] = c->g;
-f[2] = c->b;
-f[3] = c->a;
-}*/
-
 void Engine::initResources() {
 
 	//*********** ASSIMP LOADING CODE****************
@@ -361,9 +345,6 @@ void Engine::initResources() {
 	projectionMatrix = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
 	//projectionMatrix = glm::mat4();
 
-	heartMatrix = mat4();
-	//heartMatrix = glm::scale(vec3(2.0f,2.0f,2.0f));
-
 	cameraPosition = glm::vec3(0,0,-25); //translate camera back (i.e. world forward)
 
 	viewMatrix = mat4();
@@ -383,13 +364,15 @@ void Engine::initResources() {
 
 	CALL_GL(glLineWidth(3.5));
 
-	selectedObjectMatrix = &heartMatrix;
+	//heart selected by default
+	selectedObject = &heart;
+	selectedObject->vaoId = aMesh.vao;
 
 	restoreRay=false;
 }
 
 //checks event queue for events
-//and consumes them all
+//and co nsumes them all
 void Engine::checkEvents() {
 
 #define FACTOR 0.1
@@ -406,7 +389,7 @@ void Engine::checkEvents() {
 		viewMatrix = glm::translate(viewMatrix, vec3(-FACTOR,0,0));
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0))*glm::lookAt(cameraPosition,glm::vec3((*selectedObjectMatrix)[0][3],(*selectedObjectMatrix)[1][3],(*selectedObjectMatrix)[2][3]),glm::vec3(0,1,0));
+		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0))*glm::lookAt(cameraPosition,glm::vec3(selectedObject->modelMatrix[0][3],selectedObject->modelMatrix[1][3],selectedObject->modelMatrix[2][3]),glm::vec3(0,1,0));
 		
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
@@ -421,7 +404,7 @@ void Engine::checkEvents() {
 	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		plane.modelMatrix = glm::mat4();
-		target.modelMatrix = glm::mat4();
+		selectedObject->modelMatrix = glm::mat4();
 		viewMatrix = glm::translate(glm::mat4(),cameraPosition);
 	}
 	if (glfwGetKey('1') == GLFW_PRESS) {
@@ -519,9 +502,9 @@ void Engine::checkEvents() {
 		position = glm::vec3(temp[0],temp[1],temp[2]);
 
 #if defined(_DEBUG)
-		position.x-=23;
-		position.y+=40;
-		position.z-=44;
+		position.x-=25;
+		position.y+=30;
+		position.z-=20;
 #else 
 		//position.x+=0;
 		position.y-=5;
@@ -529,26 +512,26 @@ void Engine::checkEvents() {
 
 #endif
 
-
-		//std::cout << "Polhemus x: " << temp[0] << '\t' << "y: " << temp[1] << '\t' << "z: " << temp[2] << '\n';
+		std::cout << "Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
 
 		orientation.w = temp[3];
 		orientation.x = temp[4];
 		orientation.y = temp[5];
 		orientation.z = temp[6];
 
-
 		glm::mat4 rot = glm::toMat4(orientation);
 		glm::mat4 trans = glm::translate(glm::mat4(),position);	
-
 		transform = glm::toMat4(glm::angleAxis(180.0f,glm::vec3(0,1,0)))*transform;
 		transform = glm::toMat4(glm::angleAxis(-90.0f,glm::vec3(0,0,1)))*transform;
+
+
 		transform = rot*transform;
 
 		transform= trans*transform;
-
-
+		
 		ray.modelMatrix = transform;
+
+		
 
 		//std::cout << "x : " << transform[3][0] << "\ty : " << transform[3][1] << "\tz : " << transform[3][2] << '\n';
 	}
@@ -574,16 +557,16 @@ void Engine::checkEvents() {
 
 				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
 
-				(*selectedObjectMatrix)[3][0] = newMat[3][0];
-				(*selectedObjectMatrix)[3][1] = newMat[3][1];
-				(*selectedObjectMatrix)[3][2] = newMat[3][2];
+				selectedObject->modelMatrix[3][0] = newMat[3][0];
+				selectedObject->modelMatrix[3][1] = newMat[3][1];
+				selectedObject->modelMatrix[3][2] = newMat[3][2];
 				std::cout << "translate" << '\n';
 			}
 			if (appInputState == translate && remote.Button.B()) {
 				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
-				(*selectedObjectMatrix)[3][0] = newMat[3][0];
-				(*selectedObjectMatrix)[3][1] = newMat[3][1];
-				(*selectedObjectMatrix)[3][2] = newMat[3][2];
+				selectedObject->modelMatrix[3][0] = newMat[3][0];
+				selectedObject->modelMatrix[3][1] = newMat[3][1];
+				selectedObject->modelMatrix[3][2] = newMat[3][2];
 			}
 			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
 				grabbedDistance+=0.5;
@@ -612,31 +595,11 @@ void Engine::checkEvents() {
 
 }
 
-//
-// a = a * b;
-//
-void multMatrix(float *a, float *b) {
-
-	float res[16];
-
-	for (int i = 0; i < 4; ++i) {
-		for (int j = 0; j < 4; ++j) {
-			res[j*4 + i] = 0.0f;
-			for (int k = 0; k < 4; ++k) {
-				res[j*4 + i] += a[k*4 + i] * b[j*4 + k]; 
-			}
-		}
-	}
-	memcpy(a, res, 16 * sizeof(float));
-
-}
-
 void Engine::recursive_render (const struct aiScene *sc, const struct aiNode* nd)
 {
 	CALL_GL(glUseProgram(dirLight));
 	
-	CALL_GL(glUniformMatrix4fv(dirLightPVM, 1, GL_FALSE, glm::value_ptr(projectionMatrix*viewMatrix*selectedObjectMatrix)));
-	CALL_GL(glUniform3fv(dirLightView, 1, glm::value_ptr(cameraPosition)));
+	CALL_GL(glUniformMatrix4fv(dirLightPVM, 1, GL_FALSE, glm::value_ptr(projectionMatrix*viewMatrix*selectedObject->modelMatrix)));
 	
 	CALL_GL(glBindBufferRange(GL_UNIFORM_BUFFER, lightUniLoc, pointLight.uniformBlockIndex, 0, sizeof(struct pho::LightSource)));
 
@@ -672,18 +635,17 @@ void Engine::render() {
 		//render selection first
 		CALL_GL(glUseProgram(flatShader));
 		CALL_GL(glUniform4f(flatShaderColor, 1.0f, 0.0f ,0.0f, 0.6f)); 	
-		//pvm = projectionMatrix*glm::inverse(ray.modelMatrix)*target.modelMatrix;
-		pvm = projectionMatrix*viewMatrix*glm::scale(target.modelMatrix,glm::vec3(1.1f,1.1f,1.1f));
+		//pvm = projectionMatrix*glm::inverse(ray.modelMatrix)*selectedObject->modelMatrix;
+		pvm = projectionMatrix*viewMatrix*glm::scale(selectedObject->modelMatrix,glm::vec3(1.1f,1.1f,1.1f));
 		CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 		CALL_GL(glDisable(GL_DEPTH_TEST));
 		// draw the object
 		CALL_GL(glBindVertexArray(picked));
-		CALL_GL(glDrawRangeElements(GL_TRIANGLES,0,42,42,GL_UNSIGNED_SHORT,NULL));
+		CALL_GL(glDrawElements(GL_TRIANGLES,selectedObject->numFaces*3,GL_UNSIGNED_INT,0));
 		
 
 		//Shorten the beam to match the object
 		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-
 		CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
 
 
@@ -703,18 +665,22 @@ void Engine::render() {
 
 	//draw target
 	CALL_GL(glUseProgram(colorShader));
-	/*pvm = projectionMatrix*viewMatrix*target.modelMatrix;
+	/*pvm = projectionMatrix*viewMatrix*selectedObject->modelMatrix;
 	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 	CALL_GL(glBindVertexArray(target.getVaoId()));
 	CALL_GL(glDrawRangeElements(GL_TRIANGLES,0,42,42,GL_UNSIGNED_SHORT,NULL));*/
 
 
-	//draw plane for ray
+	//draw plane for ray then draw RAY
 	pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
 	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 	CALL_GL(glLineWidth(3.5));
 	CALL_GL(glBindVertexArray(plane.getVaoId()));
 	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
+		
+	CALL_GL(glBindVertexArray(ray.getVaoId()));
+	CALL_GL(glDrawRangeElements(GL_LINES,0,6,2,GL_UNSIGNED_SHORT,NULL));
+
 
 	
 	CALL_GL(glUseProgram(colorShader));
@@ -732,12 +698,7 @@ void Engine::render() {
 	//glBindVertexArray(quad.getVaoId());
 	//glDrawRangeElements(GL_TRIANGLES,0,24,24,GL_UNSIGNED_SHORT,NULL);
 
-	//draw RAY
-	pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
-	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-	CALL_GL(glBindVertexArray(ray.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_LINES,0,6,2,GL_UNSIGNED_SHORT,NULL));
-
+	
 	//CALL_GL(glUseProgram(dirLight));
 	
 	recursive_render(scene,scene->mRootNode);
@@ -821,18 +782,18 @@ void Engine::mouseButtonCallback(int button, int state) {
 		glfwGetMousePos(&xx,&yy);
 		arcBallPreviousPoint[0] = xx*1.0f;
 		arcBallPreviousPoint[1] = yy*1.0f;
-		tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
+		tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
 	}
 }
 
 void Engine::mouseMoveCallback(int xpos, int ypos) {
 	//std::cout << "movse moved x:" << xpos << "\t y:" << ypos << std::endl;
 	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-		target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
+		selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,-tempOrigin);
 		glm::mat4 rot;
 		rot = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],xpos*1.0f,ypos*1.0f, false);
-		target.modelMatrix = rot*target.modelMatrix;
-		target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
+		selectedObject->modelMatrix = rot*selectedObject->modelMatrix;
+		selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,tempOrigin);
 		arcBallPreviousPoint[0] = xpos*1.0f;
 		arcBallPreviousPoint[1] = ypos*1.0f;
 	}
@@ -904,7 +865,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 			arcBallPreviousPoint[0] = x;
 			arcBallPreviousPoint[1] = y;
-			tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
+			tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
 		}*/
 		break;
 	case rotate:
@@ -940,7 +901,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 			arcBallPreviousPoint[0] = x;
 			arcBallPreviousPoint[1] = y;
-			tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
+			tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
 		}
 		break;
 	}
@@ -956,7 +917,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	glm::mat3 tempMat;
 	glm::mat4 newLocationMatrix;
 	glm::mat4 rotation;
-	tempOrigin = glm::vec3(target.modelMatrix[3][0],target.modelMatrix[3][1],target.modelMatrix[3][2]);
+	tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
 	glm::vec2 ftranslation;
 
 	glm::vec2 f1translationVec,f2translationVec;
@@ -978,11 +939,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
 		newLocationVector = tempMat*glm::vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-		//newLocationMatrix = glm::translate(target.modelMatrix,newLocationVector);  //Calculate new location by translating object by motion vector
+		//newLocationMatrix = glm::translate(selectedObject->modelMatrix,newLocationVector);  //Calculate new location by translating object by motion vector
 		newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);
 
 		plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
-		target.modelMatrix = newLocationMatrix*target.modelMatrix;
+		selectedObject->modelMatrix = newLocationMatrix*selectedObject->modelMatrix;
 
 		break;
 		  
@@ -997,20 +958,20 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			if (numberOfCursors == 1) {
 
 				vec3 location;
-				location.x = target.modelMatrix[3][0];
-				location.y = target.modelMatrix[3][1];
-				location.z = target.modelMatrix[3][2];  
+				location.x = selectedObject->modelMatrix[3][0];
+				location.y = selectedObject->modelMatrix[3][1];
+				location.z = selectedObject->modelMatrix[3][2];  
 
-				target.modelMatrix[3][0] = 0;
-				target.modelMatrix[3][1] = 0;
-				target.modelMatrix[3][2] = 0;
+				selectedObject->modelMatrix[3][0] = 0;
+				selectedObject->modelMatrix[3][1] = 0;
+				selectedObject->modelMatrix[3][2] = 0;
 
-				target.modelMatrix = glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0))*target.modelMatrix;
-				target.modelMatrix = glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0))*target.modelMatrix;
+				selectedObject->modelMatrix = glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0))*selectedObject->modelMatrix;
+				selectedObject->modelMatrix = glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0))*selectedObject->modelMatrix;
 
-				target.modelMatrix[3][0] = location.x;
-				target.modelMatrix[3][1] = location.y;
-				target.modelMatrix[3][2] = location.z;
+				selectedObject->modelMatrix[3][0] = location.x;
+				selectedObject->modelMatrix[3][1] = location.y;
+				selectedObject->modelMatrix[3][2] = location.z;
 			}
 			break;
 		case pinch:
@@ -1036,22 +997,22 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
 			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 			
-			location.x = target.modelMatrix[3][0];
-			location.y = target.modelMatrix[3][1];
-			location.z = target.modelMatrix[3][2];
+			location.x = selectedObject->modelMatrix[3][0];
+			location.y = selectedObject->modelMatrix[3][1];
+			location.z = selectedObject->modelMatrix[3][2];
 
-			target.modelMatrix[3][0] = 0;
-			target.modelMatrix[3][1] = 0;
-			target.modelMatrix[3][2] = 0;
+			selectedObject->modelMatrix[3][0] = 0;
+			selectedObject->modelMatrix[3][1] = 0;
+			selectedObject->modelMatrix[3][2] = 0;
 
-			target.modelMatrix = glm::rotate((newAngle-referenceAngle)*(-1),vec3(0,0,1))*target.modelMatrix;
+			selectedObject->modelMatrix = glm::rotate((newAngle-referenceAngle)*(-1),vec3(0,0,1))*selectedObject->modelMatrix;
 			
-			target.modelMatrix = glm::rotate(ft.x,vec3(0,1,0))*target.modelMatrix;
-			target.modelMatrix = glm::rotate(ft.y,vec3(1,0,0))*target.modelMatrix;
+			selectedObject->modelMatrix = glm::rotate(ft.x,vec3(0,1,0))*selectedObject->modelMatrix;
+			selectedObject->modelMatrix = glm::rotate(ft.y,vec3(1,0,0))*selectedObject->modelMatrix;
 				
-			target.modelMatrix[3][0] = location.x;
-			target.modelMatrix[3][1] = location.y;
-			target.modelMatrix[3][2] = location.z;
+			selectedObject->modelMatrix[3][0] = location.x;
+			selectedObject->modelMatrix[3][1] = location.y;
+			selectedObject->modelMatrix[3][2] = location.z;
 
 			
 			//update to latest values
@@ -1062,11 +1023,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			x = tcur->getX();
 			y = tcur->getY();
 
-			target.modelMatrix = glm::translate(target.modelMatrix,-tempOrigin);
+			selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,-tempOrigin);
 
 			rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
-			target.modelMatrix = rotation*target.modelMatrix;
-			target.modelMatrix = glm::translate(target.modelMatrix,tempOrigin);
+			selectedObject->modelMatrix = rotation*selectedObject->modelMatrix;
+			selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,tempOrigin);
 			arcBallPreviousPoint[0] = x;
 			arcBallPreviousPoint[1] = y;
 			break;
@@ -1199,8 +1160,8 @@ GLuint Engine::picking()
 	red   = (tempVao >> 24) & 0xFF; 
 	CALL_GL(glUniform4f(flatShaderColor, red/255.0f, green/255.0f ,blue/255.0f, alpha/255.0f)); 	
 
-	pvm = projectionMatrix*glm::inverse(ray.modelMatrix)*target.modelMatrix;
-	//pvm = projectionMatrix*viewMatrix*target.modelMatrix;
+	pvm = projectionMatrix*glm::inverse(ray.modelMatrix)*selectedObject->modelMatrix; //todo:this should be cycled through all objects!!!
+	//pvm = projectionMatrix*viewMatrix*selectedObject->modelMatrix;
 	CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 
 
