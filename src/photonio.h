@@ -112,8 +112,8 @@ namespace pho {
 		void shutdown();
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
-		static const int WINDOW_SIZE_X = 1920;
-		static const int WINDOW_SIZE_Y = 1200;
+		static const int WINDOW_SIZE_X = 1280;
+		static const int WINDOW_SIZE_Y = 1024;
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
 

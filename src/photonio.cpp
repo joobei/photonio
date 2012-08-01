@@ -95,7 +95,7 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 
-	appInputState = rotate;
+	appInputState = idle;
 	appMode = rayCasting;
 	rotTechnique = screenSpace;
 
@@ -512,7 +512,7 @@ void Engine::checkEvents() {
 
 #endif
 
-		std::cout << "Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
+		//std::cout << "Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
 
 		orientation.w = temp[3];
 		orientation.x = temp[4];
@@ -541,7 +541,7 @@ void Engine::checkEvents() {
 	if (!grabbing && picked !=0) {
 		rayLength = -glm::distance(
 			glm::vec3(ray.getPosition()),
-			glm::vec3(target.getPosition())
+			glm::vec3(selectedObject->getPosition())
 			);
 	}
 
@@ -628,82 +628,76 @@ void Engine::render() {
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	//render off-screen for picking
-	picked = picking();
-	
-	if(picked !=0) {
+	if (appMode == rayCasting) {
+		picked = picking();
 
-		//render selection first
-		CALL_GL(glUseProgram(flatShader));
-		CALL_GL(glUniform4f(flatShaderColor, 1.0f, 0.0f ,0.0f, 0.6f)); 	
-		//pvm = projectionMatrix*glm::inverse(ray.modelMatrix)*selectedObject->modelMatrix;
-		pvm = projectionMatrix*viewMatrix*glm::scale(selectedObject->modelMatrix,glm::vec3(1.1f,1.1f,1.1f));
-		CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-		CALL_GL(glDisable(GL_DEPTH_TEST));
-		// draw the object
-		CALL_GL(glBindVertexArray(picked));
-		CALL_GL(glDrawElements(GL_TRIANGLES,selectedObject->numFaces*3,GL_UNSIGNED_INT,0));
-		
+		if(picked !=0) {
 
-		//Shorten the beam to match the object
-		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-		CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+			//render selection red border first with the flat color shader
+			CALL_GL(glUseProgram(flatShader));
+			CALL_GL(glUniform4f(flatShaderColor, 1.0f, 0.0f ,0.0f, 0.6f)); 	
+			pvm = projectionMatrix*viewMatrix*glm::scale(selectedObject->modelMatrix,glm::vec3(1.1f,1.1f,1.1f));
+			CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
+			//CALL_GL(glDisable(GL_DEPTH_TEST));
+			// draw the object
+			CALL_GL(glBindVertexArray(picked));
+			//CALL_GL(glDrawElements(GL_TRIANGLES,selectedObject->numFaces*3,GL_UNSIGNED_INT,0));
 
 
-		//glEC("outline");
-		restoreRay = true;
+			//Shorten the beam to match the object
+			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+
+			restoreRay = true;
+		}
+		if (picked == 0 && restoreRay == true) {
+			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+			float d = -1000.0f;
+			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));
+			restoreRay=false;
+		}
+
 	}
-	if (picked == 0 && restoreRay == true) {
-		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-		float d = -1000.0f;
-		CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));
-		restoreRay=false;
-	}
-
-	
 	CALL_GL(glEnable(GL_DEPTH_TEST));
 	 
 
-	//draw target
-	CALL_GL(glUseProgram(colorShader));
-	/*pvm = projectionMatrix*viewMatrix*selectedObject->modelMatrix;
-	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-	CALL_GL(glBindVertexArray(target.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_TRIANGLES,0,42,42,GL_UNSIGNED_SHORT,NULL));*/
+	if (appMode == rayCasting) {
+		//draw plane for ray
+		CALL_GL(glUseProgram(colorShader));
+		/*pvm = projectionMatrix*viewMatrix*selectedObject->modelMatrix;
+		CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
+		CALL_GL(glBindVertexArray(target.getVaoId()));
+		CALL_GL(glDrawRangeElements(GL_TRIANGLES,0,42,42,GL_UNSIGNED_SHORT,NULL));*/
 
 
-	//draw plane for ray then draw RAY
-	pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
-	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-	CALL_GL(glLineWidth(3.5));
-	CALL_GL(glBindVertexArray(plane.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
-		
-	CALL_GL(glBindVertexArray(ray.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_LINES,0,6,2,GL_UNSIGNED_SHORT,NULL));
+		//draw plane for ray then draw RAY
+		pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
+		CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
+		CALL_GL(glLineWidth(3.5));
+		CALL_GL(glBindVertexArray(plane.getVaoId()));
+		CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
 
+		CALL_GL(glBindVertexArray(ray.getVaoId()));
+		CALL_GL(glDrawRangeElements(GL_LINES,0,6,2,GL_UNSIGNED_SHORT,NULL));
+	}
 
-	
-	CALL_GL(glUseProgram(colorShader));
-	//draw plane
-	pvm = projectionMatrix*viewMatrix*plane.modelMatrix*glm::scale(vec3(8,8,8));
-	CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-	CALL_GL(glBindVertexArray(plane.getVaoId()));
-	CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
+	if (appMode == planeCasting) {
+		CALL_GL(glUseProgram(colorShader));
+		//draw plane
+		pvm = projectionMatrix*viewMatrix*plane.modelMatrix*glm::scale(vec3(8,8,8));
+		CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
+		CALL_GL(glBindVertexArray(plane.getVaoId()));
+		CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
+	}
 
-
-	//glUseProgram(textureShader);
-	//glUniformMatrix4fv(textureShaderPvm,1,GL_FALSE,glm::value_ptr(quad.modelMatrix));
-	//glBindTexture(GL_TEXTURE_2D, tex);
-	//glUniform1i(textureShaderTexture,0);
-	//glBindVertexArray(quad.getVaoId());
-	//glDrawRangeElements(GL_TRIANGLES,0,24,24,GL_UNSIGNED_SHORT,NULL);
-
-	
-	//CALL_GL(glUseProgram(dirLight));
+	glUseProgram(textureShader);
+	glUniformMatrix4fv(textureShaderPvm,1,GL_FALSE,glm::value_ptr(quad.modelMatrix));
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glUniform1i(textureShaderTexture,0);
+	glBindVertexArray(quad.getVaoId());
+	glDrawRangeElements(GL_TRIANGLES,0,24,24,GL_UNSIGNED_SHORT,NULL);
 	
 	recursive_render(scene,scene->mRootNode);
-
-	//glEC("mainloop");
 
 	glfwSwapBuffers();
 }
@@ -1152,18 +1146,17 @@ GLuint Engine::picking()
 
 	/* select the shader program */ 
 	CALL_GL(glUseProgram(flatShader)); 
-	GLuint tempVao = target.getVaoId();
+	GLuint tempVao = selectedObject->vaoId;
 
 	alpha = tempVao & 0xFF; 
 	blue  = (tempVao >> 8) & 0xFF; 
 	green = (tempVao >> 16) & 0xFF; 
 	red   = (tempVao >> 24) & 0xFF; 
 	CALL_GL(glUniform4f(flatShaderColor, red/255.0f, green/255.0f ,blue/255.0f, alpha/255.0f)); 	
-
+	
 	pvm = projectionMatrix*glm::inverse(ray.modelMatrix)*selectedObject->modelMatrix; //todo:this should be cycled through all objects!!!
 	//pvm = projectionMatrix*viewMatrix*selectedObject->modelMatrix;
 	CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-
 
 	/* draw the object*/ 
 	CALL_GL(glBindVertexArray(tempVao));
