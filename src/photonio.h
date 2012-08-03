@@ -183,9 +183,8 @@ namespace pho {
 		pho::LightSource pointLight;
 
 		//Picking
-		GLuint picking();
+		GLuint picking(const struct aiScene *sc, const struct aiNode* nd);
 		GLuint picked;
-		void render_picking_scene();
 		void generate_pixel_buffer_objects();
 		GLuint get_object_id();
 		GLuint pickProgram;
@@ -199,6 +198,7 @@ namespace pho {
 		bool grabbing;
 		float grabbedDistance;
 		pho::Asset* selectedObject;
+		pho::Asset* pointedObject;
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;

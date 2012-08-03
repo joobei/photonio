@@ -25,14 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 using namespace std;
 
-
-//// Can't send color down as a pointer to aiColor4D because AI colors are ABGR.
-//void Color4f(const struct aiColor4D *color)
-//{
-//	glColor4f(color->r, color->g, color->b, color->a);
-//}
-
-
 #pragma comment(lib, "DevIL.lib")
 #pragma comment(lib, "ILU.lib")
 #pragma comment(lib, "ILUT.lib")
@@ -325,7 +317,14 @@ void Engine::initResources() {
 	flatShader = CreateProgram(shaderList);
 	flatShaderPvm = glGetUniformLocation(flatShader,"pvm");
 	flatShaderColor = glGetUniformLocation(flatShader,"baseColor");
-	glEC("init");
+	
+	shaderList.clear();
+
+	shaderList.push_back(CreateShader(GL_VERTEX_SHADER,readTextFile("shaders/texader.vert")));
+	shaderList.push_back(CreateShader(GL_FRAGMENT_SHADER,readTextFile("shaders/texader.frag")));
+	textureShader = CreateProgram(shaderList);
+	textureShaderPvm = glGetUniformLocation(textureShader,"pvm");
+	textureShaderTexture = glGetUniformLocation(textureShader,"texturex");
 
 	shaderList.clear();
 
@@ -580,11 +579,20 @@ void Engine::checkEvents() {
 				break;
 			}
 			if (appInputState == idle && remote.Button.A()) {
+				appInputState = rotate;
 				rotTechnique = trackBall;
+
 				std::cout << "trackball" << '\n';
+
+				int xx,yy;
+				
+				glfwGetMousePos(&xx,&yy);
+				arcBallPreviousPoint[0] = xx*1.0f;
+				arcBallPreviousPoint[1] = yy*1.0f;
+				tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
 				break;
 			}
-			if (appInputState == trackBall && remote.Button.A()) {
+			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
 				//trackball rotate
 				break;
 			}
@@ -597,12 +605,10 @@ void Engine::checkEvents() {
 
 void Engine::recursive_render (const struct aiScene *sc, const struct aiNode* nd)
 {
-	CALL_GL(glUseProgram(dirLight));
-	
 	CALL_GL(glUniformMatrix4fv(dirLightPVM, 1, GL_FALSE, glm::value_ptr(projectionMatrix*viewMatrix*selectedObject->modelMatrix)));
+	CALL_GL(glUniformMatrix4fv(dirLightNM, 1, GL_FALSE, glm::value_ptr(viewMatrix*selectedObject->modelMatrix)));
 	
 	CALL_GL(glBindBufferRange(GL_UNIFORM_BUFFER, lightUniLoc, pointLight.uniformBlockIndex, 0, sizeof(struct pho::LightSource)));
-
 	// draw all meshes assigned to this node
 	for (unsigned int n=0; n < nd->mNumMeshes; ++n){
 		// bind material uniform
@@ -629,7 +635,7 @@ void Engine::render() {
 	
 	//render off-screen for picking
 	if (appMode == rayCasting) {
-		picked = picking();
+		picked = picking(scene,scene->mRootNode);
 
 		if(picked !=0) {
 
@@ -641,7 +647,7 @@ void Engine::render() {
 			//CALL_GL(glDisable(GL_DEPTH_TEST));
 			// draw the object
 			CALL_GL(glBindVertexArray(picked));
-			//CALL_GL(glDrawElements(GL_TRIANGLES,selectedObject->numFaces*3,GL_UNSIGNED_INT,0));
+			CALL_GL(glDrawElements(GL_TRIANGLES,selectedObject->numFaces*3,GL_UNSIGNED_INT,0));
 
 
 			//Shorten the beam to match the object
@@ -689,14 +695,16 @@ void Engine::render() {
 		CALL_GL(glBindVertexArray(plane.getVaoId()));
 		CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
 	}
-
+	
 	glUseProgram(textureShader);
 	glUniformMatrix4fv(textureShaderPvm,1,GL_FALSE,glm::value_ptr(quad.modelMatrix));
 	glBindTexture(GL_TEXTURE_2D, tex);
 	glUniform1i(textureShaderTexture,0);
 	glBindVertexArray(quad.getVaoId());
 	glDrawRangeElements(GL_TRIANGLES,0,24,24,GL_UNSIGNED_SHORT,NULL);
-	
+
+	CALL_GL(glUseProgram(dirLight));
+
 	recursive_render(scene,scene->mRootNode);
 
 	glfwSwapBuffers();
@@ -1133,7 +1141,7 @@ void Engine::generate_frame_buffer_texture()
 	//CALL_GL(glEC("Texture Generation"));
 }
 
-GLuint Engine::picking() 
+GLuint Engine::picking(const struct aiScene *sc, const struct aiNode* nd) 
 { 
 	GLubyte red, green, blue, alpha; 
 
@@ -1148,7 +1156,7 @@ GLuint Engine::picking()
 	CALL_GL(glUseProgram(flatShader)); 
 	GLuint tempVao = selectedObject->vaoId;
 
-	alpha = tempVao & 0xFF; 
+	alpha = heart.getVaoId() & 0xFF; 
 	blue  = (tempVao >> 8) & 0xFF; 
 	green = (tempVao >> 16) & 0xFF; 
 	red   = (tempVao >> 24) & 0xFF; 
@@ -1159,9 +1167,17 @@ GLuint Engine::picking()
 	CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
 
 	/* draw the object*/ 
-	CALL_GL(glBindVertexArray(tempVao));
-	CALL_GL(glDrawRangeElements(GL_TRIANGLES,0,42,42,GL_UNSIGNED_SHORT,NULL));
-	CALL_GL(glBindVertexArray(0));	
+	for (unsigned int n=0; n < nd->mNumMeshes; ++n) {
+		// bind VAO
+		CALL_GL(glBindVertexArray(myMeshes[nd->mMeshes[n]].vao));
+		// draw
+		CALL_GL(glDrawElements(GL_TRIANGLES,myMeshes[nd->mMeshes[n]].numFaces*3,GL_UNSIGNED_INT,0));
+	}
+
+	/*/ draw all children
+	for (unsigned int n=0; n < nd->mNumChildren; ++n){
+		recursive_render(sc, nd->mChildren[n]);
+	}*/
 
 	//check that our framebuffer is ok
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
