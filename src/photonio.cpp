@@ -88,7 +88,7 @@ calibrate(false),
 
 
 	appInputState = idle;
-	appMode = rayCasting;
+	appMode = planeCasting;
 	rotTechnique = screenSpace;
 
 	grabbing=false;
@@ -592,10 +592,10 @@ void Engine::checkEvents() {
 				tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
 				break;
 			}
-			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
+//			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
 				//trackball rotate
-				break;
-			}
+//				break;
+//			}
 		default:
 			break;
 		}
@@ -696,13 +696,13 @@ void Engine::render() {
 		CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
 	}
 	
-	glUseProgram(textureShader);
+	/*glUseProgram(textureShader);
 	glUniformMatrix4fv(textureShaderPvm,1,GL_FALSE,glm::value_ptr(quad.modelMatrix));
 	glBindTexture(GL_TEXTURE_2D, tex);
 	glUniform1i(textureShaderTexture,0);
 	glBindVertexArray(quad.getVaoId());
 	glDrawRangeElements(GL_TRIANGLES,0,24,24,GL_UNSIGNED_SHORT,NULL);
-
+	*/
 	CALL_GL(glUseProgram(dirLight));
 
 	recursive_render(scene,scene->mRootNode);
