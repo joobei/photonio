@@ -878,15 +878,16 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 				p1p.x = tcur->getX();
 				p1p.y = tcur->getY();
 				f1id = tcur->getCursorID();	
-				std::cout << "ScreenSpace rotate" << '\n';
+				
 			}
 			if (numberOfCursors == 2) {
 				rotTechnique = pinch;
+				std::cout << "pinch rotate" << '\n';
 				p2p.x = tcur->getX();
 				p2p.y = tcur->getY();
 				f2id = tcur->getCursorID();
 			}
-			std::cout << "pinch rotate" << '\n';
+			
 			break;
 		case trackBall:
 			trackedCursorId = tcur->getCursorID();
@@ -999,10 +1000,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			selectedObject->modelMatrix[3][1] = 0;
 			selectedObject->modelMatrix[3][2] = 0;
 
-			selectedObject->modelMatrix = glm::rotate((newAngle-referenceAngle)*(-1),vec3(0,0,1))*selectedObject->modelMatrix;
+			selectedObject->modelMatrix = glm::rotate((newAngle-referenceAngle)*(-10),vec3(0,0,1))*selectedObject->modelMatrix;
 			
-			selectedObject->modelMatrix = glm::rotate(ft.x,vec3(0,1,0))*selectedObject->modelMatrix;
-			selectedObject->modelMatrix = glm::rotate(ft.y,vec3(1,0,0))*selectedObject->modelMatrix;
+			selectedObject->modelMatrix = glm::rotate(ft.x*5,vec3(0,1,0))*selectedObject->modelMatrix;
+			selectedObject->modelMatrix = glm::rotate(ft.y*5,vec3(1,0,0))*selectedObject->modelMatrix;
 				
 			selectedObject->modelMatrix[3][0] = location.x;
 			selectedObject->modelMatrix[3][1] = location.y;
@@ -1010,7 +1011,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 			
 			//update to latest values
-			referenceAngle = newAngle;
+			//referenceAngle = newAngle; ???????????? doesn't seem to make a difference
+			//if (tcur->getCursorID() == f1id) {	p1p = p1c; }
+			//if (tcur->getCursorID() == f2id) {	p2p = p2c; }
 			break;
 		case trackBall:
 			//********************* TRACKBALL  *************************
