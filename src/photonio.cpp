@@ -1000,7 +1000,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			selectedObject->modelMatrix[3][1] = 0;
 			selectedObject->modelMatrix[3][2] = 0;
 
-			selectedObject->modelMatrix = glm::rotate((newAngle-referenceAngle)*(-10),vec3(0,0,1))*selectedObject->modelMatrix;
+			selectedObject->modelMatrix = glm::rotate((newAngle-referenceAngle)*(-2),vec3(0,0,1))*selectedObject->modelMatrix;
 			
 			selectedObject->modelMatrix = glm::rotate(ft.x*5,vec3(0,1,0))*selectedObject->modelMatrix;
 			selectedObject->modelMatrix = glm::rotate(ft.y*5,vec3(1,0,0))*selectedObject->modelMatrix;

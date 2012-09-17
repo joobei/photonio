@@ -87,8 +87,7 @@ namespace pho {
 
 	enum RotateTechnique { //rotTechnique
 		singleAxis,
-		v2,
-		v2pinch,
+		pinch2,
 		screenSpace,
 		pinch,
 		trackBall
