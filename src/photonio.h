@@ -61,8 +61,6 @@ using glm::mat4;
 
 //#define GLDEBUG
 
-
-
 #if defined (GLDEBUG)
 #define CALL_GL(exp) {                                        \
 exp;                                                          \
@@ -89,6 +87,8 @@ namespace pho {
 
 	enum RotateTechnique { //rotTechnique
 		singleAxis,
+		v2,
+		v2pinch,
 		screenSpace,
 		pinch,
 		trackBall
@@ -260,17 +260,22 @@ namespace pho {
 		int trackedCursorId;
 		glm::vec2 trackedCursorPrevPoint;
 		bool f1,f2;
-
 		bool verbose;
-		
 		int f1id,f2id;
 		glm::vec2 f1prev,f2prev;
 		glm::vec2 f1speed,f2speed;
 		float referenceAngle;
-
 		glm::vec2 p1p,p2p,p1c,p2c;
 		glm::vec2 p1t,p2t;
 		bool both;
+
+		//**************NEW ALGORITHM v2*******************
+
+		glm::vec2 f1c,f1p,f2c,f2p;
+
+
+		//*************************************************
+
 
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;

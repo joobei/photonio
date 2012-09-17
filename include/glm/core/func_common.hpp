@@ -278,8 +278,8 @@ namespace glm
 	/// you would want a threshold function with a smooth
 	/// transition. This is equivalent to:
 	/// genType t;
-	/// t = clamp ((x – edge0) / (edge1 – edge0), 0, 1);
-	/// return t * t * (3 – 2 * t);
+	/// t = clamp ((x Eedge0) / (edge1 Eedge0), 0, 1);
+	/// return t * t * (3 E2 * t);
 	/// Results are undefined if edge0 >= edge1.
 	///
 	/// @tparam genType Floating-point scalar or vector types.

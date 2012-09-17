@@ -1,10 +1,12 @@
+#pragma warning(disable: 4819)
+
 #include "arcball.h"
 
-glm::vec3 pho::util::getPointOnSphere(int px, int py) {
+glm::vec3 pho::util::getPointOnSphere(float px, float py) {
     float x,y;
 
-    x = (float)px/(pho::Engine::WINDOW_SIZE_X/2);
-    y = (float)py/(pho::Engine::WINDOW_SIZE_Y/2);
+    x = px/(pho::Engine::WINDOW_SIZE_X/2);
+    y = py/(pho::Engine::WINDOW_SIZE_Y/2);
 
     x = x-1;
     y = 1-y;

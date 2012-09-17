@@ -1,3 +1,5 @@
+#pragma warning(disable: 4819)
+
 #include "photonio.h"
 #include "boost/bind.hpp"
 #include <functional>

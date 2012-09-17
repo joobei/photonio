@@ -1,4 +1,5 @@
-﻿/*  Photonio Graphics Engine
+﻿#pragma warning(disable: 4819)
+/*  Photonio Graphics Engine
 Copyright (C) 2011 Nicholas Katzakis
 
 This program is free software: you can redistribute it and/or modify
@@ -87,7 +88,7 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 
-	appInputState = idle;
+	appInputState = idle; 
 	appMode = planeCasting;
 	rotTechnique = screenSpace;
 
@@ -873,28 +874,20 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 	case rotate:
 		switch (rotTechnique) {
 		case screenSpace:
-			if (rotTechnique !=pinch && (numberOfCursors > 1)) {
-				rotTechnique = pinch;
-				
-				short i=0;
-				for (std::list<TUIO::TuioCursor*>::iterator list_iter = cursorList.begin(); list_iter != cursorList.end(); list_iter++) {
-					if (i==0) {
-					p1p.x = (*list_iter)->getX();
-					p1p.y = (*list_iter)->getY();
-					f1id = (*list_iter)->getCursorID();
-					}
-					if (i==1) {
-					p2p.x = (*list_iter)->getX();
-					p2p.y = (*list_iter)->getY();
-					f2id = (*list_iter)->getCursorID();
-					}
-					i++;	
-				}
-
-				std::cout << "pinch rotate" << '\n';
-				
+			if (numberOfCursors == 1) {
+				p1p.x = tcur->getX();
+				p1p.y = tcur->getY();
+				f1id = tcur->getCursorID();	
+				std::cout << "ScreenSpace rotate" << '\n';
 			}
-		   break;
+			if (numberOfCursors == 2) {
+				rotTechnique = pinch;
+				p2p.x = tcur->getX();
+				p2p.y = tcur->getY();
+				f2id = tcur->getCursorID();
+			}
+			std::cout << "pinch rotate" << '\n';
+			break;
 		case trackBall:
 			trackedCursorId = tcur->getCursorID();
 
@@ -905,7 +898,6 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 			arcBallPreviousPoint[1] = y;
 			tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
 		}
-		break;
 	}
 	if (verbose)
 		std::cout << "add cur " << tcur->getCursorID() << " (" <<  tcur->getSessionID() << ") " << tcur->getX() << " " << tcur->getY() << std::endl;

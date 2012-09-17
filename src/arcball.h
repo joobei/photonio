@@ -1,3 +1,5 @@
+#pragma warning(disable: 4819)
+
 #ifndef ARCBALL_H
 #define ARCBALL_H
 
@@ -11,7 +13,7 @@
 namespace pho {
  namespace util {
 
-glm::vec3 getPointOnSphere(int x, int y);
+glm::vec3 getPointOnSphere(float x, float y);
 
 glm::vec3 getPointOnSphereTouch(float x, float y);
 
