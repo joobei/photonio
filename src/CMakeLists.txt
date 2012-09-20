@@ -39,7 +39,7 @@ link_directories(C:/dev/protobuf-2.4.1/vsprojects/Release)
 link_directories(C:/dev/assimp/lib/assimp_debug-dll_win32)
 link_directories(C:/dev/devil-x86-1.7.8/lib)
 
-add_executable(${PROJECTNAME} box.cc iomanager.cpp iomanager.h wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} arcball.h arcball.cpp assets.h assets.cpp)
+add_executable(${PROJECTNAME} box.cc iomanager.cpp iomanager.h model.cpp model.h wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} arcball.h arcball.cpp assets.h assets.cpp)
 
 target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 debug assimp optimized Assimp32 ${Boost_LIBRARIES} debug libprotobufd optimized libprotobuf oscnetlib ip osc tuio opengl32 winmm)
 
