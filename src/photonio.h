@@ -42,9 +42,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "TUIO/TuioCursor.h"
 #include "TUIO/TuioPoint.h"
 #include <cstdio>
-#include "assimp.hpp"
-#include "aiPostProcess.h"
-#include "aiScene.h"
 #include <functional>
 #include "wiimote.h"
 #include "box.h"
@@ -225,15 +222,6 @@ namespace pho {
 		pho::Asset ray;
 		pho::Asset quad;
 		pho::Asset heart;
-
-		// the global Assimp scene object
-		const aiScene* scene;
-		std::vector<struct MyMesh> myMeshes;
-		// Model Matrix (part of the OpenGL Model View Matrix)
-		float modelMatrix[16];
-
-		// For push and pop matrix
-		std::vector<float *> matrixStack;
 
 		// Uniform Buffer for Matrices
 		// this buffer will contain 3 matrices: projection, view and model

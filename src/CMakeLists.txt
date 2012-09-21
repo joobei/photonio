@@ -26,6 +26,8 @@ include_directories(C:/dev/winddk/inc/api)
 include_directories(C:/dev/boost_1_49_0)
 include_directories(C:/dev/assimp/include)
 include_directories(C:/dev/devil-x86-1.7.8/include)
+include_directories(${CMAKE_SOURCE_DIR}/src/assets)
+
 
 link_directories(C:/dev/TUIO_CPP/Release)
 link_directories(C:/dev/oscpacklib/Release)
@@ -39,7 +41,7 @@ link_directories(C:/dev/protobuf-2.4.1/vsprojects/Release)
 link_directories(C:/dev/assimp/lib/assimp_debug-dll_win32)
 link_directories(C:/dev/devil-x86-1.7.8/lib)
 
-add_executable(${PROJECTNAME} assimporter.h assimporter.cpp iomanager.cpp iomanager.h assets/model.cpp assets/model.h wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} arcball.h arcball.cpp assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp)
+add_executable(${PROJECTNAME} assets/assimporter.h assets/assimporter.cpp iomanager.cpp iomanager.h assets/model.cpp assets/model.h wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} arcball.h arcball.cpp assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp)
 
 target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 debug assimp optimized Assimp32 ${Boost_LIBRARIES} debug libprotobufd optimized libprotobuf oscnetlib ip osc tuio opengl32 winmm)
 
