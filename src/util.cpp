@@ -1,8 +1,6 @@
 #pragma warning(disable: 4819)
 #include "util.h"
 #include "vector3.h"
-#include "ray.h"
-#include "box.h"
 
 pho::WiiButtonState::WiiButtonState() {
 	a = false;

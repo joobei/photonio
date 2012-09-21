@@ -59,7 +59,7 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
-//#define GLDEBUG
+#define GLDEBUG
 
 #if defined (GLDEBUG)
 #define CALL_GL(exp) {                                        \
