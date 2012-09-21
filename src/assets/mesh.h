@@ -33,11 +33,7 @@ namespace pho {
 		Shader *shader;
 	}; 
 
-	// Vertex Attribute Locations
-	const GLuint vertexLoc=0, normalLoc=1, texCoordLoc=2, colorLoc=3;
-
-	// Uniform Bindings Points
-	const GLuint matricesUniLoc = 1, materialUniLoc = 2, lightUniLoc = 3;
+	
 }
 
 #endif 

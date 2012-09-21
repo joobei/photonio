@@ -1,14 +1,14 @@
 #include "shader.h"
 
-Shader::Shader(std::string filename) {
+pho::Shader::Shader(std::string filename) {
     GLuint vertex,fragment;
     vertex = CreateShader(GL_VERTEX_SHADER,filename+".vert");
     fragment = CreateShader(GL_FRAGMENT_SHADER,filename+".frag");
-    handle = pho::Shader::CreateProgram();
+    handle = pho::Shader::CreateProgram(vertex, fragment);
 }
 
 
-GLuint Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile) {
+GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile) {
     GLuint shader = glCreateShader(eShaderType);
     const char *strFileData = strShaderFile.c_str();
     glShaderSource(shader, 1, &strFileData, NULL);
@@ -40,7 +40,7 @@ GLuint Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile
     return shader;
 }
 
-GLuint Shader::CreateProgram(const GLuint vert, const GLuint frag) {
+GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag) {
     GLuint program = glCreateProgram();
 
     glAttachShader(program, vert);
@@ -66,3 +66,4 @@ GLuint Shader::CreateProgram(const GLuint vert, const GLuint frag) {
         delete[] strInfoLog;
     }
     return program;
+}
