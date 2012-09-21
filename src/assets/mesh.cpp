@@ -16,10 +16,10 @@ vertices(vertixes),
 	glGenBuffers(1,&texCoordVboId);
 
 	glBindVertexArray(vaoId);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,iboId);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibId);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.size()*sizeof(GLushort),indices.data(),GL_STATIC_DRAW);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,iboId);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibId);
 	glBindBuffer(GL_ARRAY_BUFFER,vertexVboId);
 	glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW);
 	glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0);
@@ -27,8 +27,8 @@ vertices(vertixes),
 
 	glBindBuffer(GL_ARRAY_BUFFER,texCoordVboId);
 	glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW);
-	glVertexAttribPointer(colorLoc,3,GL_FLOAT,GL_FALSE,0,0);
-	glEnableVertexAttribArray(colorLoc);
+    glVertexAttribPointer(texCoordLoc,3,GL_FLOAT,GL_FALSE,0,0);
+    glEnableVertexAttribArray(texCoordLoc);
 	glBindVertexArray(0);
 }
 
@@ -37,7 +37,7 @@ inline GLuint pho::Mesh::getVaoId() {
 	return vaoId;
 }
 
-inline glm::vec3 pho::Mesh::getPosition() {
+glm::vec3 pho::Mesh::getPosition() {
 
 	return glm::vec3(modelMatrix[3][0],modelMatrix[3][1],modelMatrix[3][2]);
 }
