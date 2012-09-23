@@ -1,3 +1,5 @@
+#pragma warning(disable: 4819)
+
 #include "assimporter.h"
 
 pho::Model pho::Assimporter::Import(const char* filename) {
@@ -24,16 +26,18 @@ pho::Model pho::Assimporter::Import(const char* filename) {
 		std::cout << importer.GetErrorString() << std::endl;
 	}
 
+	_theScene = &aiScene();
+
 	// And have it read the given file with some example postprocessing
 	// Usually - if speed is not the most important aspect for you - you'll
 	// propably to request more postprocessing than we do in this example.
-	scene = importer.ReadFile( pFile,
+	_theScene = importer.ReadFile( pFile,
 		aiProcess_CalcTangentSpace       |
 		aiProcess_Triangulate            |
 		aiProcess_JoinIdenticalVertices  |
 		aiProcess_SortByPType );
 
-	scene = importer.GetOrphanedScene();
+	_theScene = importer.GetOrphanedScene();
 
 	LoadGLTextures(scene);
 

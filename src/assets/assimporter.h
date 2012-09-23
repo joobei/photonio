@@ -14,7 +14,7 @@ namespace pho {
 	public:
 		static pho::Model Import(const char* filename);
 	private:
-		aiScene* scene;
+		aiScene* _theScene;
 	}
 }
 
