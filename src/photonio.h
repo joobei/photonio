@@ -46,7 +46,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "wiimote.h"
 #include "box.h"
 
-#include "IL/il.h"
+
 #include <GL/glfw.h>
 
 using namespace std;

@@ -5,3 +5,10 @@
 pho::Model::Model(std::vector<pho::Mesh> meshez) {
 
 }
+
+pho::Model::Model() {
+}
+
+void pho::Model::addMesh(pho::Mesh newMesh) {
+	meshes.push_back(newMesh);
+}
