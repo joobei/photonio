@@ -7,15 +7,17 @@
 #include "aiScene.h"
 #include <fstream>
 #include <iostream>
+#include "assets.h"
 
+namespace Assimporter {
+	
+	static pho::Model Import(const char* filename);
+	void LoadGLTextures(const aiScene* scene);
+	
+	void Assimporter::set_float4(float f[4], float a, float b, float c, float d);
 
-namespace pho {
-	class Assimporter {
-	public:
-		static pho::Model Import(const char* filename);
-	private:
-		aiScene* _theScene;
-	}
+	void Assimporter::color4_to_float4(const struct aiColor4D *c, float f[4]);
+
 }
 
 #endif

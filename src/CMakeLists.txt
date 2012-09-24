@@ -27,6 +27,7 @@ include_directories(C:/dev/boost_1_49_0)
 include_directories(C:/dev/assimp/include)
 include_directories(C:/dev/devil-x86-1.7.8/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/assets)
+include_directories(${CMAKE_SOURCE_DIR}/src)
 
 
 link_directories(C:/dev/TUIO_CPP/Release)

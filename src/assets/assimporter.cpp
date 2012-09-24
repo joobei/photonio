@@ -2,8 +2,11 @@
 
 #include "assimporter.h"
 
-pho::Model pho::Assimporter::Import(const char* filename) {
-//*********** ASSIMP LOADING CODE****************
+pho::Model Assimporter::Import(const char* filename) {
+
+	const aiScene* _theScene = NULL;
+
+	//*********** ASSIMP LOADING CODE****************
 
 	/*glGenBuffers(1,&matricesUniBuffer);
 	glBindBuffer(GL_UNIFORM_BUFFER, matricesUniBuffer);
@@ -20,7 +23,7 @@ pho::Model pho::Assimporter::Import(const char* filename) {
 	std::ifstream fin(pFile.c_str());
 	if(!fin.fail()) {
 		fin.close();
-	}
+	}  
 	else{
 		std::cout << "Couldn't open file:"  << pFile << std::endl;
 		std::cout << importer.GetErrorString() << std::endl;
@@ -39,23 +42,22 @@ pho::Model pho::Assimporter::Import(const char* filename) {
 
 	_theScene = importer.GetOrphanedScene();
 
-	LoadGLTextures(scene);
+	LoadGLTextures(_theScene);
 
 	// If the import failed, report it
-	if( !scene) {
+	if( !_theScene) {
 		std::cout <<  importer.GetErrorString() << std::endl;
 	}
 	else { 
 		std::cout << "Import of geometry succeeded." << std::endl; 
 	}
 
-
 	//loop through meshes
-	pho::MyMesh aMesh;
-	pho::MyMaterial aMat;
+	pho::Mesh aMesh;
+	pho::Material aMat;
 	GLuint buffer;
 
-	std::cout << "Number of meshes : " << scene->mNumMeshes << std::endl;
+	std::cout << "Number of meshes : " << _theScene->mNumMeshes << '\n';
 
 	// For each mesh
 	for (unsigned int n = 0; n < scene->mNumMeshes; ++n)
@@ -108,7 +110,7 @@ pho::Model pho::Assimporter::Import(const char* filename) {
 			//}
 			//std::cout << '\n';
 		}
-		
+
 
 		// buffer for vertex texture coordinates
 		if (mesh->HasTextureCoords(0)) {
@@ -137,11 +139,11 @@ pho::Model pho::Assimporter::Import(const char* filename) {
 		aiString texPath;	//contains filename of texture
 
 		if(AI_SUCCESS == mtl->GetTexture(aiTextureType_DIFFUSE, 0, &texPath)){
-				//bind texture
-				unsigned int texId = textureIdMap[texPath.data];
-				aMesh.texIndex = texId;
-				aMat.texCount = 1;
-			}
+			//bind texture
+			unsigned int texId = textureIdMap[texPath.data];
+			aMesh.texIndex = texId;
+			aMat.texCount = 1;
+		}
 		else
 			aMat.texCount = 0;
 
@@ -178,11 +180,106 @@ pho::Model pho::Assimporter::Import(const char* filename) {
 		glGenBuffers(1,&(aMesh.uniformBlockIndex));
 		glBindBuffer(GL_UNIFORM_BUFFER,aMesh.uniformBlockIndex);
 		glBufferData(GL_UNIFORM_BUFFER, sizeof(aMat), (void *)(&aMat), GL_STATIC_DRAW);
-		
+
 		myMeshes.push_back(aMesh);
 		std::cout << "Added mesh :" << n << std::endl;
 		std::cout << "Number of faces :" << aMesh.numFaces << std::endl;
-		
+
 	}
+}
+//*********** END   ASSIMP LOADING CODE****************/
+
+bool pho::Assimporter::LoadGLTextures(const aiScene* scene)
+{
+	ILboolean success;
+
+	/* initialization of DevIL */
+	ilInit(); 
+
+	/* scan scene's materials for textures */
+	for (unsigned int m=0; m<scene->mNumMaterials; ++m)
+	{
+		int texIndex = 0;
+		aiString path;	// filename
+
+		aiReturn texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
+		while (texFound == AI_SUCCESS) {
+			//fill map with textures, OpenGL image ids set to 0
+			textureIdMap[path.data] = 0; 
+			// more textures?
+			texIndex++;
+			texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
+		}
 	}
-	//*********** END   ASSIMP LOADING CODE****************/
+
+	int numTextures = textureIdMap.size();
+
+	/* create and fill array with DevIL texture ids */
+	ILuint* imageIds = new ILuint[numTextures];
+	ilGenImages(numTextures, imageIds); 
+
+	/* create and fill array with GL texture ids */
+	GLuint* textureIds = new GLuint[numTextures];
+	glGenTextures(numTextures, textureIds); /* Texture name generation */
+
+	/* get iterator */
+	std::map<std::string, GLuint>::iterator itr = textureIdMap.begin();
+	int i=0;
+	for (; itr != textureIdMap.end(); ++i, ++itr)
+	{
+		//save IL image ID
+		std::string filename = (*itr).first;  // get filename
+		(*itr).second = textureIds[i];	  // save texture id for filename in map
+
+		ilBindImage(imageIds[i]); /* Binding of DevIL image name */
+		ilEnable(IL_ORIGIN_SET);
+		ilOriginFunc(IL_ORIGIN_LOWER_LEFT); 
+		success = ilLoadImage((ILstring)filename.c_str());
+
+		if (success) {
+			/* Convert image to RGBA */
+			ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE); 
+
+			/* Create and load textures to OpenGL */
+			glBindTexture(GL_TEXTURE_2D, textureIds[i]); 
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ilGetInteger(IL_IMAGE_WIDTH),
+				ilGetInteger(IL_IMAGE_HEIGHT), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				ilGetData());
+		}
+		else 
+			printf("Couldn't load Image: %s\n", filename.c_str());
+	}
+	/* Because we have already copied image data into texture data
+	we can release memory used by image. */
+	ilDeleteImages(numTextures, imageIds); 
+
+	//Cleanup
+	delete [] imageIds;
+	delete [] textureIds;
+
+	return true;
+}
+
+//// Can't send color down as a pointer to aiColor4D because AI colors are ABGR.
+//void Color4f(const struct aiColor4D *color)
+//{
+//	glColor4f(color->r, color->g, color->b, color->a);
+//}
+
+void Assimporter::set_float4(float f[4], float a, float b, float c, float d)
+{
+	f[0] = a;
+	f[1] = b;
+	f[2] = c;
+	f[3] = d;
+}
+
+void Assimporter::color4_to_float4(const struct aiColor4D *c, float f[4])
+{
+	f[0] = c->r;
+	f[1] = c->g;
+	f[2] = c->b;
+	f[3] = c->a;
+}

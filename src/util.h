@@ -7,7 +7,6 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
-#include "box.h"
 #include "glm\glm.hpp"
 
 namespace pho {

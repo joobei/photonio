@@ -11,7 +11,7 @@ vertices(vertixes),
 {
 	modelMatrix = glm::mat4();
 	glGenVertexArrays(1,&vaoId);
-	glGenBuffers(1,&iboId);
+	glGenBuffers(1,&ibId);
 	glGenBuffers(1,&vertexVboId);
 	glGenBuffers(1,&texCoordVboId);
 

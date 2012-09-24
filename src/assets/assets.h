@@ -5,14 +5,13 @@
 #include <vector>
 #include "GL/glew.h"
 #include "GL/glfw.h"
-#include "box.h"
 #include "util.h"
 
 namespace pho {
 
 	// Shader uniform block stuff *******************
-	struct MyMaterial{
-
+	class Material{
+	public:
 		float diffuse[4];
 		float ambient[4];
 		float specular[4];
@@ -21,7 +20,7 @@ namespace pho {
 		int texCount;
 	};
 
-	struct LightSource {
+	class  LightSource {
 		glm::vec4 color;
 		float attenuation;
 		glm::vec3 direction;
@@ -30,6 +29,6 @@ namespace pho {
 		GLuint uniformBlockIndex;
 	};
 
-} }
+}
 
 #endif
