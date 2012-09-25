@@ -13,12 +13,13 @@ namespace pho {
 		Mesh();
 		Mesh(std::vector<glm::vec3> vertices, std::vector<GLushort> indices, std::vector<glm::vec2> texcoords, std::string name);
 		inline GLuint getVaoId();
-		void render();
+		void draw();
 		glm::vec3 getPosition();
 		unsigned int numFaces;
 		GLuint vaoId,ibId,vertexVboId,texCoordVboId;
 		GLuint texIndex;
 		GLuint uniformBlockIndex;
+		unsigned int* faces;
 	private:
 		glm::mat4 modelMatrix;
 		std::vector<glm::vec3> vertices;
