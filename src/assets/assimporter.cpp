@@ -77,8 +77,49 @@ pho::Model Assimporter::Import(const char* filename) {
 		}
 		aMesh.numFaces = _theScene->mMeshes[n]->mNumFaces;
 		aMesh.faces = faceArray;
-			 
+
+		aMesh.numVertices = mesh->mNumVertices;
+
+		// copying vertex positions
+		if (mesh->HasPositions()) {
+
+			//populate our mesh's vertices vector by extracting all the vertices from assimp's array
+			for (int i=0;i<mesh->mNumVertices;i++) {
+				aMesh.vertices.push_back(glm::vec3(mesh->mVertices[i].x,mesh->mVertices[i].y,mesh->mVertices[i].z));
+			}
+		}
+
+	// copying vertex normals
+	if (mesh->HasNormals()) {
 		
+		//populate our mesh's vertices vector by extracting all the vertices from assimp's array
+			for (int i=0;i<mesh->mNumVertices;i++) {
+				aMesh.normals.push_back(glm::vec3(mesh->mNormals[i].x,mesh->mNormals[i].y,mesh->mNormals[i].z));
+			}
+		}
+
+	importedModel.addMesh(aMesh);
+
+	// buffer for vertex texture coordinates
+	if (mesh->HasTextureCoords(0)) {
+		float *texCoords = (float *)malloc(sizeof(float)*2*mesh->mNumVertices);
+		for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
+
+			texCoords[k*2]   = mesh->mTextureCoords[0][k].x;
+			texCoords[k*2+1] = mesh->mTextureCoords[0][k].y;
+
+		}
+		glGenBuffers(1, &buffer);
+		glBindBuffer(GL_ARRAY_BUFFER, buffer);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*mesh->mNumVertices, texCoords, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(pho::texCoordLoc);
+		glVertexAttribPointer(pho::texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
+	}
+
+	// unbind buffers
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER,0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
 
 		// create material uniform buffer
 		struct aiMaterial *mtl = _theScene->mMaterials[mesh->mMaterialIndex];
@@ -204,7 +245,7 @@ pho::Model Assimporter::Import(const char* filename) {
 		delete [] textureIds;
 
 		
-
+		}
 	
 }
 

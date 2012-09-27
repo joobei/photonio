@@ -15,21 +15,21 @@ namespace pho {
 		inline GLuint getVaoId();
 		void draw();
 		glm::vec3 getPosition();
-		unsigned int numFaces;
+		unsigned int numFaces, numVertices;
 		GLuint vaoId,ibId,vertexVboId,texCoordVboId;
 		GLuint texIndex;
 		GLuint uniformBlockIndex;
 		unsigned int* faces;
-	private:
 		glm::mat4 modelMatrix;
 		std::vector<glm::vec3> vertices;
+		std::vector<glm::vec3> normals;
 		std::vector<GLushort> indices;	 
 		std::vector<glm::vec3> colors;
 		std::vector<glm::vec2> texcoords;
 		bool selected;
 		std::string name;
-		int numfaces;
 		Shader *shader;
+		bool uploaded;
 	}; 
 
 	

@@ -7,7 +7,8 @@ vertices(vertixes),
 	indices(indixes),
 	texcoords(texcoords),
 	selected(false),
-	name(name)
+	name(name),
+	uploaded(false)
 {
 	modelMatrix = glm::mat4();
 	glGenVertexArrays(1,&vaoId);
@@ -30,13 +31,14 @@ vertices(vertixes),
     glVertexAttribPointer(texCoordLoc,3,GL_FLOAT,GL_FALSE,0,0);
     glEnableVertexAttribArray(texCoordLoc);
 	glBindVertexArray(0);
+
 }
 
-pho::Mesh::draw() {
+void pho::Mesh::draw() {
 
 	GLuint buffer;  //buffer used to upload stuff to GPU memory
-
-	// generate Vertex Array for mesh
+	
+	//Generate Vertex Array for mesh
 	glGenVertexArrays(1,&(vaoId));
 	glBindVertexArray(vaoId);
 
@@ -45,51 +47,17 @@ pho::Mesh::draw() {
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * numFaces * 3, faces, GL_STATIC_DRAW);
 
+	glGenBuffers(1,&buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*numVertices, vertices.data(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(pho::vertexLoc);
+	glVertexAttribPointer(pho::vertexLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	// buffer for vertex positions
-	if (mesh->HasPositions()) {
-		glGenBuffers(1, &buffer);
-		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*mesh->mNumVertices, mesh->mVertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(pho::vertexLoc);
-		glVertexAttribPointer(pho::vertexLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
-	}
-
-	// buffer for vertex normals
-	if (mesh->HasNormals()) {
-		glGenBuffers(1, &buffer);
-		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*mesh->mNumVertices, mesh->mNormals, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(pho::normalLoc);
-		glVertexAttribPointer(pho::normalLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-		//for (int i=0;i<100;i++) {
-		//	std::cout << mesh->mNormals[i].x << " "; 
-		//}
-		//std::cout << '\n';
-	}
-
-
-	// buffer for vertex texture coordinates
-	if (mesh->HasTextureCoords(0)) {
-		float *texCoords = (float *)malloc(sizeof(float)*2*mesh->mNumVertices);
-		for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
-
-			texCoords[k*2]   = mesh->mTextureCoords[0][k].x;
-			texCoords[k*2+1] = mesh->mTextureCoords[0][k].y;
-
-		}
-		glGenBuffers(1, &buffer);
-		glBindBuffer(GL_ARRAY_BUFFER, buffer);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*mesh->mNumVertices, texCoords, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(pho::texCoordLoc);
-		glVertexAttribPointer(pho::texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
-	}
-
-	// unbind buffers
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER,0);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*numVertices, normals.data(), GL_STATIC_DRAW);
+	glEnableVertexAttribArray(pho::normalLoc);
+	glVertexAttribPointer(pho::normalLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
 }
 
 inline GLuint pho::Mesh::getVaoId() {
