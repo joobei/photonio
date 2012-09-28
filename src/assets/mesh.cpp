@@ -5,7 +5,7 @@
 pho::Mesh::Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec2> texcoords,std::string name):
 vertices(vertixes),
 	indices(indixes),
-	texcoords(texcoords),
+	texCoords(texcoords),
 	selected(false),
 	name(name),
 	uploaded(false)
@@ -34,7 +34,7 @@ vertices(vertixes),
 
 }
 
-void pho::Mesh::draw() {
+bool pho::Mesh::loadToGPU() {
 
 	GLuint buffer;  //buffer used to upload stuff to GPU memory
 	
@@ -42,22 +42,38 @@ void pho::Mesh::draw() {
 	glGenVertexArrays(1,&(vaoId));
 	glBindVertexArray(vaoId);
 
-	// buffer for faces
+	//faces
 	glGenBuffers(1,&buffer);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * numFaces * 3, faces, GL_STATIC_DRAW);
 
+	//vertices
 	glGenBuffers(1,&buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*numVertices, vertices.data(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(pho::vertexLoc);
 	glVertexAttribPointer(pho::vertexLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
+	//normals
 	glGenBuffers(1, &buffer);
 	glBindBuffer(GL_ARRAY_BUFFER, buffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*numVertices, normals.data(), GL_STATIC_DRAW);
 	glEnableVertexAttribArray(pho::normalLoc);
 	glVertexAttribPointer(pho::normalLoc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	//texture coordinates
+	glGenBuffers(1, &buffer);
+	glBindBuffer(GL_ARRAY_BUFFER, buffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*numVertices, texCoords, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(pho::texCoordLoc);
+	glVertexAttribPointer(pho::texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
+
+	// unbind buffers
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER,0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
+
+	return true;
 }
 
 inline GLuint pho::Mesh::getVaoId() {
