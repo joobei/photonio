@@ -3,14 +3,11 @@
 pho::UniformAssigner& pho::UniformAssigner::operator=(int data) { glUniform1i(location,data); }
 pho::UniformAssigner& pho::UniformAssigner::operator=(float data) { glUniform1f(location,data);}
 //pho::UniformAssigner& pho::UniformAssigner::operator=(double data){ glUniform1f(location,data);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mediump_vec2& data){ glUniform2f(location,data.x,data.y);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mediump_vec3& data){ glUniform3f(location,data.x,data.y,data.z);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mediump_vec4& data){ glUniform4f(location,data.x,data.y,data.z,data.w);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mediump_mat4& data){ glUniformMatrix4fv(location,1,data.value->);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::highp_vec2& data){ glUniform1i(location,data);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::highp_vec3& data){ glUniform1i(location,data);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::highp_vec4& data){ glUniform1i(location,data);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::highp_mat4& data){ glUniform1i(location,data);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec2& data){ glUniform2f(location,data.x,data.y);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec3& data){ glUniform3f(location,data.x,data.y,data.z);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec4& data){ glUniform4f(location,data.x,data.y,data.z,data.w);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mat4& data){ glUniformMatrix4fv(location,1,GL_FALSE,glm::value_ptr(data));}
+
 
 pho::Shader::Shader(std::string filename) {
 	GLuint vertex,fragment;
@@ -85,7 +82,7 @@ GLint pho::Shader::getUniform(const std::string& uniform_name) {
 	
 	if (attributes.find(uniform_name) == attributes.end()) { 
 		//hasn't been found so add it
-		GLint temp = glGetUniformLocation(program,uniform_name);
+		GLint temp = glGetUniformLocation(program,uniform_name.c_str());
 		attributes.insert(uniform_name,temp);
 		return temp;
 	}
