@@ -113,7 +113,6 @@ namespace pho {
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
 
-
 		void addTuioObject(TuioObject *tobj);
 		void updateTuioObject(TuioObject *tobj); 
 		void removeTuioObject(TuioObject *tobj);
@@ -156,7 +155,7 @@ namespace pho {
 		glm::vec3 cameraDirection;
 
 		//Shaders
-		pho::Shader* directional;
+        pho::Shader* colorShader;
 
 		//Lights
 		GLuint lightSource;
@@ -177,8 +176,6 @@ namespace pho {
 		float rayLength;
 		bool grabbing;
 		float grabbedDistance;
-		pho::Asset* selectedObject;
-		pho::Asset* pointedObject;
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
@@ -192,31 +189,13 @@ namespace pho {
 #if defined(_DEBUG)
 		Minicom_client _serialserver;
 #endif
-
 		boost::mutex ioMutex; //locks the message queue for thread access
 
 		//assets
-		GLuint searchByName(const std::string name);		
-
-		std::vector<pho::Asset> assets;
-		std::vector<pho::Asset>::iterator assetIterator;
-		pho::Asset target;
-		pho::Asset cursor;
-		pho::Asset plane;
-		pho::Asset ray;
-		pho::Asset quad;
-		pho::Asset heart;
-
-		// Uniform Buffer for Matrices
-		// this buffer will contain 3 matrices: projection, view and model
-		// each matrix is a float array with 16 components
-		GLuint matricesUniBuffer;
-#define MatricesUniBufferSize sizeof(float) * 16 * 3
-#define ProjMatrixOffset 0
-#define ViewMatrixOffset sizeof(float) * 16
-#define ModelMatrixOffset sizeof(float) * 16 * 2
-#define MatrixSize sizeof(float) * 16
-
+        pho::Mesh target;
+        pho::Mesh cursor;
+        pho::Mesh plane;
+        pho::Mesh ray;
 
 		//raycasting test
 		glm::vec3 rayOrigin;

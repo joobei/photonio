@@ -14,11 +14,12 @@ namespace pho {
 		Mesh();
 		Mesh(std::vector<glm::vec3> vertices, std::vector<GLushort> indices, std::vector<glm::vec2> texcoords, std::string name);
 		inline GLuint getVaoId();
+        void setShader(pho::Shader* tehShader);
 		void draw();
 		bool loadToGPU();
 		glm::vec3 getPosition();
 		unsigned int numFaces, numVertices;
-		GLuint vaoId,ibId,vertexVboId,texCoordVboId;
+        GLuint vaoId,ibId,vertexVboId,colorVboId;
 		GLuint texIndex;
 		GLuint uniformBlockIndex;
 		unsigned int* faces;
@@ -29,7 +30,7 @@ namespace pho {
 		std::vector<glm::vec3> colors;
 		bool selected;
 		std::string name;
-		Shader *shader;
+        pho::Shader* shader;
 		bool uploaded;
 		float* texCoords;
 		pho::Material material;

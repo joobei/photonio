@@ -42,6 +42,7 @@ namespace pho {
 		std::map<std::string,GLint> attributes;
 		pho::UniformAssigner operator[](const std::string& uniform_name);
 		GLint getUniform(const std::string& uniform_name);
+        void use();
 	};
 
 	// Vertex Attribute Locations

@@ -2,13 +2,10 @@
 
 #include "mesh.h"
 
-pho::Mesh::Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec2> texcoords,std::string name):
+pho::Mesh::Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec3> colorz):
 vertices(vertixes),
 	indices(indixes),
-	texCoords(texcoords),
-	selected(false),
-	name(name),
-	uploaded(false)
+    colors(colorz)
 {
 	modelMatrix = glm::mat4();
 	glGenVertexArrays(1,&vaoId);
@@ -26,12 +23,16 @@ vertices(vertixes),
 	glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0);
 	glEnableVertexAttribArray(vertexLoc);
 
-	glBindBuffer(GL_ARRAY_BUFFER,texCoordVboId);
+    glBindBuffer(GL_ARRAY_BUFFER,colorVboId);
 	glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW);
     glVertexAttribPointer(texCoordLoc,3,GL_FLOAT,GL_FALSE,0,0);
     glEnableVertexAttribArray(texCoordLoc);
 	glBindVertexArray(0);
 
+}
+
+void pho::Mesh::setShader(pho::Shader* tehShader) {
+    shader = tehShader;
 }
 
 bool pho::Mesh::loadToGPU() {
@@ -81,6 +82,11 @@ inline GLuint pho::Mesh::getVaoId() {
 }
 
 glm::vec3 pho::Mesh::getPosition() {
-
 	return glm::vec3(modelMatrix[3][0],modelMatrix[3][1],modelMatrix[3][2]);
+}
+
+void pho::Mesh::draw() {
+    shader->use(); //bind the shader this mesh uses
+    glBindBuffer(vaoId); //bind the vao
+    glDrawRangeElements(GL_TRIANGLES,0,vertices.size(),indices.size(),GL_UNSIGNED_SHORT,NULL);
 }

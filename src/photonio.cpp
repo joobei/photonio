@@ -30,7 +30,6 @@ using namespace std;
 #pragma comment(lib, "ILU.lib")
 #pragma comment(lib, "ILUT.lib")
 
-
 Engine::Engine():
 calibrate(false),
 	eventQueue(),
@@ -97,18 +96,8 @@ void Engine::initResources() {
 	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
 
-	directional = new Shader("dirlightdiffambpix");
-	
-
-
-	dirLightTexUnit = glGetUniformLocation(dirLight,"texUnit");
-	dirLightCamera = glGetUniformLocation(dirLight,"cameraPosition");
-	dirLightPVM = glGetUniformLocation(dirLight,"pvm");
-	dirLightNM = glGetUniformLocation(dirLight,"nm"); //normal matrix
-
-	glUniformBlockBinding(dirLight, glGetUniformBlockIndex(dirLight,"Material"), materialUniLoc); 
-	glUniformBlockBinding(dirLight, glGetUniformBlockIndex(dirLight,"Light"), lightUniLoc); 
-
+    colorShader = new Shader("colorshader");
+    //todo: Add uniforms
 
 	//Calculate the matrices
 	projectionMatrix   = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
@@ -118,7 +107,6 @@ void Engine::initResources() {
 
 	viewMatrix = mat4();
 	viewMatrix = glm::translate(viewMatrix,cameraPosition); 
-
 
 	glEnable (GL_BLEND);
 	glDepthMask(GL_TRUE);
@@ -367,7 +355,10 @@ void Engine::render() {
 	
 	CALL_GL(glEnable(GL_DEPTH_TEST));
 	 	
-	
+    plane.draw();
+    cursor.draw();
+    ray.draw();
+    target.draw();
 
 	glfwSwapBuffers();
 }
@@ -711,7 +702,7 @@ void Engine::refresh(TuioTime frameTime) {
 	//std::cout << "refresh " << frameTime.getTotalMilliseconds() << std::endl;
 }
 
-/*
+
 void Engine::initSimpleGeometry() {
 
 	std::vector<GLushort> indices;
@@ -757,8 +748,7 @@ void Engine::initSimpleGeometry() {
 	vertices.push_back(vec3(0.0,1.0,0.5));	
 	colors.push_back(vec3(1.0,1.0,1.0));
 
-	target = pho::Asset(vertices,indices,colors,"target");
-	assets.push_back(target);
+    target = pho::Mesh(vertices,indices,colors);
 
 	vertices.clear();
 	
@@ -776,8 +766,7 @@ void Engine::initSimpleGeometry() {
 	indices.clear(); indices.push_back(0); indices.push_back(1);indices.push_back(1);indices.push_back(2);
 	indices.push_back(2);indices.push_back(3);indices.push_back(3);indices.push_back(0);
 
-	plane = pho::Asset(vertices,indices,colors,"plane");
-
+    plane = pho::Mesh(vertices,indices,colors);
 
 	vertices.clear();
 	colors.clear();
@@ -791,8 +780,7 @@ void Engine::initSimpleGeometry() {
 	indices.push_back(0);
 	indices.push_back(1);
 
-	ray = pho::Asset(vertices,indices,colors,"ray");
-
+    ray = pho::Mesh(vertices,indices,colors);
 
 	indices.clear();
 	vertices.clear();
@@ -821,9 +809,9 @@ void Engine::initSimpleGeometry() {
 	indices.push_back(0);indices.push_back(1);indices.push_back(2);
 	indices.push_back(3);indices.push_back(4);indices.push_back(5);	
 
-	quad = pho::Asset::Asset(vertices,indices,texcoords,"quad");
+    //Simple quad to Render off-screen buffer
+    //quad = pho::Asset::Asset(vertices,indices,texcoords,"quad");
 
-	quad.modelMatrix = glm::scale(glm::vec3(0.3,0.3,1));
-	quad.modelMatrix = glm::translate(quad.modelMatrix,glm::vec3(-2.2,-2.2,0));
+    //quad.modelMatrix = glm::scale(glm::vec3(0.3,0.3,1));
+    //quad.modelMatrix = glm::translate(quad.modelMatrix,glm::vec3(-2.2,-2.2,0));
 }
-*/

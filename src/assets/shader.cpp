@@ -79,7 +79,6 @@ GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag) {
 //Get value of uniform, adds it if it doesn't exist.
 GLint pho::Shader::getUniform(const std::string& uniform_name) {
 
-	
 	if (attributes.find(uniform_name) == attributes.end()) { 
 		//hasn't been found so add it
 		GLint temp = glGetUniformLocation(program,uniform_name.c_str());
@@ -97,4 +96,8 @@ GLint pho::Shader::getUniform(const std::string& uniform_name) {
 pho::UniformAssigner pho::Shader::operator[](const std::string& uniform_name)
 {
 	return UniformAssigner(getUniform(uniform_name));
+}
+
+void pho::Shader::use() {
+    glUseProgram(program);
 }
