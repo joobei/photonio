@@ -5,18 +5,42 @@
 #include "GL/glew.h"
 #include "glm/glm.hpp"
 #include <vector>
-
+#include <map>
 
 namespace pho {
+
+	class UniformAssigner
+	{
+	public:
+		explicit UniformAssigner(int uniform_location) : location(uniform_location){}
+		UniformAssigner& operator=(int data);
+		UniformAssigner& operator=(float data);
+		UniformAssigner& operator=(double data);
+		UniformAssigner& operator=(const glm::mediump_vec2& data);
+		UniformAssigner& operator=(const glm::mediump_vec3& data);
+		UniformAssigner& operator=(const glm::mediump_vec4& data);
+		UniformAssigner& operator=(const glm::mediump_mat4& data);
+		UniformAssigner& operator=(const glm::highp_vec2& data);
+		UniformAssigner& operator=(const glm::highp_vec3& data);
+		UniformAssigner& operator=(const glm::highp_vec4& data);
+		UniformAssigner& operator=(const glm::highp_mat4& data);
+		~UniformAssigner(){ }
+	private:
+		int location;
+	};
 
 	class Shader {
 	public:
 		Shader(std::string filename);
-		GLuint handle;
+		GLuint program;
 		const char* filename;
 
 		GLuint CreateShader(GLenum eShaderType, const std::string &strShaderFile);
 		GLuint CreateProgram(const GLuint vert, const GLuint frag);
+		void SetAttribute(char * name, int val);
+		std::map<std::string,GLint> attributes;
+		pho::UniformAssigner operator[](const std::string& uniform_name);
+		GLint getUniform(const std::string& uniform_name);
 	};
 
 	// Vertex Attribute Locations
@@ -25,5 +49,8 @@ namespace pho {
 	// Uniform Bindings Points
 	const GLuint matricesUniLoc = 1, materialUniLoc = 2, lightUniLoc = 3;
 }
+
+
+
 
 #endif

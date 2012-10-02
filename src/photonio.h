@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <cstdio>
 #include <functional>
 #include "wiimote.h"
-#include "box.h"
+#include "shader.h"
 
 
 #include <GL/glfw.h>
@@ -156,23 +156,7 @@ namespace pho {
 		glm::vec3 cameraDirection;
 
 		//Shaders
-		GLuint colorShader;
-		GLuint colorShaderPvm;
-
-		GLuint flatShader;
-		GLuint flatShaderPvm;
-		GLuint flatShaderColor;
-
-		GLuint textureShader;
-		GLuint textureShaderPvm;
-		GLuint textureShaderTexture;
-
-		GLuint dirLight;
-		GLuint dirLightCamera;
-		GLuint dirLightPVM;
-		GLuint dirLightNM;
-		GLuint dirLightMaterial;
-		GLuint dirLightTexUnit;
+		pho::Shader* directional;
 
 		//Lights
 		GLuint lightSource;

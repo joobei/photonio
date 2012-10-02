@@ -5,6 +5,7 @@
 #include <vector>
 #include "GL/glew.h"
 #include "shader.h"
+#include "assets.h"
 
 namespace pho {
 
@@ -31,6 +32,7 @@ namespace pho {
 		Shader *shader;
 		bool uploaded;
 		float* texCoords;
+		pho::Material material;
 	}; 
 
 	

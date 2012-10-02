@@ -7,6 +7,10 @@ pho::Model Assimporter::Import(const char* filename) {
 	pho::Model importedModel;
 
 	const aiScene* _theScene = NULL;
+
+	// images / texture
+    // map image filenames to textureIds
+    // pointer to texture Array
 	std::map<std::string, GLuint> textureIdMap;
 	std::vector<pho::Mesh> meshes;
 
@@ -53,125 +57,6 @@ pho::Model Assimporter::Import(const char* filename) {
 	}
 
 	std::cout << "Number of meshes : " << _theScene->mNumMeshes << '\n';
-
-	// For each mesh
-	for (unsigned int n = 0; n < _theScene->mNumMeshes; ++n)
-	{
-		//loop through meshes
-		pho::Mesh aMesh;
-		pho::Material aMat;
-
-		const struct aiMesh* mesh = _theScene->mMeshes[n];
-
-		// create array with faces
-		// have to convert from Assimp format to array
-		unsigned int *faceArray;
-		faceArray = (unsigned int *)calloc(sizeof(unsigned int),mesh->mNumFaces * 3);
-		if (faceArray == NULL) { std::cout << "texture coords Memory Allocation failed" << '\n'; }
-
-		unsigned int faceIndex = 0;
-
-		for (unsigned int t = 0; t < mesh->mNumFaces; ++t) {
-			const struct aiFace* face = &mesh->mFaces[t];
-
-			memcpy(&faceArray[faceIndex], face->mIndices,3 * sizeof(unsigned int));
-			faceIndex += 3;
-		}
-		aMesh.numFaces = _theScene->mMeshes[n]->mNumFaces;
-		aMesh.faces = faceArray;
-
-		aMesh.numVertices = mesh->mNumVertices;
-
-		// copying vertex positions
-		if (mesh->HasPositions()) {
-
-			//populate our mesh's vertices vector by extracting all the vertices from assimp's array
-			for (int i=0;i<mesh->mNumVertices;i++) {
-				aMesh.vertices.push_back(glm::vec3(mesh->mVertices[i].x,mesh->mVertices[i].y,mesh->mVertices[i].z));
-			}
-		}
-
-		// copying vertex normals
-		if (mesh->HasNormals()) {
-
-			//populate our mesh's vertices vector by extracting all the vertices from assimp's array
-			for (int i=0;i<mesh->mNumVertices;i++) {
-				aMesh.normals.push_back(glm::vec3(mesh->mNormals[i].x,mesh->mNormals[i].y,mesh->mNormals[i].z));
-			}
-		}
-
-		// buffer for vertex texture coordinates
-		if (mesh->HasTextureCoords(0)) {
-			float* temp = (float *)calloc(sizeof(float),2*mesh->mNumVertices);
-			if (temp == NULL) { std::cout << "texture coords Memory Allocation failed" << '\n'; }
-			aMesh.texCoords = temp;
-			
-			//loop through 
-			for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
-
-				aMesh.texCoords[k*2]   = mesh->mTextureCoords[0][k].x;
-				aMesh.texCoords[k*2+1] = mesh->mTextureCoords[0][k].y;
-			}
-		}
-
-		// create material uniform buffer
-		struct aiMaterial *mtl = _theScene->mMaterials[mesh->mMaterialIndex];
-
-		aiString texPath;	//contains filename of texture
-
-		if(AI_SUCCESS == mtl->GetTexture(aiTextureType_DIFFUSE, 0, &texPath)){
-			//bind texture
-			unsigned int texId = textureIdMap[texPath.data];
-			aMesh.texIndex = texId;
-			aMat.texCount = 1;
-		}
-		else
-			aMat.texCount = 0;
-
-		float c[4];
-		set_float4(c, 0.8f, 0.8f, 0.8f, 1.0f);
-		aiColor4D diffuse;
-		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))
-			color4_to_float4(&diffuse, c);
-		memcpy(aMat.diffuse, c, sizeof(c));
-
-		set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
-		aiColor4D ambient;
-		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient))
-			color4_to_float4(&ambient, c);
-		memcpy(aMat.ambient, c, sizeof(c));
-
-		set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
-		aiColor4D specular;
-		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &specular))
-			color4_to_float4(&specular, c);
-		memcpy(aMat.specular, c, sizeof(c));
-
-		set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
-		aiColor4D emission;
-		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_EMISSIVE, &emission))
-			color4_to_float4(&emission, c);
-		memcpy(aMat.emissive, c, sizeof(c));
-
-		float shininess = 0.0;
-		unsigned int max;
-		aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shininess, &max);
-		aMat.shininess = shininess;
-
-		glGenBuffers(1,&(aMesh.uniformBlockIndex));
-		glBindBuffer(GL_UNIFORM_BUFFER,aMesh.uniformBlockIndex);
-		glBufferData(GL_UNIFORM_BUFFER, sizeof(aMat), (void *)(&aMat), GL_STATIC_DRAW);
-
-		//Add mesh to model ************************************
-		importedModel.addMesh(aMesh);
-
-		std::cout << "Added mesh :" << n << '\n';
-		std::cout << "Number of faces :" << aMesh.numFaces << std::endl;
-
-	}
-
-
-
 
 
 
@@ -247,6 +132,133 @@ pho::Model Assimporter::Import(const char* filename) {
 
 
 
+
+
+
+
+
+
+
+
+	//Transfer Meshes
+	// For each mesh
+	for (unsigned int n = 0; n < _theScene->mNumMeshes; ++n)
+	{
+		//loop through meshes
+		pho::Mesh aMesh;
+		
+
+		const struct aiMesh* mesh = _theScene->mMeshes[n];
+
+		// create array with faces
+		// have to convert from Assimp format to array
+		unsigned int *faceArray;
+		faceArray = (unsigned int *)calloc(sizeof(unsigned int),mesh->mNumFaces * 3);
+		if (faceArray == NULL) { std::cout << "texture coords Memory Allocation failed" << '\n'; }
+
+		unsigned int faceIndex = 0;
+
+		for (unsigned int t = 0; t < mesh->mNumFaces; ++t) {
+			const struct aiFace* face = &mesh->mFaces[t];
+
+			memcpy(&faceArray[faceIndex], face->mIndices,3 * sizeof(unsigned int));
+			faceIndex += 3;
+		}
+		aMesh.numFaces = _theScene->mMeshes[n]->mNumFaces;
+		aMesh.faces = faceArray;
+
+		aMesh.numVertices = mesh->mNumVertices;
+
+		// copying vertex positions
+		if (mesh->HasPositions()) {
+
+			//populate our mesh's vertices vector by extracting all the vertices from assimp's array
+			for (unsigned int i=0;i<mesh->mNumVertices;i++) {
+				aMesh.vertices.push_back(glm::vec3(mesh->mVertices[i].x,mesh->mVertices[i].y,mesh->mVertices[i].z));
+			}
+		}
+
+		// copying vertex normals
+		if (mesh->HasNormals()) {
+
+			//populate our mesh's vertices vector by extracting all the vertices from assimp's array
+			for (unsigned int i=0;i<mesh->mNumVertices;i++) {
+				aMesh.normals.push_back(glm::vec3(mesh->mNormals[i].x,mesh->mNormals[i].y,mesh->mNormals[i].z));
+			}
+		}
+
+		// buffer for vertex texture coordinates
+		if (mesh->HasTextureCoords(0)) {
+			float* temp = (float *)calloc(sizeof(float),2*mesh->mNumVertices);
+			if (temp == NULL) { std::cout << "texture coords Memory Allocation failed" << '\n'; }
+			aMesh.texCoords = temp;
+			
+			//loop through 
+			for (unsigned int k = 0; k < mesh->mNumVertices; ++k) {
+
+				aMesh.texCoords[k*2]   = mesh->mTextureCoords[0][k].x;
+				aMesh.texCoords[k*2+1] = mesh->mTextureCoords[0][k].y;
+			}
+		}
+		 
+		// create material uniform buffer
+		struct aiMaterial *mtl = _theScene->mMaterials[mesh->mMaterialIndex];
+
+		aiString texPath;	//contains filename of texture
+
+		if(AI_SUCCESS == mtl->GetTexture(aiTextureType_DIFFUSE, 0, &texPath)){
+			//bind texture
+			unsigned int texId = textureIdMap[texPath.data];
+			aMesh.texIndex = texId;
+			aMesh.material.texCount = 1;
+		}
+		else
+			aMesh.material.texCount = 0;
+
+		float c[4];
+		set_float4(c, 0.8f, 0.8f, 0.8f, 1.0f);
+		aiColor4D diffuse;
+		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_DIFFUSE, &diffuse))
+			color4_to_float4(&diffuse, c);
+		memcpy(aMesh.material.diffuse, c, sizeof(c));
+
+		set_float4(c, 0.2f, 0.2f, 0.2f, 1.0f);
+		aiColor4D ambient;
+		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_AMBIENT, &ambient))
+			color4_to_float4(&ambient, c);
+		memcpy(aMesh.material.ambient, c, sizeof(c));
+
+		set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
+		aiColor4D specular;
+		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_SPECULAR, &specular))
+			color4_to_float4(&specular, c);
+		memcpy(aMesh.material.specular, c, sizeof(c));
+
+		set_float4(c, 0.0f, 0.0f, 0.0f, 1.0f);
+		aiColor4D emission;
+		if(AI_SUCCESS == aiGetMaterialColor(mtl, AI_MATKEY_COLOR_EMISSIVE, &emission))
+			color4_to_float4(&emission, c);
+		memcpy(aMesh.material.emissive, c, sizeof(c));
+
+		float shininess = 0.0;
+		unsigned int max;
+		aiGetMaterialFloatArray(mtl, AI_MATKEY_SHININESS, &shininess, &max);
+		aMesh.material.shininess = shininess;
+
+		glGenBuffers(1,&(aMesh.uniformBlockIndex));
+		glBindBuffer(GL_UNIFORM_BUFFER,aMesh.uniformBlockIndex);
+		glBufferData(GL_UNIFORM_BUFFER, sizeof(aMesh.material), (void *)(&aMesh.material), GL_STATIC_DRAW);
+
+		//Add mesh to model ************************************
+		importedModel.addMesh(aMesh);
+
+		std::cout << "Added mesh :" << n << '\n';
+		std::cout << "Number of faces :" << aMesh.numFaces << std::endl;
+
+	}
+
+
+	return importedModel;
 
 }
 

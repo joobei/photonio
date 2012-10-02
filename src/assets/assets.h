@@ -21,6 +21,7 @@ namespace pho {
 	};
 
 	class  LightSource {
+	public:
 		glm::vec4 color;
 		float attenuation;
 		glm::vec3 direction;

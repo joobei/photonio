@@ -30,21 +30,6 @@ using namespace std;
 #pragma comment(lib, "ILU.lib")
 #pragma comment(lib, "ILUT.lib")
 
-void set_float4(float f[4], float a, float b, float c, float d)
-{
-	f[0] = a;
-	f[1] = b;
-	f[2] = c;
-	f[3] = d;
-}
-
-void color4_to_float4(const struct aiColor4D *c, float f[4])
-{
-	f[0] = c->r;
-	f[1] = c->g;
-	f[2] = c->b;
-	f[3] = c->a;
-}
 
 Engine::Engine():
 calibrate(false),
@@ -108,44 +93,14 @@ calibrate(false),
 
 void Engine::initResources() {
 
-	pointLight.color = glm::vec4(1.0,1.0,1.0,1.0);
-	//pointLight.direction  = glm::vec3(-0.5,-0.5,-0.5);
-	pointLight.direction  = glm::vec3(-1.0,0.0,0.0);
-	pointLight.position = glm::vec3(0,150,150);
-
 	glGenBuffers(1,&(pointLight.uniformBlockIndex)); //generate buffer and store it's location in pointLight's member variable
 	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
 
-	//Prepare our shaders
-	std::vector<GLuint> shaderList;
-
-	shaderList.push_back(CreateShader(GL_VERTEX_SHADER,readTextFile("shaders/shader.vert")));
-	shaderList.push_back(CreateShader(GL_FRAGMENT_SHADER,readTextFile("shaders/shader.frag")));
-	colorShader = CreateProgram(shaderList);
-	colorShaderPvm = glGetUniformLocation(colorShader,"pvm");
-
-	shaderList.clear();
-
-	shaderList.push_back(CreateShader(GL_VERTEX_SHADER,readTextFile("shaders/offscreen.vert")));
-	shaderList.push_back(CreateShader(GL_FRAGMENT_SHADER,readTextFile("shaders/offscreen.frag")));
-	flatShader = CreateProgram(shaderList);
-	flatShaderPvm = glGetUniformLocation(flatShader,"pvm");
-	flatShaderColor = glGetUniformLocation(flatShader,"baseColor");
+	directional = new Shader("dirlightdiffambpix");
 	
-	shaderList.clear();
 
-	shaderList.push_back(CreateShader(GL_VERTEX_SHADER,readTextFile("shaders/texader.vert")));
-	shaderList.push_back(CreateShader(GL_FRAGMENT_SHADER,readTextFile("shaders/texader.frag")));
-	textureShader = CreateProgram(shaderList);
-	textureShaderPvm = glGetUniformLocation(textureShader,"pvm");
-	textureShaderTexture = glGetUniformLocation(textureShader,"texturex");
 
-	shaderList.clear();
-
-	shaderList.push_back(CreateShader(GL_VERTEX_SHADER,readTextFile("shaders/dirlightdiffambpix.vert")));
-	shaderList.push_back(CreateShader(GL_FRAGMENT_SHADER,readTextFile("shaders/dirlightdiffambpix.frag")));
-	dirLight = CreateProgram(shaderList);
 	dirLightTexUnit = glGetUniformLocation(dirLight,"texUnit");
 	dirLightCamera = glGetUniformLocation(dirLight,"cameraPosition");
 	dirLightPVM = glGetUniformLocation(dirLight,"pvm");
@@ -156,7 +111,7 @@ void Engine::initResources() {
 
 
 	//Calculate the matrices
-	projectionMatrix = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
+	projectionMatrix   = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
 	//projectionMatrix = glm::mat4();
 
 	cameraPosition = glm::vec3(0,0,-25); //translate camera back (i.e. world forward)
@@ -164,23 +119,11 @@ void Engine::initResources() {
 	viewMatrix = mat4();
 	viewMatrix = glm::translate(viewMatrix,cameraPosition); 
 
-	initSimpleGeometry();
 
-	generate_frame_buffer_texture();
-	generate_pixel_buffer_objects();
-
-	//glEnable(GL_DEPTH_TEST);
 	glEnable (GL_BLEND);
-	//glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_TRUE);
-	//glDepthFunc(GL_LEQUAL);
-	//glDepthRange(-1000.0f, 1000.0f);
 
 	CALL_GL(glLineWidth(3.5));
-
-	//heart selected by default
-	selectedObject = &heart;
-	selectedObject->vaoId = aMesh.vao;
 
 	restoreRay=false;
 }
@@ -418,109 +361,13 @@ void Engine::checkEvents() {
 
 }
 
-void Engine::recursive_render (const struct aiScene *sc, const struct aiNode* nd)
-{
-	CALL_GL(glUniformMatrix4fv(dirLightPVM, 1, GL_FALSE, glm::value_ptr(projectionMatrix*viewMatrix*selectedObject->modelMatrix)));
-	CALL_GL(glUniformMatrix4fv(dirLightNM, 1, GL_FALSE, glm::value_ptr(viewMatrix*selectedObject->modelMatrix)));
-	
-	CALL_GL(glBindBufferRange(GL_UNIFORM_BUFFER, lightUniLoc, pointLight.uniformBlockIndex, 0, sizeof(struct pho::LightSource)));
-	// draw all meshes assigned to this node
-	for (unsigned int n=0; n < nd->mNumMeshes; ++n){
-		// bind material uniform
-		CALL_GL(glBindBufferRange(GL_UNIFORM_BUFFER, materialUniLoc, myMeshes[nd->mMeshes[n]].uniformBlockIndex, 0, sizeof(struct pho::MyMaterial)));
-		// bind texture
-		CALL_GL(glBindTexture(GL_TEXTURE_2D, myMeshes[nd->mMeshes[n]].texIndex));
-		// bind VAO
-		CALL_GL(glBindVertexArray(myMeshes[nd->mMeshes[n]].vao));
-		// draw
-		CALL_GL(glDrawElements(GL_TRIANGLES,myMeshes[nd->mMeshes[n]].numFaces*3,GL_UNSIGNED_INT,0));
-	}
-
-	// draw all children
-	for (unsigned int n=0; n < nd->mNumChildren; ++n){
-		recursive_render(sc, nd->mChildren[n]);
-	}
-	
-	//glEC("recursive");
-}
-
 void Engine::render() {
 	CALL_GL(glClearColor(1,1,1,1));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
-	//render off-screen for picking
-	if (appMode == rayCasting) {
-		picked = picking(scene,scene->mRootNode);
-
-		if(picked !=0) {
-
-			//render selection red border first with the flat color shader
-			CALL_GL(glUseProgram(flatShader));
-			CALL_GL(glUniform4f(flatShaderColor, 1.0f, 0.0f ,0.0f, 0.6f)); 	
-			pvm = projectionMatrix*viewMatrix*glm::scale(selectedObject->modelMatrix,glm::vec3(1.1f,1.1f,1.1f));
-			CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-			//CALL_GL(glDisable(GL_DEPTH_TEST));
-			// draw the object
-			CALL_GL(glBindVertexArray(picked));
-			CALL_GL(glDrawElements(GL_TRIANGLES,selectedObject->numFaces*3,GL_UNSIGNED_INT,0));
-
-
-			//Shorten the beam to match the object
-			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
-
-			restoreRay = true;
-		}
-		if (picked == 0 && restoreRay == true) {
-			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			float d = -1000.0f;
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));
-			restoreRay=false;
-		}
-
-	}
 	CALL_GL(glEnable(GL_DEPTH_TEST));
-	 
-
-	if (appMode == rayCasting) {
-		//draw plane for ray
-		CALL_GL(glUseProgram(colorShader));
-		/*pvm = projectionMatrix*viewMatrix*selectedObject->modelMatrix;
-		CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-		CALL_GL(glBindVertexArray(target.getVaoId()));
-		CALL_GL(glDrawRangeElements(GL_TRIANGLES,0,42,42,GL_UNSIGNED_SHORT,NULL));*/
-
-
-		//draw plane for ray then draw RAY
-		pvm = projectionMatrix*viewMatrix*ray.modelMatrix;
-		CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-		CALL_GL(glLineWidth(3.5));
-		CALL_GL(glBindVertexArray(plane.getVaoId()));
-		CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
-
-		CALL_GL(glBindVertexArray(ray.getVaoId()));
-		CALL_GL(glDrawRangeElements(GL_LINES,0,6,2,GL_UNSIGNED_SHORT,NULL));
-	}
-
-	if (appMode == planeCasting) {
-		CALL_GL(glUseProgram(colorShader));
-		//draw plane
-		pvm = projectionMatrix*viewMatrix*plane.modelMatrix*glm::scale(vec3(8,8,8));
-		CALL_GL(glUniformMatrix4fv(colorShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-		CALL_GL(glBindVertexArray(plane.getVaoId()));
-		CALL_GL(glDrawRangeElements(GL_LINES,0,12,8,GL_UNSIGNED_SHORT,NULL));
-	}
+	 	
 	
-	/*glUseProgram(textureShader);
-	glUniformMatrix4fv(textureShaderPvm,1,GL_FALSE,glm::value_ptr(quad.modelMatrix));
-	glBindTexture(GL_TEXTURE_2D, tex);
-	glUniform1i(textureShaderTexture,0);
-	glBindVertexArray(quad.getVaoId());
-	glDrawRangeElements(GL_TRIANGLES,0,24,24,GL_UNSIGNED_SHORT,NULL);
-	*/
-	CALL_GL(glUseProgram(dirLight));
-
-	recursive_render(scene,scene->mRootNode);
 
 	glfwSwapBuffers();
 }
@@ -560,38 +407,6 @@ bool Engine::computeRotationMatrix() {
 
 	return true;
 }
-
-/*bool Engine::computeRotationMatrix() {
-		//change = orientation;
-		vec3 H = glm::cross(ma,acc);
-
-		float normH = (float) H.length();
-
-		if (normH<0.1f) return false;
-
-		float invH = 1.0f / normH;
-
-		H *= invH;
-
-		float invA = 1.0f / (float) acc.length();
-
-		acc *= invA;
-
-		vec3 M = glm::cross(acc,H);
-
-		orientation[0][0] = H.x;   orientation[0][1] = H.y;   orientation[0][2] = H.z;
-		orientation[1][0] = M.x;   orientation[1][1] = M.y;   orientation[1][2] = M.z;
-		orientation[2][0] = acc.x; orientation[2][1] = acc.y; orientation[2][2] = acc.z;
-
-		glm::mat4 pitch = glm::mat4();
-		pitch = glm::rotate(pitch,glm::degrees((float)M_PI_2),vec3(1,0,0));
-
-		if(calibrate) { calibration = glm::inverse(orientation);
-		calibrate = !calibrate; }
-
-		orientation = mat4(axisChange)*calibration*orientation*pitch;
-		return true;
-	}*/
 
 void Engine::mouseButtonCallback(int button, int state) {
 	if ((button == 0) && (state == GLFW_PRESS)) {
@@ -896,274 +711,7 @@ void Engine::refresh(TuioTime frameTime) {
 	//std::cout << "refresh " << frameTime.getTotalMilliseconds() << std::endl;
 }
 
-void Engine::generate_frame_buffer_texture() 
-{  
-
-	/* create a framebuffer object */ 
-	CALL_GL(glGenFramebuffers(1, &fbo));     
-	/* attach the texture and the render buffer to the frame buffer */ 
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, fbo)); 
-
-	/* generate a texture id */ 
-	CALL_GL(glGenTextures(1, &tex)); 
-	/* bind the texture */ 
-	CALL_GL(glBindTexture(GL_TEXTURE_2D, tex)); 
-	/* create the texture in the GPU */ 
-	CALL_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WINDOW_SIZE_X, WINDOW_SIZE_Y 
-		, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr)); 
-
-	/* set texture parameters */ 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)); 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)); 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)); 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)); 
-
-	/* unbind the texture */ 
-	CALL_GL(glBindTexture(GL_TEXTURE_2D, 0)); 
-
-	/* create a renderbuffer object for the depth buffer */ 
-	CALL_GL(glGenRenderbuffers(1, &rbo)); 
-	/* bind the texture */ 
-	CALL_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo)); 
-	/* create the render buffer in the GPU */ 
-	CALL_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT 
-		, WINDOW_SIZE_X, WINDOW_SIZE_Y)); 
-
-	/* unbind the render buffer */ 
-	CALL_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-
-
-	/* attach the texture and the render buffer to the frame buffer */ 
-	CALL_GL(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex, 0)); 
-	CALL_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT 
-		, GL_RENDERBUFFER, rbo)); 
-
-	// check the frame buffer 
-	if (glCheckFramebufferStatus( 
-		GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			std::cout << "Framebuffer status not complete" << '\n';
-	}
-	/* handle an error : frame buffer incomplete */ 
-	/* return to the default frame buffer */ 
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0)); 
-
-	//CALL_GL(glEC("Texture Generation"));
-}
-
-GLuint Engine::picking(const struct aiScene *sc, const struct aiNode* nd) 
-{ 
-	GLubyte red, green, blue, alpha; 
-
-	/* bind the frame buffer */ 
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, fbo)); 
-
-	/* clear the frame buffer */ 
-	CALL_GL(glClearColor(0,0,0,0)); 
-	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)); 
-
-	/* select the shader program */ 
-	CALL_GL(glUseProgram(flatShader)); 
-	GLuint tempVao = selectedObject->vaoId;
-
-	alpha = heart.getVaoId() & 0xFF; 
-	blue  = (tempVao >> 8) & 0xFF; 
-	green = (tempVao >> 16) & 0xFF; 
-	red   = (tempVao >> 24) & 0xFF; 
-	CALL_GL(glUniform4f(flatShaderColor, red/255.0f, green/255.0f ,blue/255.0f, alpha/255.0f)); 	
-	
-	pvm = projectionMatrix*glm::inverse(ray.modelMatrix)*selectedObject->modelMatrix; //todo:this should be cycled through all objects!!!
-	//pvm = projectionMatrix*viewMatrix*selectedObject->modelMatrix;
-	CALL_GL(glUniformMatrix4fv(flatShaderPvm, 1, GL_FALSE, glm::value_ptr(pvm)));
-
-	/* draw the object*/ 
-	for (unsigned int n=0; n < nd->mNumMeshes; ++n) {
-		// bind VAO
-		CALL_GL(glBindVertexArray(myMeshes[nd->mMeshes[n]].vao));
-		// draw
-		CALL_GL(glDrawElements(GL_TRIANGLES,myMeshes[nd->mMeshes[n]].numFaces*3,GL_UNSIGNED_INT,0));
-	}
-
-	/*/ draw all children
-	for (unsigned int n=0; n < nd->mNumChildren; ++n){
-		recursive_render(sc, nd->mChildren[n]);
-	}*/
-
-	//check that our framebuffer is ok
-	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "Framebuffer Error" << '\n';
-	}
-
-	GLuint temp;
-
-	temp = get_object_id();
-
-
-	//glEC("off screen");
-
-	/* return to the default frame buffer */
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0)); 
-
-	if (temp !=0) { 
-		return temp; 
-	}
-	else return 0;
-}
-
-void Engine::generate_pixel_buffer_objects() 
-{ 
-	/* generate the pixel buffer object */ 
-	CALL_GL(glGenBuffers(1,&pbo_a));     
-	CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_a)); 
-	CALL_GL(glBufferData(GL_PIXEL_PACK_BUFFER, WINDOW_SIZE_X * WINDOW_SIZE_Y * 4, nullptr, GL_STREAM_READ)); 
-	/* to avoid weird behaviour the first frame the data is loaded */ 
-	CALL_GL(glReadPixels(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y, GL_BGRA, GL_UNSIGNED_BYTE, 0));     
-
-	/* generate the first pixel buffer objects 
-	glGenBuffers(1,&pbo_b);     
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_b); 
-	glBufferData(GL_PIXEL_PACK_BUFFER, WINDOW_SIZE_X * WINDOW_SIZE_Y * 4, nullptr, GL_STREAM_READ); 
-	// to avoid weird behaviour the first frame the data is loaded 
-	glReadPixels(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y, GL_BGRA, GL_UNSIGNED_BYTE, 0);     
-	// unbind 
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0); */
-
-}
-
-GLuint Engine::get_object_id() 
-{ 
-	static int frame_event = 0; 
-	GLuint object_id; 
-	int x, y; 
-	GLuint red, green, blue, alpha, pixel_index; 
-	GLubyte* ptr; 
-
-	/* switch between pixel buffer objects 
-	if (frame_event == 0){ 
-	frame_event = 1; 
-	read_pbo = pbo_b; 
-	map_pbo = pbo_a; 
-	} 
-	else { 
-	frame_event = 0; 
-	map_pbo = pbo_a; 
-	read_pbo = pbo_b; 
-	} */
-
-
-	/* read one pixel buffer */ 
-	CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_a)); 
-	/* map the other pixel buffer */  
-	CALL_GL(glReadPixels(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y, GL_BGRA, GL_UNSIGNED_BYTE, 0));
-	ptr = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_WRITE); 
-	/* get the mouse coordinates */ 
-	/* OpenGL has the {0,0} at the down-left corner of the screen */ 
-	x = WINDOW_SIZE_X/2;
-	y = WINDOW_SIZE_Y/2;
-	object_id = -1; 
-	if (x >= 0 && x < WINDOW_SIZE_X && y >= 0 && y < WINDOW_SIZE_Y){ 
-		//std::cout << "x - y " << '\t' << x << '\t' << y << '\n';
-		pixel_index = (x + y * WINDOW_SIZE_X) * 4; 
-		blue = ptr[pixel_index]; 
-		green = ptr[pixel_index + 1]; 
-		red = ptr[pixel_index + 2]; 
-		alpha = ptr[pixel_index + 3]; 
-
-		/*std::cout << "received : ";
-		printf("0x%X\t", alpha);
-		printf("0x%X\t", blue);
-		printf("0x%X\t", green);
-		printf("0x%X\n", red);*/
-
-		object_id = alpha +(red << 24) + (green << 16) + (blue << 8);
-	} 
-
-	CALL_GL(glUnmapBuffer(GL_PIXEL_PACK_BUFFER)); 
-	CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)); 
-	return object_id; 
-} 
-
-/*GLuint Engine::get_object_id() 
-{ 
-static int frame_event = 0; 
-GLuint object_id; 
-int x, y; 
-GLuint red, green, blue, alpha, pixel_index; 
-GLubyte* ptr; 
-
-/* switch between pixel buffer objects 
-if (frame_event == 0){ 
-frame_event = 1; 
-read_pbo = pbo_b; 
-map_pbo = pbo_a; 
-} 
-else { 
-frame_event = 0; 
-map_pbo = pbo_a; 
-read_pbo = pbo_b; 
-} 
-
-
-// read one pixel buffer 
-CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_a)); 
-// map the other pixel buffer 
-CALL_GL(glReadPixels(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y, GL_BGRA, GL_UNSIGNED_BYTE, 0));
-ptr = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_WRITE); 
-// get the mouse coordinates 
-// OpenGL has the {0,0} at the down-left corner of the screen 
-glfwGetMousePos(&x, &y); 
-//std::cout << x << " -" << y << '\n';
-y = WINDOW_SIZE_Y - y; 
-object_id = -1; 
-if (x >= 0 && x < WINDOW_SIZE_X && y >= 0 && y < WINDOW_SIZE_Y){ 
-//std::cout << "x - y " << '\t' << x << '\t' << y << '\n';
-pixel_index = (x + y * WINDOW_SIZE_X) * 4; 
-blue = ptr[pixel_index]; 
-green = ptr[pixel_index + 1]; 
-red = ptr[pixel_index + 2]; 
-alpha = ptr[pixel_index + 3]; 
-
-std::cout << "received : ";
-printf("0x%X\t", alpha);
-printf("0x%X\t", blue);
-printf("0x%X\t", green);
-printf("0x%X\n", red);
-
-object_id = alpha +(red << 24) + (green << 16) + (blue << 8);
-} 
-
-CALL_GL(glUnmapBuffer(GL_PIXEL_PACK_BUFFER)); 
-CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)); 
-return object_id; 
-} */
-
-
-void Engine::glEC(const std::string place) 
-{
-
-	error = glGetError(); 
-	if (error != 0) { 
-		std::cout << "Error in " << place << " : ";
-		switch(error) {
-			//case GL_INVALID_ENUM​: std::cout << "Invalid Enum"; break; 
-		case GL_INVALID_VALUE: std::cout << "Invalud Value"; break;
-		case GL_INVALID_OPERATION: std::cout << "Invalid Operation"; break;
-			//case GL_INVALID_FRAMEBUFFER_OPERATION​: std::cout << "Invalid Framebuffer Operation"; break;
-		case GL_OUT_OF_MEMORY: std::cout << "Out of Memory"; break;
-		default: std::cout << error; break;
-		}
-		std::cout << '\n';
-	}
-
-}
-
-GLuint Engine::searchByName(const std::string name) {
-	for (assetIterator = assets.begin(); assetIterator !=assets.end(); assetIterator++) {
-		if(assetIterator->name==name) return assetIterator->vaoId;break;
-
-	}
-	return -1;
-}
-
+/*
 void Engine::initSimpleGeometry() {
 
 	std::vector<GLushort> indices;
@@ -1278,3 +826,4 @@ void Engine::initSimpleGeometry() {
 	quad.modelMatrix = glm::scale(glm::vec3(0.3,0.3,1));
 	quad.modelMatrix = glm::translate(quad.modelMatrix,glm::vec3(-2.2,-2.2,0));
 }
+*/
