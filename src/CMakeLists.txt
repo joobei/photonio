@@ -1,4 +1,4 @@
-source_group("shaders" FILES shader.frag shader.vert)
+add_subdirectory(shaders shaders)
 
 ########## Dependencies ############
 SET(Boost_USE_STATIC_LIBS   ON)

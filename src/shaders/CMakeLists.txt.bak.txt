@@ -1,9 +1,0 @@
-
-
-ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
-          POST_BUILD
-          COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/shaders
-          COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/shaders ${PROJECT_BINARY_DIR}/shaders
-)
-
-source_group(shaders shader.*)

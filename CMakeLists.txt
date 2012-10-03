@@ -15,4 +15,4 @@ set(${PROJECTNAME}_VERSION_MINOR 3)
 
 add_subdirectory(lib)
 add_subdirectory(src)
-add_subdirectory(shaders shaders)
+
