@@ -92,7 +92,6 @@ GLint pho::Shader::getUniform(const std::string& uniform_name) {
 	}
 	else { 
 		//has been found so return the value
-
 		it = attributes.find(uniform_name);
 		return it->second();
 	}
