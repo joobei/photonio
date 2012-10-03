@@ -134,7 +134,7 @@ void Engine::checkEvents() {
 		viewMatrix = glm::translate(viewMatrix, vec3(-FACTOR,0,0));
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0))*glm::lookAt(cameraPosition,glm::vec3(selectedObject->modelMatrix[0][3],selectedObject->modelMatrix[1][3],selectedObject->modelMatrix[2][3]),glm::vec3(0,1,0));
+		//viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0))*glm::lookAt(cameraPosition,glm::vec3(cursor.modelMatrix[0][3],cursor.modelMatrix[1][3],cursor.modelMatrix[2][3]),glm::vec3(0,1,0));
 		
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
@@ -149,7 +149,6 @@ void Engine::checkEvents() {
 	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		plane.modelMatrix = glm::mat4();
-		selectedObject->modelMatrix = glm::mat4();
 		viewMatrix = glm::translate(glm::mat4(),cameraPosition);
 	}
 	if (glfwGetKey('1') == GLFW_PRESS) {
@@ -282,13 +281,7 @@ void Engine::checkEvents() {
 	}
 	lock.unlock();
 
-	//Ray length calculation
-	if (!grabbing && picked !=0) {
-		rayLength = -glm::distance(
-			glm::vec3(ray.getPosition()),
-			glm::vec3(selectedObject->getPosition())
-			);
-	}
+
 
 	//if the connection to the wii-mote was successful
 	if (wii) {
@@ -302,16 +295,16 @@ void Engine::checkEvents() {
 
 				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
 
-				selectedObject->modelMatrix[3][0] = newMat[3][0];
-				selectedObject->modelMatrix[3][1] = newMat[3][1];
-				selectedObject->modelMatrix[3][2] = newMat[3][2];
+				cursor.modelMatrix[3][0] = newMat[3][0];
+				cursor.modelMatrix[3][1] = newMat[3][1];
+				cursor.modelMatrix[3][2] = newMat[3][2];
 				std::cout << "translate" << '\n';
 			}
 			if (appInputState == translate && remote.Button.B()) {
 				mat4 newMat = glm::translate(ray.modelMatrix,glm::vec3(0,0,grabbedDistance));
-				selectedObject->modelMatrix[3][0] = newMat[3][0];
-				selectedObject->modelMatrix[3][1] = newMat[3][1];
-				selectedObject->modelMatrix[3][2] = newMat[3][2];
+				cursor.modelMatrix[3][0] = newMat[3][0];
+				cursor.modelMatrix[3][1] = newMat[3][1];
+				cursor.modelMatrix[3][2] = newMat[3][2];
 			}
 			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
 				grabbedDistance+=0.5;
@@ -335,7 +328,7 @@ void Engine::checkEvents() {
 				glfwGetMousePos(&xx,&yy);
 				arcBallPreviousPoint[0] = xx*1.0f;
 				arcBallPreviousPoint[1] = yy*1.0f;
-				tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
+				tempOrigin = glm::vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
 				break;
 			}
 //			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
@@ -405,18 +398,18 @@ void Engine::mouseButtonCallback(int button, int state) {
 		glfwGetMousePos(&xx,&yy);
 		arcBallPreviousPoint[0] = xx*1.0f;
 		arcBallPreviousPoint[1] = yy*1.0f;
-		tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
+		tempOrigin = glm::vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
 	}
 }
 
 void Engine::mouseMoveCallback(int xpos, int ypos) {
 	//std::cout << "movse moved x:" << xpos << "\t y:" << ypos << std::endl;
 	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-		selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,-tempOrigin);
+		cursor.modelMatrix = glm::translate(cursor.modelMatrix,-tempOrigin);
 		glm::mat4 rot;
 		rot = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],xpos*1.0f,ypos*1.0f, false);
-		selectedObject->modelMatrix = rot*selectedObject->modelMatrix;
-		selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,tempOrigin);
+		cursor.modelMatrix = rot*cursor.modelMatrix;
+		cursor.modelMatrix = glm::translate(cursor.modelMatrix,tempOrigin);
 		arcBallPreviousPoint[0] = xpos*1.0f;
 		arcBallPreviousPoint[1] = ypos*1.0f;
 	}
@@ -488,7 +481,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 			arcBallPreviousPoint[0] = x;
 			arcBallPreviousPoint[1] = y;
-			tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
+			tempOrigin = glm::vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
 		}*/
 		break;
 	case rotate:
@@ -517,7 +510,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 			arcBallPreviousPoint[0] = x;
 			arcBallPreviousPoint[1] = y;
-			tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
+			tempOrigin = glm::vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
 		}
 	}
 	if (verbose)
@@ -532,7 +525,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	glm::mat3 tempMat;
 	glm::mat4 newLocationMatrix;
 	glm::mat4 rotation;
-	tempOrigin = glm::vec3(selectedObject->modelMatrix[3][0],selectedObject->modelMatrix[3][1],selectedObject->modelMatrix[3][2]);
+	tempOrigin = glm::vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
 	glm::vec2 ftranslation;
 
 	glm::vec2 f1translationVec,f2translationVec;
@@ -554,11 +547,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
 		newLocationVector = tempMat*glm::vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-		//newLocationMatrix = glm::translate(selectedObject->modelMatrix,newLocationVector);  //Calculate new location by translating object by motion vector
+		//newLocationMatrix = glm::translate(cursor.modelMatrix,newLocationVector);  //Calculate new location by translating object by motion vector
 		newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);
 
 		plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
-		selectedObject->modelMatrix = newLocationMatrix*selectedObject->modelMatrix;
+		cursor.modelMatrix = newLocationMatrix*cursor.modelMatrix;
 
 		break;
 		  
@@ -573,20 +566,20 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			if (numberOfCursors == 1) {
 
 				vec3 location;
-				location.x = selectedObject->modelMatrix[3][0];
-				location.y = selectedObject->modelMatrix[3][1];
-				location.z = selectedObject->modelMatrix[3][2];  
+				location.x = cursor.modelMatrix[3][0];
+				location.y = cursor.modelMatrix[3][1];
+				location.z = cursor.modelMatrix[3][2];  
 
-				selectedObject->modelMatrix[3][0] = 0;
-				selectedObject->modelMatrix[3][1] = 0;
-				selectedObject->modelMatrix[3][2] = 0;
+				cursor.modelMatrix[3][0] = 0;
+				cursor.modelMatrix[3][1] = 0;
+				cursor.modelMatrix[3][2] = 0;
 
-				selectedObject->modelMatrix = glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0))*selectedObject->modelMatrix;
-				selectedObject->modelMatrix = glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0))*selectedObject->modelMatrix;
+				cursor.modelMatrix = glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0))*cursor.modelMatrix;
+				cursor.modelMatrix = glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0))*cursor.modelMatrix;
 
-				selectedObject->modelMatrix[3][0] = location.x;
-				selectedObject->modelMatrix[3][1] = location.y;
-				selectedObject->modelMatrix[3][2] = location.z;
+				cursor.modelMatrix[3][0] = location.x;
+				cursor.modelMatrix[3][1] = location.y;
+				cursor.modelMatrix[3][2] = location.z;
 			}
 			break;
 		case pinch:
@@ -612,22 +605,22 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
 			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 			
-			location.x = selectedObject->modelMatrix[3][0];
-			location.y = selectedObject->modelMatrix[3][1];
-			location.z = selectedObject->modelMatrix[3][2];
+			location.x = cursor.modelMatrix[3][0];
+			location.y = cursor.modelMatrix[3][1];
+			location.z = cursor.modelMatrix[3][2];
 
-			selectedObject->modelMatrix[3][0] = 0;
-			selectedObject->modelMatrix[3][1] = 0;
-			selectedObject->modelMatrix[3][2] = 0;
+			cursor.modelMatrix[3][0] = 0;
+			cursor.modelMatrix[3][1] = 0;
+			cursor.modelMatrix[3][2] = 0;
 
-			selectedObject->modelMatrix = glm::rotate((newAngle-referenceAngle)*(-2),vec3(0,0,1))*selectedObject->modelMatrix;
+			cursor.modelMatrix = glm::rotate((newAngle-referenceAngle)*(-2),vec3(0,0,1))*cursor.modelMatrix;
 			
-			selectedObject->modelMatrix = glm::rotate(ft.x*5,vec3(0,1,0))*selectedObject->modelMatrix;
-			selectedObject->modelMatrix = glm::rotate(ft.y*5,vec3(1,0,0))*selectedObject->modelMatrix;
+			cursor.modelMatrix = glm::rotate(ft.x*5,vec3(0,1,0))*cursor.modelMatrix;
+			cursor.modelMatrix = glm::rotate(ft.y*5,vec3(1,0,0))*cursor.modelMatrix;
 				
-			selectedObject->modelMatrix[3][0] = location.x;
-			selectedObject->modelMatrix[3][1] = location.y;
-			selectedObject->modelMatrix[3][2] = location.z;
+			cursor.modelMatrix[3][0] = location.x;
+			cursor.modelMatrix[3][1] = location.y;
+			cursor.modelMatrix[3][2] = location.z;
 
 			
 			//update to latest values
@@ -640,11 +633,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			x = tcur->getX();
 			y = tcur->getY();
 
-			selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,-tempOrigin);
+			cursor.modelMatrix = glm::translate(cursor.modelMatrix,-tempOrigin);
 
 			rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
-			selectedObject->modelMatrix = rotation*selectedObject->modelMatrix;
-			selectedObject->modelMatrix = glm::translate(selectedObject->modelMatrix,tempOrigin);
+			cursor.modelMatrix = rotation*cursor.modelMatrix;
+			cursor.modelMatrix = glm::translate(cursor.modelMatrix,tempOrigin);
 			arcBallPreviousPoint[0] = x;
 			arcBallPreviousPoint[1] = y;
 			break;

@@ -1,3 +1,5 @@
+#pragma warning(disable: 4819)
+
 #include "shader.h"
 
 pho::UniformAssigner& pho::UniformAssigner::operator=(int data) { glUniform1i(location,data); }
@@ -78,16 +80,19 @@ GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag) {
 
 //Get value of uniform, adds it if it doesn't exist.
 GLint pho::Shader::getUniform(const std::string& uniform_name) {
+	std::map<std::string,GLint>::iterator it;
+
 
 	if (attributes.find(uniform_name) == attributes.end()) { 
 		//hasn't been found so add it
 		GLint temp = glGetUniformLocation(program,uniform_name.c_str());
-		attributes.insert(uniform_name,temp);
+		
+		attributes.insert(std::pair<std::string,GLint>(uniform_name,temp));
 		return temp;
 	}
 	else { 
 		//has been found so return the value
-		std::map<std::string,GLint>::iterator it;
+
 		it = attributes.find(uniform_name);
 		return it->second();
 	}

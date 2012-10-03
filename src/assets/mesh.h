@@ -12,7 +12,7 @@ namespace pho {
 	class Mesh {
 	public:
 		Mesh();
-		Mesh(std::vector<glm::vec3> vertices, std::vector<GLushort> indices, std::vector<glm::vec2> texcoords, std::string name);
+		Mesh(std::vector<glm::vec3> vertices, std::vector<GLushort> indices, std::vector<glm::vec3> colors);
 		inline GLuint getVaoId();
         void setShader(pho::Shader* tehShader);
 		void draw();

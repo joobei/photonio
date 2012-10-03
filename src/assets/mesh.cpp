@@ -11,7 +11,7 @@ vertices(vertixes),
 	glGenVertexArrays(1,&vaoId);
 	glGenBuffers(1,&ibId);
 	glGenBuffers(1,&vertexVboId);
-	glGenBuffers(1,&texCoordVboId);
+	glGenBuffers(1,&colorVboId);
 
 	glBindVertexArray(vaoId);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibId);
@@ -24,7 +24,7 @@ vertices(vertixes),
 	glEnableVertexAttribArray(vertexLoc);
 
     glBindBuffer(GL_ARRAY_BUFFER,colorVboId);
-	glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER,colors.size()*2*sizeof(GLfloat),colors.data(),GL_STATIC_DRAW);
     glVertexAttribPointer(texCoordLoc,3,GL_FLOAT,GL_FALSE,0,0);
     glEnableVertexAttribArray(texCoordLoc);
 	glBindVertexArray(0);
@@ -87,6 +87,6 @@ glm::vec3 pho::Mesh::getPosition() {
 
 void pho::Mesh::draw() {
     shader->use(); //bind the shader this mesh uses
-    glBindBuffer(vaoId); //bind the vao
+    glBindBuffer(GL_ARRAY_BUFFER,vaoId); //bind the vao
     glDrawRangeElements(GL_TRIANGLES,0,vertices.size(),indices.size(),GL_UNSIGNED_SHORT,NULL);
 }

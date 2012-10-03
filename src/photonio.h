@@ -45,6 +45,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <functional>
 #include "wiimote.h"
 #include "shader.h"
+#include "mesh.h"
 
 
 #include <GL/glfw.h>
