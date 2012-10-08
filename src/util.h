@@ -9,6 +9,26 @@
 #include <sstream>
 #include "glm\glm.hpp"
 
+//errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
+
+#define GLDEBUG
+
+#if defined (GLDEBUG)
+#define CALL_GL(exp) {                                        \
+exp;                                                          \
+unsigned int err = GL_NO_ERROR;                               \
+do{                                                           \
+      err = glGetError();                                     \
+      if(err != GL_NO_ERROR){                                 \
+           std::cout << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
+      }                                                       \
+ }while(err != GL_NO_ERROR);                                  \
+}
+#else
+#define CALL_GL(exp) exp
+#endif
+
+
 namespace pho {
 
 	// The sampler uniform for textured models
@@ -28,16 +48,8 @@ namespace pho {
 		return glm::acos(cosC);
 	}
 
-	inline std::string readTextFile(const char* filename) {
-		std::fstream shaderFile(filename,std::ios::in);
-		std::string shader;
+	std::string readTextFile(std::string filename);
 
-		std::stringstream buffer;
-		buffer << shaderFile.rdbuf();
-		shader = buffer.str();
-
-		return buffer.str();
-	}
 
 	class WiiButtonState {
 	public:

@@ -6,6 +6,7 @@
 #include "GL/glew.h"
 #include "shader.h"
 #include "assets.h"
+#include "util.h"
 
 namespace pho {
 

@@ -92,6 +92,8 @@ calibrate(false),
 
 void Engine::initResources() {
 
+	initSimpleGeometry();
+
 	glGenBuffers(1,&(pointLight.uniformBlockIndex)); //generate buffer and store it's location in pointLight's member variable
 	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
@@ -100,7 +102,7 @@ void Engine::initResources() {
     //todo: Add uniforms
 
 	//Calculate the matrices
-	projectionMatrix   = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
+	projectionMatrix = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
 	//projectionMatrix = glm::mat4();
 
 	cameraPosition = glm::vec3(0,0,-25); //translate camera back (i.e. world forward)
@@ -343,19 +345,19 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-	CALL_GL(glClearColor(1,1,1,1));
+	CALL_GL(glClearColor(0,0,0,1));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
-	CALL_GL(glEnable(GL_DEPTH_TEST));
+	//CALL_GL(glEnable(GL_DEPTH_TEST));
 	
 	colorShader.use();
-	colorShader["pvm"] = plane.modelMatrix;
-    plane.draw();
-	colorShader["pvm"] = cursor.modelMatrix;
-    cursor.draw();
-	colorShader["pvm"] = ray.modelMatrix;
-    ray.draw();
-	colorShader["pvm"] = target.modelMatrix;
+	//colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+    //plane.draw();
+	//colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+    //cursor.draw();
+	//colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
+    //ray.draw();
+	colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
     target.draw();
 
 	glfwSwapBuffers();
@@ -704,8 +706,8 @@ void Engine::refresh(TuioTime frameTime) {
 void Engine::initSimpleGeometry() {
 
 	std::vector<GLushort> indices;
-	vector<vec3> vertices;
-	vector<vec3> colors;
+	std::vector<vec3> vertices;
+	std::vector<vec3> colors;
 	
 	
 	indices.push_back(0); indices.push_back(1); indices.push_back(3);
@@ -784,7 +786,7 @@ void Engine::initSimpleGeometry() {
 	vertices.clear();
 	colors.clear();
 
-	std::vector<glm::vec2> texcoords;
+	/*std::vector<glm::vec2> texcoords;
 
 	vertices.push_back(vec3(-1,-1,0));
 	texcoords.push_back(glm::vec2(0,0));
@@ -808,8 +810,8 @@ void Engine::initSimpleGeometry() {
 	indices.push_back(3);indices.push_back(4);indices.push_back(5);	
 
     //Simple quad to Render off-screen buffer
-    //quad = pho::Asset::Asset(vertices,indices,texcoords,"quad");
+    quad = pho::Asset::Asset(vertices,indices,texcoords,"quad");
 
-    //quad.modelMatrix = glm::scale(glm::vec3(0.3,0.3,1));
-    //quad.modelMatrix = glm::translate(quad.modelMatrix,glm::vec3(-2.2,-2.2,0));
+    quad.modelMatrix = glm::scale(glm::vec3(0.3,0.3,1));
+    quad.modelMatrix = glm::translate(quad.modelMatrix,glm::vec3(-2.2,-2.2,0));*/
 }

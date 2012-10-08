@@ -58,23 +58,6 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
-#define GLDEBUG
-
-#if defined (GLDEBUG)
-#define CALL_GL(exp) {                                        \
-exp;                                                          \
-unsigned int err = GL_NO_ERROR;                               \
-do{                                                           \
-      err = glGetError();                                     \
-      if(err != GL_NO_ERROR){                                 \
-           std::cout << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
-		   errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
-      }                                                       \
- }while(err != GL_NO_ERROR);                                  \
-}
-#else
-#define CALL_GL(exp) exp
-#endif
 
 namespace pho {
 
@@ -110,8 +93,8 @@ namespace pho {
 		void shutdown();
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
-		static const int WINDOW_SIZE_X = 1280;
-		static const int WINDOW_SIZE_Y = 1024;
+		static const int WINDOW_SIZE_X = 800;
+		static const int WINDOW_SIZE_Y = 600;
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
 

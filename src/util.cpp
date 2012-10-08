@@ -2,6 +2,17 @@
 #include "util.h"
 #include "vector3.h"
 
+std::string pho::readTextFile(std::string filename) {
+	std::fstream shaderFile(filename,std::ios::in);
+	std::string shader;
+
+	std::stringstream buffer;
+	buffer << shaderFile.rdbuf();
+	shader = buffer.str();
+
+	return buffer.str();
+}
+
 pho::WiiButtonState::WiiButtonState() {
 	a = false;
 	b = false;
