@@ -1,6 +1,10 @@
 #pragma warning(disable: 4819)
-
 #include "mesh.h"
+
+pho::Mesh::Mesh() {
+	modelMatrix = glm::mat4();
+	selected = false;
+}
 
 pho::Mesh::Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec3> colorz):
 vertices(vertixes),
@@ -86,7 +90,7 @@ glm::vec3 pho::Mesh::getPosition() {
 }
 
 void pho::Mesh::draw() {
-    shader->use(); //bind the shader this mesh uses
     glBindBuffer(GL_ARRAY_BUFFER,vaoId); //bind the vao
     glDrawRangeElements(GL_TRIANGLES,0,vertices.size(),indices.size(),GL_UNSIGNED_SHORT,NULL);
 }
+

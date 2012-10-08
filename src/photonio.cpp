@@ -96,7 +96,7 @@ void Engine::initResources() {
 	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
 
-    colorShader = new Shader("colorshader");
+    colorShader = pho::Shader("shader");
     //todo: Add uniforms
 
 	//Calculate the matrices
@@ -347,10 +347,15 @@ void Engine::render() {
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	CALL_GL(glEnable(GL_DEPTH_TEST));
-	 	
+	
+	colorShader.use();
+	colorShader["pvm"] = plane.modelMatrix;
     plane.draw();
+	colorShader["pvm"] = cursor.modelMatrix;
     cursor.draw();
+	colorShader["pvm"] = ray.modelMatrix;
     ray.draw();
+	colorShader["pvm"] = target.modelMatrix;
     target.draw();
 
 	glfwSwapBuffers();

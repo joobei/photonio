@@ -32,17 +32,18 @@ namespace pho {
 
 	class Shader {
 	public:
+		Shader();
 		Shader(std::string filename);
 		GLuint program;
 		const char* filename;
-
 		GLuint CreateShader(GLenum eShaderType, const std::string &strShaderFile);
 		GLuint CreateProgram(const GLuint vert, const GLuint frag);
 		void SetAttribute(char * name, int val);
 		std::map<std::string,GLint> attributes;
-		pho::UniformAssigner operator[](const std::string& uniform_name);
 		GLint getUniform(const std::string& uniform_name);
         void use();
+
+		pho::UniformAssigner operator[](const std::string& uniform_name);
 	};
 
 	// Vertex Attribute Locations

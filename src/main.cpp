@@ -1,3 +1,4 @@
+#pragma warning(disable: 4098)
 #pragma warning(disable: 4819)
 
 #include "photonio.h"

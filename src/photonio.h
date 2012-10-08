@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <sstream>
 #include "util.h"
 #include <boost/static_assert.hpp>
+#include <boost/filesystem.hpp>
 #include "eventQueue.h"
 #include "asio.h"
 #include "spuc/generic/running_average.h"
@@ -156,7 +157,7 @@ namespace pho {
 		glm::vec3 cameraDirection;
 
 		//Shaders
-        pho::Shader* colorShader;
+        pho::Shader colorShader;
 
 		//Lights
 		GLuint lightSource;

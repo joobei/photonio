@@ -2,20 +2,22 @@
 
 #include "shader.h"
 
-pho::UniformAssigner& pho::UniformAssigner::operator=(int data) { glUniform1i(location,data); }
-pho::UniformAssigner& pho::UniformAssigner::operator=(float data) { glUniform1f(location,data);}
-//pho::UniformAssigner& pho::UniformAssigner::operator=(double data){ glUniform1f(location,data);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec2& data){ glUniform2f(location,data.x,data.y);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec3& data){ glUniform3f(location,data.x,data.y,data.z);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec4& data){ glUniform4f(location,data.x,data.y,data.z,data.w);}
-pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mat4& data){ glUniformMatrix4fv(location,1,GL_FALSE,glm::value_ptr(data));}
+pho::UniformAssigner& pho::UniformAssigner::operator=(int data) { glUniform1i(location,data); return (*this); }
+pho::UniformAssigner& pho::UniformAssigner::operator=(float data) { glUniform1f(location,data); return (*this);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec2& data){ glUniform2f(location,data.x,data.y); return (*this);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec3& data){ glUniform3f(location,data.x,data.y,data.z); return (*this);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec4& data){ glUniform4f(location,data.x,data.y,data.z,data.w); return (*this);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mat4& data){ glUniformMatrix4fv(location,1,GL_FALSE,glm::value_ptr(data)); return (*this);}
 
+pho::Shader::Shader() {
+
+}
 
 pho::Shader::Shader(std::string filename) {
 	GLuint vertex,fragment;
 	vertex = CreateShader(GL_VERTEX_SHADER,filename+".vert");
 	fragment = CreateShader(GL_FRAGMENT_SHADER,filename+".frag");
-	program = pho::Shader::CreateProgram(vertex, fragment);
+	program = CreateProgram(vertex, fragment);
 }
 
 GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile) {
@@ -93,7 +95,7 @@ GLint pho::Shader::getUniform(const std::string& uniform_name) {
 	else { 
 		//has been found so return the value
 		it = attributes.find(uniform_name);
-		return it->second();
+		return it->second;
 	}
 }
 
