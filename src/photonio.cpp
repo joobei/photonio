@@ -96,7 +96,7 @@ void Engine::initResources() {
 	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
 
-    colorShader = pho::Shader("shader");
+    colorShader = pho::Shader("shaders/shader");
     //todo: Add uniforms
 
 	//Calculate the matrices
