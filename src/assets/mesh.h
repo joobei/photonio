@@ -17,6 +17,7 @@ namespace pho {
 		inline GLuint getVaoId();
         void setShader(pho::Shader* tehShader);
 		void draw();
+		void drawLines();
 		bool loadToGPU();
 		glm::vec3 getPosition();
 		unsigned int numFaces, numVertices;
@@ -35,6 +36,7 @@ namespace pho {
 		bool uploaded;
 		float* texCoords;
 		pho::Material material;
+		
 	}; 
 
 	

@@ -91,8 +91,11 @@ glm::vec3 pho::Mesh::getPosition() {
 }
 
 void pho::Mesh::draw() {
-    //CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,vaoId)); //bind the vao
 	CALL_GL(glBindVertexArray(vaoId));
     CALL_GL(glDrawElements(GL_TRIANGLES,indices.size(),GL_UNSIGNED_SHORT,NULL));
 }
 
+void pho::Mesh::drawLines() {
+	CALL_GL(glBindVertexArray(vaoId));
+    CALL_GL(glDrawElements(GL_LINES,indices.size(),GL_UNSIGNED_SHORT,NULL));
+}

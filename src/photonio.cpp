@@ -136,8 +136,7 @@ void Engine::checkEvents() {
 		viewMatrix = glm::translate(viewMatrix, vec3(-FACTOR,0,0));
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-		//viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0))*glm::lookAt(cameraPosition,glm::vec3(cursor.modelMatrix[0][3],cursor.modelMatrix[1][3],cursor.modelMatrix[2][3]),glm::vec3(0,1,0));
-		
+		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0));	
 	}
 	if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,FACTOR,0));
@@ -350,13 +349,14 @@ void Engine::render() {
 	
 	//CALL_GL(glEnable(GL_DEPTH_TEST));
 	
-	colorShader.use();
-	//colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
-    //plane.draw();
-	//colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-    //cursor.draw();
-	//colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-    //ray.draw();
+	colorShader.use(); //bind the standard shader for default colored objects
+
+	colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+    plane.draw();
+	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+    cursor.draw();
+	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
+    ray.drawLines();
 	colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
     target.draw();
 
@@ -749,7 +749,7 @@ void Engine::initSimpleGeometry() {
 	colors.push_back(vec3(1.0,1.0,1.0));
 
     target = pho::Mesh(vertices,indices,colors);
-
+	cursor = pho::Mesh(vertices,indices,colors);
 	vertices.clear();
 	
 	vertices.push_back(vec3(-0.7,0,1));
