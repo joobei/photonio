@@ -97,5 +97,7 @@ void pho::Mesh::draw() {
 
 void pho::Mesh::drawLines() {
 	CALL_GL(glBindVertexArray(vaoId));
+	CALL_GL(glLineWidth(3.5));
     CALL_GL(glDrawElements(GL_LINES,indices.size(),GL_UNSIGNED_SHORT,NULL));
+	CALL_GL(glLineWidth(1.0));
 }

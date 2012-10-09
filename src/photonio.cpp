@@ -99,21 +99,19 @@ void Engine::initResources() {
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
 
     colorShader = pho::Shader("shaders/shader");
-    //todo: Add uniforms
 
 	//Calculate the matrices
 	projectionMatrix = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
 	//projectionMatrix = glm::mat4();
 
-	cameraPosition = glm::vec3(0,0,-25); //translate camera back (i.e. world forward)
+	cameraPosition = glm::vec3(0,0,-5); //translate camera back (i.e. world forward)
 
 	viewMatrix = mat4();
 	viewMatrix = glm::translate(viewMatrix,cameraPosition); 
 
+	glEnable (GL_DEPTH_TEST);
 	glEnable (GL_BLEND);
 	glDepthMask(GL_TRUE);
-
-	CALL_GL(glLineWidth(3.5));
 
 	restoreRay=false;
 }
@@ -344,7 +342,7 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-	CALL_GL(glClearColor(0,0,0,1));
+	CALL_GL(glClearColor(1,1,1,1));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	//CALL_GL(glEnable(GL_DEPTH_TEST));
@@ -352,14 +350,13 @@ void Engine::render() {
 	colorShader.use(); //bind the standard shader for default colored objects
 
 	colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
-    plane.draw();
+    plane.drawLines();
 	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
     cursor.draw();
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
     ray.drawLines();
-	colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
-    target.draw();
-
+	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
+	//target.draw();
 	glfwSwapBuffers();
 }
 

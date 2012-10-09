@@ -18,6 +18,7 @@ namespace pho {
         void setShader(pho::Shader* tehShader);
 		void draw();
 		void drawLines();
+		void drawWireframe();
 		bool loadToGPU();
 		glm::vec3 getPosition();
 		unsigned int numFaces, numVertices;
