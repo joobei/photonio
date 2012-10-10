@@ -171,9 +171,8 @@ namespace pho {
 
 		boost::asio::io_service serialioservice;
 		boost::thread* serialThread;
-#if defined(_DEBUG)
 		Minicom_client _serialserver;
-#endif
+
 		boost::mutex ioMutex; //locks the message queue for thread access
 
 		//assets

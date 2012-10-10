@@ -35,9 +35,12 @@ calibrate(false),
 	eventQueue(),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-#if defined(_DEBUG)
+	
+#ifdef _DEBUG 
 	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
-#endif	
+#else 
+    _serialserver(serialioservice,115200,"COM3",&eventQueue,&ioMutex),
+#endif  
 	wii(false)
 {
 #define SIZE 30                     //Size of the moving average filter
@@ -60,10 +63,9 @@ calibrate(false),
 
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
-#if defined(_DEBUG)
 	//Polhemus
 	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
-#endif	
+
 	count=0;
 
 	wii=remote.Connect(wiimote::FIRST_AVAILABLE);
@@ -215,9 +217,7 @@ void Engine::checkEvents() {
 					appInputState = rotate; }
 				else
 					{ appInputState = idle; 
-					printf("rotate-->idle");
-				}
-
+					printf("rotate-->idle");}
 				break;
 			case 3:
 				break;
@@ -245,13 +245,13 @@ void Engine::checkEvents() {
 		position = glm::vec3(temp[0],temp[1],temp[2]);
 
 #if defined(_DEBUG)
-		position.x-=25;
+		/*position.x-=25;
 		position.y+=30;
-		position.z-=20;
+		position.z-=20;*/
 #else 
-		//position.x+=0;
+		/*position.x+=0;
 		position.y-=5;
-		position.z-=1;
+		position.z-=1;*/
 
 #endif
 
@@ -262,18 +262,17 @@ void Engine::checkEvents() {
 		orientation.y = temp[5];
 		orientation.z = temp[6];
 
-		glm::mat4 rot = glm::toMat4(orientation);
-		glm::mat4 trans = glm::translate(glm::mat4(),position);	
-		transform = glm::toMat4(glm::angleAxis(180.0f,glm::vec3(0,1,0)))*transform;
-		transform = glm::toMat4(glm::angleAxis(-90.0f,glm::vec3(0,0,1)))*transform;
+		//transform=glm::translate(transform,position);
 
-
-		transform = rot*transform;
-
-		transform= trans*transform;
+		transform=glm::toMat4(orientation);
+		//transform = glm::toMat4(glm::angleAxis(180.0f,glm::vec3(0,1,0)))*transform;
+		//transform = glm::toMat4(glm::angleAxis(-90.0f,glm::vec3(0,0,1)))*transform;
 		
-		ray.modelMatrix = transform;
+		transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
+		transform[3][1] = position.y;
+		transform[3][2] = position.z;
 
+		cursor.modelMatrix = transform;
 		
 
 		//std::cout << "x : " << transform[3][0] << "\ty : " << transform[3][1] << "\tz : " << transform[3][2] << '\n';
@@ -698,7 +697,6 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 void Engine::refresh(TuioTime frameTime) {
 	//std::cout << "refresh " << frameTime.getTotalMilliseconds() << std::endl;
 }
-
 
 void Engine::initSimpleGeometry() {
 
