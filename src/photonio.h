@@ -32,6 +32,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "util.h"
 #include <boost/static_assert.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/timer.hpp> //for stopwatch and time output
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/posix_time_io.hpp>
 #include "eventQueue.h"
 #include "asio.h"
 #include "spuc/generic/running_average.h"
@@ -222,6 +225,9 @@ namespace pho {
 
 		std::ofstream errorLog;
 
+		//time
+		boost::posix_time::time_facet *tf;
+		float deltat;
 	};
 
 }

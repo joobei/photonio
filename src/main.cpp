@@ -35,13 +35,17 @@ int main()
 	glfwOpenWindowHint(GLFW_FSAA_SAMPLES,8);
 	//glfwOpenWindowHint( GLFW_STEREO, GL_TRUE );
 
-	if (!glfwOpenWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,0,0,0,0,0,0,GLFW_WINDOW))
-    { std::cout << "GLFW Init WIndow Failed" << std::endl;
-    }
+	
 
 #if defined(_DEBUG)
+	if (!glfwOpenWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,0,0,0,0,0,0,GLFW_WINDOW))
+    { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 	glfwSetWindowPos(600,300);
+#else 
+	if (!glfwOpenWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,0,0,0,0,0,0,GLFW_FULLSCREEN))
+    { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 #endif
+
     glfwSetWindowTitle("KeiMote");
 
 

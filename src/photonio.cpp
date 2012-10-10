@@ -51,6 +51,8 @@ calibrate(false),
 	magnetometerY.set_size(SIZE);
 	magnetometerZ.set_size(SIZE);
 
+	errorLog.open("error.log",std::ios_base::app);
+
 	tuioClient = new TuioClient(3333);
 	tuioClient->addTuioListener(this);
 	tuioClient->connect();
@@ -80,8 +82,6 @@ calibrate(false),
 
 	grabbing=false;
 
-	errorLog.open("error.log",std::ios_base::app);
-
 	prevMouseWheel = 0;
 	gyroData = false;
 
@@ -89,7 +89,8 @@ calibrate(false),
 	axisChange[1][0] = 0; axisChange[1][1] =  0;  axisChange[1][2] =  1;
 	axisChange[2][0] = 0; axisChange[2][1] =  -1;  axisChange[2][2] = 0;
 
-	
+	tf = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
+	deltat = 1.0f; //so as to not repeat keystrokes
 }
 
 void Engine::initResources() {
@@ -148,10 +149,7 @@ void Engine::checkEvents() {
 	}
 	if (glfwGetKey(GLFW_KEY_END)) {
 	}
-	if (glfwGetKey(GLFW_KEY_SPACE)) {
-		plane.modelMatrix = glm::mat4();
-		viewMatrix = glm::translate(glm::mat4(),cameraPosition);
-	}
+	
 	if (glfwGetKey('1') == GLFW_PRESS) {
 		rotTechnique = screenSpace;
 		std::cout << "Screen Space Rotation" << '\n';
@@ -255,8 +253,6 @@ void Engine::checkEvents() {
 
 #endif
 
-		//std::cout << "Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
-
 		orientation.w = temp[3];
 		orientation.x = temp[4];
 		orientation.y = temp[5];
@@ -265,15 +261,25 @@ void Engine::checkEvents() {
 		//transform=glm::translate(transform,position);
 
 		transform=glm::toMat4(orientation);
-		//transform = glm::toMat4(glm::angleAxis(180.0f,glm::vec3(0,1,0)))*transform;
-		//transform = glm::toMat4(glm::angleAxis(-90.0f,glm::vec3(0,0,1)))*transform;
+		
+		//Further rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
+		transform = transform*glm::toMat4(glm::angleAxis(180.0f,glm::vec3(0,1,0))); //order is important 
+		transform = transform*glm::toMat4(glm::angleAxis(90.0f,glm::vec3(0,0,1)));
 		
 		transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
 		transform[3][1] = position.y;
 		transform[3][2] = position.z;
 
-		cursor.modelMatrix = transform;
+		ray.modelMatrix = transform;
 		
+		if (glfwGetKey(GLFW_KEY_SPACE)) {
+		//plane.modelMatrix = glm::mat4();
+		//viewMatrix = glm::translate(glm::mat4(),cameraPosition);
+		
+			errorLog << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
+
+		}
+
 
 		//std::cout << "x : " << transform[3][0] << "\ty : " << transform[3][1] << "\tz : " << transform[3][2] << '\n';
 	}
@@ -433,9 +439,7 @@ void Engine::go() {
 
 void Engine::shutdown() {
 	netThread->interrupt();
-#if defined(_DEBUG)
 	_serialserver.shutDown();
-#endif
 	serialThread->interrupt();
 	errorLog.close();
 }
