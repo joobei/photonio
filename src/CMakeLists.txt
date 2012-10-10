@@ -59,5 +59,8 @@ ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
           COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/src/assets
           COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${PROJECT_BINARY_DIR}/src/assets
 
-		  COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_BINARY_DIR}/photonio.exe C:\Users\jubei\Google Drive\dev
+		  #COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_BINARY_DIR}/${PROJECTNAME}.exe C:/Users/jubei/
 )
+
+#set(CMAKE_INSTALL_PREFIX "C:\Users\jubei\Google Drive\dev")
+#INSTALL(TARGETS ${PROJECTNAME} RUNTIME DESTINATION C:\Users\jubei\Google Drive\dev)
