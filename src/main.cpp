@@ -42,7 +42,7 @@ int main()
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
     glfwSetWindowTitle("KeiMote");
-
+	//glfwEnable( GLFW_MOUSE_CURSOR );
 
     GLenum err = glewInit();
     if (GLEW_OK != err)

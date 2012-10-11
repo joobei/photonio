@@ -82,7 +82,7 @@ bool pho::Mesh::loadToGPU() {
 	return true;
 }
 
-inline GLuint pho::Mesh::getVaoId() {
+GLuint pho::Mesh::getVaoId() {
 	return vaoId;
 }
 

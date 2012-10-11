@@ -136,7 +136,7 @@ namespace pho {
 		mat3 axisChange;
 		mat4 trackerMatrix;
 		mat3 orientation3;
-		mat4 projectionMatrix, viewMatrix, pvm;
+		mat4 projectionMatrix, viewMatrix;
 		vec3 acc,ma,gyro;
 		float arcBallPreviousPoint[2];
 		bool calibrate;
@@ -146,14 +146,14 @@ namespace pho {
 		glm::vec3 cameraDirection;
 
 		//Shaders
-        pho::Shader colorShader;
+        pho::Shader colorShader,offscreenShader;
 
 		//Lights
 		GLuint lightSource;
 		pho::LightSource pointLight;
 
 		//Picking
-		GLuint picking(const struct aiScene *sc, const struct aiNode* nd);
+		GLuint picking();
 		GLuint picked;
 		void generate_pixel_buffer_objects();
 		GLuint get_object_id();
@@ -188,8 +188,6 @@ namespace pho {
         pho::Mesh ray;
 
 		//raycasting test
-		glm::vec3 rayOrigin;
-		glm::quat rayOrientation;
 		int count;
 
 
