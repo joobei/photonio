@@ -58,7 +58,7 @@ calibrate(false),
 	tuioClient->connect();
 
 	if (!tuioClient->isConnected()) {
-		std::cout << "tuio client connection failed" << std::endl;
+		std::cout << "Tuio client connection failed" << std::endl;
 	}
 
 	verbose = false;
@@ -90,7 +90,7 @@ calibrate(false),
 	axisChange[2][0] = 0; axisChange[2][1] =  -1;  axisChange[2][2] = 0;
 
 	tf = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
-	deltat = 1.0f; //so as to not repeat keystrokes
+	deltat = -1.0f; //so as to not repeat keystrokes
 }
 
 void Engine::initResources() {
@@ -104,10 +104,10 @@ void Engine::initResources() {
     colorShader = pho::Shader("shaders/shader");
 
 	//Calculate the matrices
-	projectionMatrix = glm::perspective(45.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); //create perspective matrix
-	//projectionMatrix = glm::mat4();
+	//First create the perspective matrix
+	projectionMatrix = glm::perspective(80.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
-	cameraPosition = glm::vec3(0,0,-5); //translate camera back (i.e. world forward)
+	cameraPosition = glm::vec3(0,0,0); //translate camera back (i.e. world forward)
 
 	viewMatrix = mat4();
 	viewMatrix = glm::translate(viewMatrix,cameraPosition); 
@@ -117,6 +117,9 @@ void Engine::initResources() {
 	glDepthMask(GL_TRUE);
 
 	restoreRay=false;
+
+	cursor.modelMatrix = glm::translate(cursor.modelMatrix,glm::vec3(0,0,-20));
+	plane.modelMatrix = cursor.modelMatrix;
 }
 
 //checks event queue for events
@@ -162,6 +165,13 @@ void Engine::checkEvents() {
 		rotTechnique = trackBall;
 		std::cout << "Virtual Trackball Rotation" << '\n';
 	}
+
+	if (glfwGetKey('4') == GLFW_PRESS) {
+		appMode = rayCasting;
+		std::cout << "RayCasting" << '\n';
+	}
+
+
 	int wheel = glfwGetMouseWheel();
 	if (wheel != prevMouseWheel) {
 		int amount = wheel - prevMouseWheel;
@@ -242,16 +252,9 @@ void Engine::checkEvents() {
 
 		position = glm::vec3(temp[0],temp[1],temp[2]);
 
-#if defined(_DEBUG)
-		/*position.x-=25;
-		position.y+=30;
-		position.z-=20;*/
-#else 
-		/*position.x+=0;
+		position.z-=5;
 		position.y-=5;
-		position.z-=1;*/
 
-#endif
 
 		orientation.w = temp[3];
 		orientation.x = temp[4];
@@ -272,12 +275,13 @@ void Engine::checkEvents() {
 
 		ray.modelMatrix = transform;
 		
-		if (glfwGetKey(GLFW_KEY_SPACE)) {
-		//plane.modelMatrix = glm::mat4();
-		//viewMatrix = glm::translate(glm::mat4(),cameraPosition);
-		
-			errorLog << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
+		if (wii) {  //just to debug polhemus positions
+			remote.RefreshState();
 
+			if (remote.Button.A()) {   
+				std::cout << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
+				errorLog << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
+			}
 		}
 
 
