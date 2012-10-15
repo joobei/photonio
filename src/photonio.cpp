@@ -86,6 +86,8 @@ calibrate(false),
 
 	tf = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
 	deltat = -1.0f; //so as to not repeat keystrokes
+
+	perspective = 80.0f;
 }
 
 void Engine::initResources() {
@@ -101,7 +103,7 @@ void Engine::initResources() {
 
 	//Calculate the matrices
 	//First create the perspective matrix
-	projectionMatrix = glm::perspective(80.0f, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
+	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
 	cameraPosition = vec3(0,0,0); //translate camera back (i.e. world forward)
 
@@ -146,11 +148,15 @@ void Engine::checkEvents() {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,FACTOR,0));
 	}
 	if (glfwGetKey(GLFW_KEY_HOME)) {
-		cameraDirection = glm::rotate(cameraDirection, (float)0.001, vec3(0,1,0));
-		viewMatrix = glm::lookAt(cameraPosition,cameraPosition+cameraDirection,vec3(0,1,0));
+		perspective +=1.0;
+		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
+		std::cout << "Perspective : " << perspective << '\n';
 		
 	}
 	if (glfwGetKey(GLFW_KEY_END)) {
+		perspective -=1.0;
+		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
+		std::cout << "Perspective : " << perspective << '\n';
 	}
 	
 	if (glfwGetKey('1') == GLFW_PRESS) {
@@ -275,14 +281,14 @@ void Engine::checkEvents() {
 
 		ray.modelMatrix = transform;
 		
-		if (wii) {  //just to debug polhemus positions
+		/*if (wii) {  //just to debug polhemus positions
 			remote.RefreshState();
 
 			if (remote.Button.A()) {   
 				std::cout << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
 				errorLog << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
 			}
-		}
+		}*/
 
 
 		//std::cout << "x : " << transform[3][0] << "\ty : " << transform[3][1] << "\tz : " << transform[3][2] << '\n';
@@ -344,6 +350,11 @@ void Engine::checkEvents() {
 				arcBallPreviousPoint[0] = xx*1.0f;
 				arcBallPreviousPoint[1] = yy*1.0f;
 				tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
+				break;
+			}
+			if (appInputState == rotate && !remote.Button.A()) {
+				appInputState = idle;
+				std::cout << "idle" << '\n';
 				break;
 			}
 //			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
@@ -934,7 +945,8 @@ GLuint Engine::picking()
 	//upload vaoid to shader as color
 	offscreenShader["baseColor"] = vec4(red/255.0f, green/255.0f ,blue/255.0f, alpha/255.0f);
 	//upload ray's position as viewMatrix
-	offscreenShader["pvm"] = projectionMatrix*glm::inverse(ray.modelMatrix)*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
+	//offscreenShader["pvm"] = projectionMatrix*glm::inverse(ray.modelMatrix)*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
+	offscreenShader["pvm"] = projectionMatrix*ray.modelMatrix*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
 
 	/* draw the object*/ 
 	cursor.draw();

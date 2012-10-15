@@ -189,7 +189,9 @@ namespace pho {
 
 		//raycasting test
 		int count;
-
+		
+		//perspective matrix control
+		float perspective;
 
 		//TUIO input stuff
 		glm::vec2 xyOrigin;
