@@ -70,15 +70,13 @@ calibrate(false),
 	if (wii) { 	remote.SetLEDs(0x01); }
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
-
 	appInputState = idle; 
 	appMode = rayCasting;
 	rotTechnique = screenSpace;
 
-	grabbing=false;
-
 	prevMouseWheel = 0;
 	gyroData = false;
+	rayHit=false;
 
 	axisChange[0][0] = 1; axisChange[0][1] =  0;  axisChange[0][2] =  0;
 	axisChange[1][0] = 0; axisChange[1][1] =  0;  axisChange[1][2] =  1;
@@ -296,11 +294,8 @@ void Engine::checkEvents() {
 	lock.unlock();
 
 	//Ray length calculation
-	if (!grabbing && picked !=0) {
-		rayLength = -glm::distance(
-			vec3(ray.getPosition()),
-			vec3(cursor.getPosition())
-			);
+	if (hitObject !=0 && appInputState != translate) {
+		rayLength = -glm::distance(vec3(ray.getPosition()),vec3(cursor.getPosition()));
 	}
 
 
@@ -310,9 +305,12 @@ void Engine::checkEvents() {
 
 		switch(appMode)  {
 		case rayCasting:
-			if (appInputState == idle && remote.Button.B()) {   
+			if (appInputState == idle && remote.Button.B() && rayHit) {   
 				appInputState = translate;
 				grabbedDistance = rayLength;
+
+				//possibly costly calculation:
+				grabOffset = glm::vec3();
 
 				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
 
@@ -321,15 +319,18 @@ void Engine::checkEvents() {
 				cursor.modelMatrix[3][2] = newMat[3][2];
 				std::cout << "translate" << '\n';
 			}
+
 			if (appInputState == translate && remote.Button.B()) {
 				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
 				cursor.modelMatrix[3][0] = newMat[3][0];
 				cursor.modelMatrix[3][1] = newMat[3][1];
 				cursor.modelMatrix[3][2] = newMat[3][2];
 			}
+
 			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
 				grabbedDistance+=0.5;
 			}
+
 			if (appInputState == translate && remote.Button.Up()) {
 				grabbedDistance-=0.5;
 			}
@@ -374,16 +375,16 @@ void Engine::render() {
 	
 	//render off-screen for picking
 	if (appMode == rayCasting) {
-		picked = picking();
+		hitObject = picking();
 
-		if(picked !=0) {
+		if(hitObject !=0) {
 
 			//render selection red border first with the flat color shader
 			offscreenShader.use();
 			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.6f);
 			offscreenShader["pvm"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
 			
-			//CALL_GL(glDisable(GL_DEPTH_TEST));
+			CALL_GL(glDisable(GL_DEPTH_TEST));
 			// draw the object
 			cursor.draw();
 
@@ -393,7 +394,7 @@ void Engine::render() {
 
 			restoreRay = true;
 		}
-		if (picked == 0 && restoreRay == true) {
+		if (hitObject == 0 && restoreRay == true) {
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 			float d = -1000.0f;
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));
@@ -402,7 +403,7 @@ void Engine::render() {
 
 	}
 
-	//CALL_GL(glEnable(GL_DEPTH_TEST));
+	CALL_GL(glEnable(GL_DEPTH_TEST));
 	
 	colorShader.use(); //bind the standard shader for default colored objects
 
@@ -412,6 +413,15 @@ void Engine::render() {
     cursor.draw();
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
     ray.drawLines();
+
+	if (rayHit) {
+		vec3 intersection;
+		cursor.findIntersection(ray.modelMatrix,intersection);
+		point.modelMatrix = glm::translate(glm::mat4(),intersection);
+		point.modelMatrix = glm::scale(point.modelMatrix,glm::vec3(1.5,1.5,1.5));
+		colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+		point.draw();
+	}
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
 	glfwSwapBuffers();
@@ -817,7 +827,7 @@ void Engine::initSimpleGeometry() {
 	indices.clear(); indices.push_back(0); indices.push_back(1);indices.push_back(1);indices.push_back(2);
 	indices.push_back(2);indices.push_back(3);indices.push_back(3);indices.push_back(0);
 
-    plane = pho::Mesh(vertices,indices,colors);
+    plane = pho::Mesh(vertices,indices,colors, true);
 
 	vertices.clear();
 	colors.clear();
@@ -831,11 +841,20 @@ void Engine::initSimpleGeometry() {
 	indices.push_back(0);
 	indices.push_back(1);
 
-    ray = pho::Mesh(vertices,indices,colors);
+    ray = pho::Mesh(vertices,indices,colors, true);
 
 	indices.clear();
 	vertices.clear();
 	colors.clear();
+
+	vertices.push_back(vec3(-0.5,-0.5,0));
+	vertices.push_back(vec3(0,0.5,0));
+	vertices.push_back(vec3(0.5,-0.5,0));
+	indices.push_back(0);indices.push_back(1);indices.push_back(2);
+	colors.push_back(vec3(1,1,1));
+	colors.push_back(vec3(1,1,1));
+	colors.push_back(vec3(1,1,1));
+	point = pho::Mesh(vertices,indices,colors,true);
 
 	/*std::vector<glm::vec2> texcoords;
 
@@ -946,7 +965,7 @@ GLuint Engine::picking()
 	offscreenShader["baseColor"] = vec4(red/255.0f, green/255.0f ,blue/255.0f, alpha/255.0f);
 	//upload ray's position as viewMatrix
 	//offscreenShader["pvm"] = projectionMatrix*glm::inverse(ray.modelMatrix)*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
-	offscreenShader["pvm"] = projectionMatrix*ray.modelMatrix*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
+	offscreenShader["pvm"] = projectionMatrix*glm::inverse(ray.modelMatrix)*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
 
 	/* draw the object*/ 
 	cursor.draw();
@@ -966,10 +985,14 @@ GLuint Engine::picking()
 	/* return to the default frame buffer */
 	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0)); 
 
-	if (temp !=0) { 
+	if (temp !=0) {
+		rayHit=true;
 		return temp; 
 	}
-	else return 0;
+	else {
+		rayHit=false;
+		return 0;
+	}
 }
 
 void Engine::generate_pixel_buffer_objects() 

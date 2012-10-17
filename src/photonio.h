@@ -98,8 +98,8 @@ namespace pho {
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-		static const int WINDOW_SIZE_X = 1280;
-		static const int WINDOW_SIZE_Y = 800;
+		static const int WINDOW_SIZE_X = 800;
+		static const int WINDOW_SIZE_Y = 600;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -154,7 +154,9 @@ namespace pho {
 
 		//Picking
 		GLuint picking();
-		GLuint picked;
+		GLuint hitObject;
+		bool rayHit;
+
 		void generate_pixel_buffer_objects();
 		GLuint get_object_id();
 		GLuint pickProgram;
@@ -165,8 +167,9 @@ namespace pho {
 		GLenum DrawBuffers[2];
 		bool restoreRay;
 		float rayLength;
-		bool grabbing;
+		glm::vec3 grabOffset;
 		float grabbedDistance;
+		
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
@@ -186,6 +189,7 @@ namespace pho {
         pho::Mesh cursor;
         pho::Mesh plane;
         pho::Mesh ray;
+		pho::Mesh point;
 
 		//raycasting test
 		int count;

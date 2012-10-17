@@ -52,7 +52,6 @@ int main()
 
     }
     std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) <<std::endl;
-	
 
     pho::Engine *engine = new Engine();
 
@@ -63,6 +62,7 @@ int main()
 
     engine->go();
 
+	glfwCloseWindow();
     glfwTerminate();
     return 0;
 }

@@ -165,7 +165,7 @@ pho::Model Assimporter::Import(const char* filename) {
 			faceIndex += 3;
 		}
 		aMesh.numFaces = _theScene->mMeshes[n]->mNumFaces;
-		aMesh.faces = faceArray;
+		//aMesh.faces = faceArray;
 
 		aMesh.numVertices = mesh->mNumVertices;
 
