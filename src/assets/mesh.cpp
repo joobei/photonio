@@ -12,7 +12,7 @@ vertices(vertixes),
 	indices(indixes),
 	colors(colorz)
 {
-	
+
 	for (std::vector<GLushort>::size_type i=0; i != indixes.size(); i+=3) {
 		Face temp;
 		temp.a = indixes[i];
@@ -145,70 +145,51 @@ void pho::Mesh::drawLines() {
 
 //for a given ray, find out if that ray hits the mesh then return the closest hit point
 bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
-	glm::vec3 a,b,c;
-	std::vector<glm::vec3> foundPoints;
-	float epsilon = 0.001f;
+	glm::vec3 rayOrigin;
+	glm::vec3 rayDirection;
 
-	bool hit = false;
-	
+	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the matrix
+	rayDirection = glm::vec3(0,0,-1)*glm::mat3(rayMatrix);  //direction of ray
+
+	glm::vec3 v0,v1,v2; //three vertices of the triangle to be tested
+	std::vector<glm::vec3> foundPoints;
+
+	float epsilon = 0.000001f;
+
 	//iterate through all faces
 	for (std::vector<Face>::size_type i=0;i < faces.size(); i++) {
 		glm::vec3 intersection;
-		//*********************** MUST CONVERT TO MODEL SPACE*************
 
-		a = vertices[faces[i].a];
-		b = vertices[faces[i].b];
-		c = vertices[faces[i].c];
+		v0 = vertices[faces[i].a]; //vertices are kept in another vector object
+		v1 = vertices[faces[i].b]; //I fetch them using indices
+		v2 = vertices[faces[i].c];
 
-		a = glm::mat3(modelMatrix)*a;
-		a.x = a.x+modelMatrix[3][0];
-		a.y = a.x+modelMatrix[3][1];
-		a.z = a.x+modelMatrix[3][2];
+		v0 = glm::mat3(modelMatrix)*v0;  //first rotate the vertex
+		v0 = v0+glm::vec3(modelMatrix[3]); //then translate it
 
-		b = glm::mat3(modelMatrix)*b;
-		b.x = b.x+modelMatrix[3][0];
-		b.y = b.x+modelMatrix[3][1];
-		b.z = b.x+modelMatrix[3][2];
+		v1 = glm::mat3(modelMatrix)*v1;
+		v1 = v1+glm::vec3(modelMatrix[3]);
 
-		c = glm::mat3(modelMatrix)*c;
-		c.x = b.x+modelMatrix[3][0];
-		c.y = b.x+modelMatrix[3][1];
-		c.z = b.x+modelMatrix[3][2];
+		v2 = glm::mat3(modelMatrix)*v2;
+		v2 = v2+glm::vec3(modelMatrix[3]);
 
-		if (lineTriangleIntersection(a,b,c,rayMatrix,epsilon,intersection)) {
-			foundPoints.push_back(intersection);
+
+		if (glm::intersectLineTriangle(rayOrigin,rayDirection,v0,v1,v2,intersection)) {
+
+
+			foundPoint = intersection;
+
+			return true;
+
 		}
 	}
+	return false;
 
-	glm::vec3 rayPoint = glm::vec3(rayMatrix[3][0],rayMatrix[3][1],rayMatrix[3][2]);
-
-	
-	switch(foundPoints.size()) {
-	case 0: return false;
-	case 1: foundPoint = foundPoints[0]; return true;
-	case 2: 
-		{
-			float p0length;
-			glm::vec3 test = foundPoints[0] - rayPoint;
-			p0length = test.length();
-
-			float p1length;
-			glm::vec3 test2 = foundPoints[1] - rayPoint;
-			p1length = test2.length();
-
-			if ( p0length > p1length ) {
-				foundPoint = foundPoints[0];
-			}
-			else {
-				foundPoint = foundPoints[1]; 
-			}
-		}
-	}
 }
 
 bool pho::Mesh::lineTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection) {
 
-	glm::vec3 lineDirection = glm::vec3()*glm::mat3(rayMatrix);  //direction of ray
+	glm::vec3 lineDirection = glm::vec3(0,0,-1)*glm::mat3(rayMatrix);  //direction of ray
 	glm::vec3 lineOrigin = glm::vec3(rayMatrix[3][0],rayMatrix[3][1],rayMatrix[3][2]);
 
 	glm::vec3 e1,e2,p,s,q;
@@ -251,4 +232,68 @@ bool pho::Mesh::lineTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v
 	intersection = lineOrigin + t*lineDirection;
 	return true;
 
+}
+
+bool pho::Mesh::RayIntersectTriangle(glm::mat4 rayMatrix, const glm::vec3 &T0, const glm::vec3 &T1, const glm::vec3 &T2, glm::vec3 &IntersectPt)
+{
+	glm::vec3 RayPt;
+	glm::vec3 RayDir;
+	RayDir = glm::vec3(0,0,-1)*glm::mat3(rayMatrix);  //direction of ray
+	RayPt = glm::vec3(rayMatrix[3][0],rayMatrix[3][1],rayMatrix[3][2]);
+
+	vec3 u, v, n;             // triangle vectors
+	vec3 w0, w;               // ray vectors
+	float r, a, b;             // params to calc ray-plane intersect
+
+	// get triangle edge vectors and plane normal
+	u = T1 - T0;
+	v = T2 - T0;
+	n = glm::cross(u, v);
+
+	w0 = RayPt - T0;
+	a = -glm::dot(n, w0);
+	b = glm::dot(n, RayDir);
+	if(b == 0.0f)
+	{
+		return false;
+	}
+	/*if (fabsf(b) < SMALL_NUM) {  // ray is parallel to triangle plane
+	if (a == 0)                // ray lies in triangle plane
+	return 2;
+	else return 0;             // ray disjoint from plane
+	}*/
+
+	// get intersect point of ray with triangle plane
+	r = a / b;
+	if (r < 0.0f)                  // ray goes away from triangle
+	{
+		return false;              // => no intersect
+	}
+	// for a segment, also test if (r > 1.0) => no intersect
+
+	IntersectPt = RayPt + r * RayDir; // intersect point of ray and plane
+
+	// is I inside T?
+	float uu, uv, vv, wu, wv, D;
+	uu = glm::dot(u, u);
+	uv = glm::dot(u, v);
+	vv = glm::dot(v, v);
+	w = IntersectPt - T0;
+	wu = glm::dot(w, u);
+	wv = glm::dot(w, v);
+	D = 1.0f / (uv * uv - uu * vv);
+
+	// get and test parametric coords
+	float s, t;
+	s = (uv * wv - vv * wu) * D;
+	if (s < 0.0f || s > 1.0f)        // I is outside T
+	{
+		return false;
+	}
+	t = (uv * wu - uu * wv) * D;
+	if (t < 0.0f || (s + t) > 1.0f)  // I is outside T
+	{
+		return false;
+	}
+	return true;
 }

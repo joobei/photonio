@@ -2,11 +2,17 @@
 #define MESH_H
 
 #include "glm/glm.hpp"
+#include "glm/gtx/intersect.hpp"
 #include <vector>
 #include "GL/glew.h"
 #include "shader.h"
 #include "assets.h"
 #include "util.h"
+
+using glm::vec3;
+using glm::vec4;
+using glm::mat3;
+using glm::mat4;
 
 namespace pho {
 
@@ -27,8 +33,10 @@ namespace pho {
 		void drawWireframe();
 		bool loadToGPU();
 		glm::vec3 getPosition();
+		
 		bool findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint);
 		bool lineTriangleIntersection(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection);
+		bool RayIntersectTriangle(glm::mat4 rayMatrix, const glm::vec3 &T0, const glm::vec3 &T1, const glm::vec3 &T2, glm::vec3 &IntersectPt);
 
 		unsigned int numFaces, numVertices;
         GLuint vaoId,ibId,vertexVboId,colorVboId;

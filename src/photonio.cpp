@@ -370,7 +370,7 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-	CALL_GL(glClearColor(1,1,1,1));
+	CALL_GL(glClearColor(0,0,0,1));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	//render off-screen for picking
@@ -401,6 +401,7 @@ void Engine::render() {
 			restoreRay=false;
 		}
 
+	
 	}
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
@@ -418,9 +419,10 @@ void Engine::render() {
 		vec3 intersection;
 		cursor.findIntersection(ray.modelMatrix,intersection);
 		point.modelMatrix = glm::translate(glm::mat4(),intersection);
-		point.modelMatrix = glm::scale(point.modelMatrix,glm::vec3(1.5,1.5,1.5));
+		//point.modelMatrix = glm::scale(point.modelMatrix,glm::vec3(1.5,1.5,1.5));
 		colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
 		point.draw();
+		
 	}
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
