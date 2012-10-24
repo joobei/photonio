@@ -401,7 +401,7 @@ void Engine::render() {
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	//render off-screen for picking
-	if (appMode == rayCasting) {
+	/*if (appMode == rayCasting) {
 		hitObject = picking();
 
 		if(hitObject !=0) {
@@ -427,9 +427,7 @@ void Engine::render() {
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));
 			restoreRay=false;
 		}
-
-	
-	}
+	}*/
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
 	

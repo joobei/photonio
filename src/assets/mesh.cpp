@@ -237,7 +237,7 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 			//convert intersection point from barycentric to cartesian
 			foundPoint = intersection.x*glm::vec3(v0)+intersection.y*glm::vec3(v1)+intersection.z*glm::vec3(v2);
 		
-			std::cout << count << " - Found x: \t" <<intersection.x << " \t" << intersection.y << " \t" << intersection.z << '\n'; 
+			std::cout << count << " - Found x: \t" <<foundPoint.x << " \t" << foundPoint.y << " \t" << foundPoint.z << '\n'; 
 			count++;
 			return true;
 		}
