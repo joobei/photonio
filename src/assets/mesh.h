@@ -29,24 +29,31 @@ namespace pho {
 		GLuint getVaoId();
         void setShader(pho::Shader* tehShader);
 		void draw();
-		void drawLines();
-		void drawWireframe();
+		void draw(bool wireframe);
+
 		bool loadToGPU();
 		glm::vec3 getPosition();
 		
 		bool findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint);
-		bool lineTriangleIntersection(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection);
-		bool RayIntersectTriangle(glm::mat4 rayMatrix, const glm::vec3 &T0, const glm::vec3 &T1, const glm::vec3 &T2, glm::vec3 &IntersectPt);
+
+		bool simple; //for rays, simple lines
 
 		unsigned int numFaces, numVertices;
-        GLuint vaoId,ibId,vertexVboId,colorVboId;
+        GLuint vaoId;
+		GLuint wfvaoId;
+		GLuint ibId;
+		GLuint vertexVboId;
+		GLuint colorVboId;
+		GLuint wfibId; //indices for wireframe rendering
 		GLuint texIndex;
 		GLuint uniformBlockIndex;
+
 		std::vector<pho::Face> faces;
 		glm::mat4 modelMatrix;
 		std::vector<glm::vec3> vertices;
 		std::vector<glm::vec3> normals;
 		std::vector<GLushort> indices;	 
+		std::vector<GLushort> wfindices;	 
 		std::vector<glm::vec3> colors;
 		bool selected;
 		std::string name;

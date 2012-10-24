@@ -92,29 +92,31 @@ void Engine::initResources() {
 
 	initSimpleGeometry();
 
+	//for lighting, not used yet
 	glGenBuffers(1,&(pointLight.uniformBlockIndex)); //generate buffer and store it's location in pointLight's member variable
 	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
 
-    colorShader = pho::Shader("shaders/shader");
+    //load shaders from files
+	colorShader = pho::Shader("shaders/shader");  
 	offscreenShader = pho::Shader("shaders/offscreen");
 
-	//Calculate the matrices
-	//First create the perspective matrix
+	
+	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
-	cameraPosition = vec3(0,0,0); //translate camera back (i.e. world forward)
-
-	viewMatrix = mat4();
-	viewMatrix = glm::translate(viewMatrix,cameraPosition); 
+	//Camera at the origin
+	cameraPosition = vec3(0,0,0); 
+	viewMatrix = mat4(1);
+	viewMatrix = glm::translate(cameraPosition); 
 
 	glEnable (GL_DEPTH_TEST);
 	glEnable (GL_BLEND);
 	glDepthMask(GL_TRUE);
 
-	restoreRay=false;
+	restoreRay=false; //make ray long again if NOT intersecting
 
-	cursor.modelMatrix = glm::translate(cursor.modelMatrix,vec3(0,0,-10));
+	cursor.modelMatrix = glm::translate(cursor.modelMatrix,vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
 
 	//picking stuff
@@ -130,6 +132,31 @@ void Engine::checkEvents() {
 	if (glfwGetKey(GLFW_KEY_DOWN)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
 	}
+
+	if (glfwGetKey(GLFW_KEY_KP_4)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(0.1f,glm::vec3(0,1,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_6)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(-0.1f,glm::vec3(0,1,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_8)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(0.1f,glm::vec3(1,0,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_5)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(-0.1f,glm::vec3(1,0,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_7)) {
+		ray.modelMatrix[3][0] -=1;
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_9)) {
+		ray.modelMatrix[3][0] +=1;
+	}
+
 	if (glfwGetKey(GLFW_KEY_UP)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,0,FACTOR));
 	}
@@ -277,7 +304,7 @@ void Engine::checkEvents() {
 		transform[3][1] = position.y;
 		transform[3][2] = position.z;
 
-		ray.modelMatrix = transform;
+		//ray.modelMatrix = transform;
 		
 		/*if (wii) {  //just to debug polhemus positions
 			remote.RefreshState();
@@ -409,21 +436,26 @@ void Engine::render() {
 	colorShader.use(); //bind the standard shader for default colored objects
 
 	colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
-    plane.drawLines();
-	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-    cursor.draw();
+    plane.draw(true);
+    //cursor.draw();
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-    ray.drawLines();
-
-	if (rayHit) {
-		vec3 intersection;
-		cursor.findIntersection(ray.modelMatrix,intersection);
-		point.modelMatrix = glm::translate(glm::mat4(),intersection);
-		//point.modelMatrix = glm::scale(point.modelMatrix,glm::vec3(1.5,1.5,1.5));
-		colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
-		point.draw();
+    ray.draw(true);
+	
+	offscreenShader.use();
+	offscreenShader["baseColor"] = vec4(1.0f, 1.0f ,1.0f, 1.0f);
+	offscreenShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+	cursor.draw(true);
 		
-	}
+	colorShader.use(); //back to drawing with colors
+
+	//intersection test
+	vec3 intersection;
+	cursor.findIntersection(ray.modelMatrix,intersection);
+	point.modelMatrix = glm::translate(intersection);
+	colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+	point.draw();
+		
+	
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
 	glfwSwapBuffers();
@@ -771,35 +803,36 @@ void Engine::initSimpleGeometry() {
 	std::vector<GLushort> indices;
 	std::vector<vec3> vertices;
 	std::vector<vec3> colors;
-	
-	
-	indices.push_back(0); indices.push_back(1); indices.push_back(3);
-	indices.push_back(3); indices.push_back(1); indices.push_back(2);
-	indices.push_back(2); indices.push_back(1); indices.push_back(8);
 
-	indices.push_back(3); indices.push_back(2); indices.push_back(7);
-	indices.push_back(7); indices.push_back(2); indices.push_back(6);
-	indices.push_back(6); indices.push_back(2); indices.push_back(8);
+	//COUNTER CLOCKWISE TRIANGLE ORDER IMPORTANT FOR glm::intersectRayTriangle!!!!!!!!!!!!!!!
+	indices.push_back(1); indices.push_back(0); indices.push_back(3);  
+	indices.push_back(3); indices.push_back(2); indices.push_back(1);
+	indices.push_back(2); indices.push_back(8); indices.push_back(1);
 
-	indices.push_back(7); indices.push_back(4); indices.push_back(6);
-	indices.push_back(6); indices.push_back(4); indices.push_back(5);
-	indices.push_back(5); indices.push_back(6); indices.push_back(8);
+	indices.push_back(2); indices.push_back(3); indices.push_back(7);
+	indices.push_back(7); indices.push_back(6); indices.push_back(2);
+	indices.push_back(6); indices.push_back(8); indices.push_back(2);
 
-	indices.push_back(4); indices.push_back(5); indices.push_back(0);
-	indices.push_back(0); indices.push_back(5); indices.push_back(1);
-	indices.push_back(1); indices.push_back(5); indices.push_back(8);
+	indices.push_back(7); indices.push_back(6); indices.push_back(4);
+	indices.push_back(6); indices.push_back(5); indices.push_back(4);
+	indices.push_back(5); indices.push_back(8); indices.push_back(6);
 
-	indices.push_back(0); indices.push_back(4); indices.push_back(3);
-	indices.push_back(3); indices.push_back(4); indices.push_back(7);
+	indices.push_back(4); indices.push_back(0); indices.push_back(5);
+	indices.push_back(5); indices.push_back(0); indices.push_back(1);
+	indices.push_back(5); indices.push_back(1); indices.push_back(8);
 
-	vertices.push_back(vec3(-0.5,-0.5,0.5)); //front bottom left
+	indices.push_back(4); indices.push_back(3); indices.push_back(0);
+	indices.push_back(4); indices.push_back(7); indices.push_back(3);
+
+	vertices.push_back(vec3(-0.5,-0.5,0.5)); //front bottom left  0
 	colors.push_back(vec3(1.0,0.0,0.0));
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //front top left
+	vertices.push_back(vec3(-0.5,0.5,0.5)); //front top left 1
 	colors.push_back(vec3(0.0,1.0,0.0));
-	vertices.push_back(vec3(0.5,0.5,0.5));  //front top right
+	vertices.push_back(vec3(0.5,0.5,0.5));  //front top right  2
 	colors.push_back(vec3(0.0,0.0,1.0));
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //front bottom right
+	vertices.push_back(vec3(0.5,-0.5,0.5)); //front bottom right  3
 	colors.push_back(vec3(1.0,1.0,1.0)); 
+
 	vertices.push_back(vec3(-0.5,-0.5,-0.5));
 	colors.push_back(vec3(1.0,1.0,1.0)); 
 	vertices.push_back(vec3(-0.5,0.5,-0.5));
@@ -808,7 +841,8 @@ void Engine::initSimpleGeometry() {
 	colors.push_back(vec3(1.0,1.0,1.0)); 
 	vertices.push_back(vec3(0.5,-0.5,-0.5));
 	colors.push_back(vec3(1.0,1.0,1.0)); 
-	vertices.push_back(vec3(0.0,1.0,0.5));	
+	
+	vertices.push_back(vec3(0.0,1.0,0.5));	//roof top
 	colors.push_back(vec3(1.0,1.0,1.0));
 
     target = pho::Mesh(vertices,indices,colors);
