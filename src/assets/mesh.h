@@ -35,6 +35,7 @@ namespace pho {
 		glm::vec3 getPosition();
 		
 		bool findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint);
+		bool rayTriangleIntersection(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection);
 
 		bool simple; //for rays, simple lines
 

@@ -212,6 +212,8 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 	glm::vec3 rayOrigin;
 	glm::vec3 rayDirection;
 
+	float epsilon = 0.000001;
+
 	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the matrix
 	rayDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
 	rayDirection = glm::normalize(rayDirection);
@@ -230,18 +232,78 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 		v1 = modelMatrix*v1;
 		v2 = modelMatrix*v2;
 		
-		//if there's a hit
+		//currently disabled
+		/*if there's a hit
 		if (glm::intersectRayTriangle(rayOrigin,rayDirection,glm::vec3(v0),glm::vec3(v1),glm::vec3(v2),intersection)) {
 			static int count  = 0;
 
 			//convert intersection point from barycentric to cartesian
-			foundPoint = intersection.x*glm::vec3(v0)+intersection.y*glm::vec3(v1)+intersection.z*glm::vec3(v2);
+			//currently does not work because of glm::intersectRayTriangle bug
+			foundPoint = intersection;
 		
 			std::cout << count << " - Found x: \t" <<foundPoint.x << " \t" << foundPoint.y << " \t" << foundPoint.z << '\n'; 
 			count++;
 			return true;
+		}*/
+
+		if (lineTriangleIntersection(glm::vec3(v0),glm::vec3(v1),glm::vec3(v2),rayMatrix,epsilon,intersection)) {
+			static int count  = 0;
+
+			foundPoint = intersection;
+
+			std::cout << count << " - Found x: \t" <<foundPoint.x << " \t" << foundPoint.y << " \t" << foundPoint.z << '\n'; 
+			count++;
+			return true;
 		}
+
 	}
 	return false;
+
+}
+
+bool pho::Mesh::rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection) {
+
+	glm::vec3 lineDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
+	glm::vec3 lineOrigin = glm::vec3(rayMatrix[3][0],rayMatrix[3][1],rayMatrix[3][2]);
+
+	glm::vec3 e1,e2,p,s,q;
+
+	float t,u,v,tmp;
+
+	e1 = v1-v0;
+	e2 = v2-v0;
+	p=glm::cross(lineDirection,e2);
+	tmp = glm::dot(p,e1);
+
+	if((tmp > -epsilon) && (tmp < epsilon)) {
+		return false;
+	}
+
+	tmp = 1.0f/tmp;
+	s = lineOrigin - v0;
+
+	u=tmp*glm::dot(s,p);
+	if (u < 00 || u > 1.0) {
+		return false;
+	}
+
+	q = glm::cross(s,e1);
+	v = tmp * glm::dot(lineDirection,q);
+
+	if(v<0.0||v>1.0) {
+		return false;
+	}
+
+	if (u+v > 1.0) {
+		return false;
+	}
+
+	t = tmp * glm::dot(e2,q);
+
+	//info here (probably barycentric coordinates)
+
+	//intersection point
+	intersection = lineOrigin + t*lineDirection;
+	return true;
 
 }

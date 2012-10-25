@@ -881,13 +881,13 @@ void Engine::initSimpleGeometry() {
 	vertices.clear();
 	colors.clear();
 
-	vertices.push_back(vec3(-0.5,-0.5,0));
-	vertices.push_back(vec3(0,0.5,0));
-	vertices.push_back(vec3(0.5,-0.5,0));
+	vertices.push_back(vec3(-0.1,-0.1,0));
+	vertices.push_back(vec3(0,0.1,0));
+	vertices.push_back(vec3(0.1,-0.1,0));
 	indices.push_back(0);indices.push_back(1);indices.push_back(2);
-	colors.push_back(vec3(1,1,1));
-	colors.push_back(vec3(1,1,1));
-	colors.push_back(vec3(1,1,1));
+	colors.push_back(vec3(0,1,0));
+	colors.push_back(vec3(0,1,0));
+	colors.push_back(vec3(0,1,0));
 	point = pho::Mesh(vertices,indices,colors,true);
 
 	/*std::vector<glm::vec2> texcoords;
