@@ -320,11 +320,6 @@ void Engine::checkEvents() {
 	}
 	lock.unlock();
 
-	//Ray length calculation
-	if (hitObject !=0 && appInputState != translate) {
-		rayLength = -glm::distance(vec3(ray.getPosition()),vec3(cursor.getPosition()));
-	}
-
 
 	//if the connection to the wii-mote was successful
 	if (wii) {
@@ -400,34 +395,43 @@ void Engine::render() {
 	CALL_GL(glClearColor(0,0,0,1));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
-	//render off-screen for picking
-	/*if (appMode == rayCasting) {
-		hitObject = picking();
-
-		if(hitObject !=0) {
-
+	//If we are raycasting and there's a hit
+	if (appMode == rayCasting) {
+		if (cursor.findIntersection(ray.modelMatrix,intersectionPoint)) {
+		
+			CALL_GL(glDisable(GL_DEPTH_TEST));
 			//render selection red border first with the flat color shader
 			offscreenShader.use();
 			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.6f);
-			offscreenShader["pvm"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
-			
-			CALL_GL(glDisable(GL_DEPTH_TEST));
+			offscreenShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
 			// draw the object
 			cursor.draw();
 
+			point.modelMatrix = glm::translate(intersectionPoint);
+
+			colorShader.use(); //back to drawing with colors
+			colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+			point.draw();
+
+			//Ray length calculation
+			rayLength = -glm::distance(vec3(ray.getPosition()),intersectionPoint);
 			//Shorten the beam to match the object
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
 
-			restoreRay = true;
+			restoreRay = true; //mark ray to be restored to full length
 		}
-		if (hitObject == 0 && restoreRay == true) {
+		
+		if (restoreRay) {
+
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 			float d = -1000.0f;
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));
-			restoreRay=false;
+			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));  //edit the 6th float, i.e. the Z
+			
+			restoreRay = false;  //we already restored, no need to do it every frame
 		}
-	}*/
+	}
+
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
 	
@@ -441,18 +445,8 @@ void Engine::render() {
 	
 	offscreenShader.use();
 	offscreenShader["baseColor"] = vec4(1.0f, 1.0f ,1.0f, 1.0f);
-	offscreenShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-	cursor.draw(true);
-		
-	colorShader.use(); //back to drawing with colors
-
-	//intersection test
-	vec3 intersection;
-	cursor.findIntersection(ray.modelMatrix,intersection);
-	point.modelMatrix = glm::translate(intersection);
-	colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
-	point.draw();
-		
+	offscreenShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+	cursor.draw(true);		
 	
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
@@ -999,7 +993,7 @@ GLuint Engine::picking()
 	offscreenShader["baseColor"] = vec4(red/255.0f, green/255.0f ,blue/255.0f, alpha/255.0f);
 	//upload ray's position as viewMatrix
 	//offscreenShader["pvm"] = projectionMatrix*glm::inverse(ray.modelMatrix)*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
-	offscreenShader["pvm"] = projectionMatrix*glm::inverse(ray.modelMatrix)*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
+	offscreenShader["mvp"] = projectionMatrix*ray.modelMatrix*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
 
 	/* draw the object*/ 
 	cursor.draw();

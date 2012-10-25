@@ -212,7 +212,7 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 	glm::vec3 rayOrigin;
 	glm::vec3 rayDirection;
 
-	float epsilon = 0.000001;
+	double epsilon = 0.000001;
 
 	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the matrix
 	rayDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
@@ -222,7 +222,6 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 
 	//iterate through all faces
 	for (std::vector<Face>::size_type i=0;i < faces.size(); i++) {
-		glm::vec3 intersection;
 
 		v0 = glm::vec4(vertices[faces[i].a],1.0f); //vertices are kept in another vector object
 		v1 = glm::vec4(vertices[faces[i].b],1.0f); //I fetch them using indices
@@ -232,7 +231,7 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 		v1 = modelMatrix*v1;
 		v2 = modelMatrix*v2;
 		
-		//currently disabled
+		//currently disabled because glm says barycentric but they are not barycentric
 		/*if there's a hit
 		if (glm::intersectRayTriangle(rayOrigin,rayDirection,glm::vec3(v0),glm::vec3(v1),glm::vec3(v2),intersection)) {
 			static int count  = 0;
@@ -246,13 +245,7 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 			return true;
 		}*/
 
-		if (lineTriangleIntersection(glm::vec3(v0),glm::vec3(v1),glm::vec3(v2),rayMatrix,epsilon,intersection)) {
-			static int count  = 0;
-
-			foundPoint = intersection;
-
-			std::cout << count << " - Found x: \t" <<foundPoint.x << " \t" << foundPoint.y << " \t" << foundPoint.z << '\n'; 
-			count++;
+		if (rayTriangleIntersection(glm::vec3(v0),glm::vec3(v1),glm::vec3(v2),rayMatrix,epsilon,foundPoint)) {
 			return true;
 		}
 

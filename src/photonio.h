@@ -166,10 +166,12 @@ namespace pho {
 		GLuint fbo;
 		GLuint pbo_a,pbo_b;
 		GLenum DrawBuffers[2];
-		bool restoreRay;
 		float rayLength;
+		bool restoreRay;
 		glm::vec3 grabOffset;
 		float grabbedDistance;
+
+		vec3 intersectionPoint;
 		
 
 		EventQueue eventQueue;
