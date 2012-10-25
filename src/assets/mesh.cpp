@@ -270,14 +270,16 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,glm::vec3& foundNormal) {
 	glm::vec3 rayOrigin;
 	glm::vec3 rayDirection;
-
+	glm::vec3 sphereOrigin;
+	float radius;
 
 	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the matrix
 	rayDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
 	rayDirection = glm::normalize(rayDirection);
-	float radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
+	sphereOrigin = glm::vec3(modelMatrix[3]);
+	radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
 
-	if (glm::intersectRaySphere(rayOrigin,rayDirection,glm::vec3(modelMatrix[3]),radius,foundPoint,foundNormal)) {
+	if (glm::intersectRaySphere(rayOrigin,rayDirection,sphereOrigin,radius,foundPoint,foundNormal)) {
 		
 		static int count  = 0;
 

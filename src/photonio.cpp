@@ -124,25 +124,25 @@ void Engine::initResources() {
 //and consumes them all
 void Engine::checkEvents() {
 	
-#define FACTOR 0.1
+#define FACTOR 0.5f
 	if (glfwGetKey(GLFW_KEY_DOWN)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_4)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(0.1f,glm::vec3(0,1,0));
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(0,1,0));
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_6)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(-0.1f,glm::vec3(0,1,0));
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(0,1,0));
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_8)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(0.1f,glm::vec3(1,0,0));
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(1,0,0));
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_5)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(-0.1f,glm::vec3(1,0,0));
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(1,0,0));
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_7)) {
@@ -299,7 +299,7 @@ void Engine::checkEvents() {
 		transform[3][1] = position.y;
 		transform[3][2] = position.z;
 
-		ray.modelMatrix = transform;
+		//ray.modelMatrix = transform;
 		
 		/*if (wii) {  //just to debug polhemus positions
 			remote.RefreshState();
@@ -422,8 +422,19 @@ void Engine::render() {
 			restoreRay = true; //mark ray to be restored to full length
 		}
 
+		intersectionPoint = glm::vec3();
+		if (cursor.findSphereIntersection(ray.modelMatrix,intersectionPoint,intersectionNormal)) {
 
-		
+			//Ray length calculation
+			rayLength = -glm::distance(vec3(ray.getPosition()),intersectionPoint);
+
+			//Shorten the beam to match the object
+			//CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+			//CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+
+			restoreRay = true; //mark ray to be restored to full length
+
+		}
 	}
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
@@ -444,7 +455,8 @@ void Engine::render() {
 	//target.draw();
 
 	if (restoreRay) {  //sign that the ray has been shortened so we hit something so we must draw
-		point.modelMatrix = glm::translate(intersectionPoint);
+		//point.modelMatrix = glm::translate(intersectionPoint);
+		point.modelMatrix = glm::translate(glm::vec3(cursor.modelMatrix[3])+intersectionPoint);
 		colorShader.use(); //back to drawing with colors
 		colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
 		point.draw();
