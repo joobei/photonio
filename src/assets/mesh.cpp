@@ -13,8 +13,11 @@ vertices(vertixes),
 	colors(colorz)
 {
 	simple = false;
+	farthestVertex = vertices[indices[0]];
+	GLushort farthestIndex=0;
 
-	for (std::vector<GLushort>::size_type i=0; i != indixes.size(); i+=3) {
+	for (std::vector<GLushort>::size_type i=0; i != indices.size(); i+=3) {
+		
 		Face temp;
 		temp.a = indixes[i];
 		temp.b = indixes[i+1];
@@ -28,6 +31,15 @@ vertices(vertixes),
 		wfindices.push_back(indixes[i+2]);
 		wfindices.push_back(indixes[i+2]);
 		wfindices.push_back(indixes[i]);
+	}
+
+	//find farthest vertex and save for sphere radius
+	for (std::vector<glm::vec3>::size_type i=0; i!= vertices.size(); i++) {
+
+		if(glm::distance(vertices[i],glm::vec3(0,0,0)) > glm::distance(vertices[farthestIndex],glm::vec3(0,0,0))) {
+			farthestVertex = vertices[farthestIndex];
+			farthestIndex = i;
+		}
 	}
 
 
@@ -189,7 +201,7 @@ GLuint pho::Mesh::getVaoId() {
 }
 
 glm::vec3 pho::Mesh::getPosition() {
-	return glm::vec3(modelMatrix[3][0],modelMatrix[3][1],modelMatrix[3][2]);
+	return glm::vec3(modelMatrix[3]);
 }
 
 void pho::Mesh::draw() {
@@ -247,11 +259,35 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 
 		if (rayTriangleIntersection(glm::vec3(v0),glm::vec3(v1),glm::vec3(v2),rayMatrix,epsilon,foundPoint)) {
 			return true;
+
 		}
 
 	}
 	return false;
 
+}
+
+bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,glm::vec3& foundNormal) {
+	glm::vec3 rayOrigin;
+	glm::vec3 rayDirection;
+
+
+	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the matrix
+	rayDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
+	rayDirection = glm::normalize(rayDirection);
+	float radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
+
+	if (glm::intersectRaySphere(rayOrigin,rayDirection,glm::vec3(modelMatrix[3]),radius,foundPoint,foundNormal)) {
+		
+		static int count  = 0;
+
+		std::cout << count << " - Found x: \t" <<foundPoint.x << " \t" << foundPoint.y << " \t" << foundPoint.z << '\n'; 
+		count++;
+
+
+		return true;
+	}
+	else return false;
 }
 
 bool pho::Mesh::rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection) {

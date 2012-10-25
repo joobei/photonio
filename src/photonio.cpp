@@ -116,18 +116,14 @@ void Engine::initResources() {
 
 	restoreRay=false; //make ray long again if NOT intersecting
 
-	cursor.modelMatrix = glm::translate(cursor.modelMatrix,vec3(0,0,-5));
+	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
-
-	//picking stuff
-	generate_frame_buffer_texture();
-	generate_pixel_buffer_objects();
 }
 
 //checks event queue for events
-//and co nsumes them all
+//and consumes them all
 void Engine::checkEvents() {
-
+	
 #define FACTOR 0.1
 	if (glfwGetKey(GLFW_KEY_DOWN)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
@@ -178,6 +174,9 @@ void Engine::checkEvents() {
 		std::cout << "Perspective : " << perspective << '\n';
 		
 	}
+	if (glfwGetKey(GLFW_KEY_SPACE)) {
+		cursor.modelMatrix = glm::translate(0,0,-5);
+	}
 	if (glfwGetKey(GLFW_KEY_END)) {
 		perspective -=1.0;
 		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -201,7 +200,7 @@ void Engine::checkEvents() {
 		appMode = rayCasting;
 		std::cout << "RayCasting" << '\n';
 	}
-
+	
 
 	int wheel = glfwGetMouseWheel();
 	if (wheel != prevMouseWheel) {
@@ -283,10 +282,6 @@ void Engine::checkEvents() {
 
 		position = vec3(temp[0],temp[1],temp[2]);
 
-		position.z-=5;
-		position.y-=5;
-
-
 		orientation.w = temp[3];
 		orientation.x = temp[4];
 		orientation.y = temp[5];
@@ -304,7 +299,7 @@ void Engine::checkEvents() {
 		transform[3][1] = position.y;
 		transform[3][2] = position.z;
 
-		//ray.modelMatrix = transform;
+		ray.modelMatrix = transform;
 		
 		/*if (wii) {  //just to debug polhemus positions
 			remote.RefreshState();
@@ -332,7 +327,7 @@ void Engine::checkEvents() {
 				grabbedDistance = rayLength;
 
 				//possibly costly calculation:
-				grabOffset = glm::vec3();
+				grabOffset = glm::vec3(cursor.modelMatrix[3])-intersectionPoint;
 
 				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
 
@@ -343,7 +338,8 @@ void Engine::checkEvents() {
 			}
 
 			if (appInputState == translate && remote.Button.B()) {
-				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
+			
+				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance)+grabOffset);
 				cursor.modelMatrix[3][0] = newMat[3][0];
 				cursor.modelMatrix[3][1] = newMat[3][1];
 				cursor.modelMatrix[3][2] = newMat[3][2];
@@ -395,10 +391,20 @@ void Engine::render() {
 	CALL_GL(glClearColor(0,0,0,1));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
+	if (restoreRay) {
+
+		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+		float d = -1000.0f;
+		CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));  //edit the 6th float, i.e. the Z
+
+		restoreRay = false;  //we already restored, no need to do it every frame
+	}
+
 	//If we are raycasting and there's a hit
 	if (appMode == rayCasting) {
 		if (cursor.findIntersection(ray.modelMatrix,intersectionPoint)) {
-		
+			rayHit = true; //picked up by checkEvents in wii-mote mode switch
+
 			CALL_GL(glDisable(GL_DEPTH_TEST));
 			//render selection red border first with the flat color shader
 			offscreenShader.use();
@@ -406,12 +412,6 @@ void Engine::render() {
 			offscreenShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
 			// draw the object
 			cursor.draw();
-
-			point.modelMatrix = glm::translate(intersectionPoint);
-
-			colorShader.use(); //back to drawing with colors
-			colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
-			point.draw();
 
 			//Ray length calculation
 			rayLength = -glm::distance(vec3(ray.getPosition()),intersectionPoint);
@@ -421,35 +421,35 @@ void Engine::render() {
 
 			restoreRay = true; //mark ray to be restored to full length
 		}
+
+
 		
-		if (restoreRay) {
-
-			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			float d = -1000.0f;
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));  //edit the 6th float, i.e. the Z
-			
-			restoreRay = false;  //we already restored, no need to do it every frame
-		}
 	}
-
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
 	
 	colorShader.use(); //bind the standard shader for default colored objects
 
+	if (appMode == planeCasting) {
 	colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
     plane.draw(true);
+	}
     //cursor.draw();
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
     ray.draw(true);
-	
-	offscreenShader.use();
-	offscreenShader["baseColor"] = vec4(1.0f, 1.0f ,1.0f, 1.0f);
-	offscreenShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-	cursor.draw(true);		
+	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+	cursor.draw();		
 	
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
+
+	if (restoreRay) {  //sign that the ray has been shortened so we hit something so we must draw
+		point.modelMatrix = glm::translate(intersectionPoint);
+		colorShader.use(); //back to drawing with colors
+		colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+		point.draw();
+	}
+
 	glfwSwapBuffers();
 }
 
@@ -526,6 +526,7 @@ void Engine::go() {
 }
 
 void Engine::shutdown() {
+
 	netThread->interrupt();
 	_serialserver.shutDown();
 	serialThread->interrupt();
@@ -875,10 +876,16 @@ void Engine::initSimpleGeometry() {
 	vertices.clear();
 	colors.clear();
 
-	vertices.push_back(vec3(-0.1,-0.1,0));
-	vertices.push_back(vec3(0,0.1,0));
-	vertices.push_back(vec3(0.1,-0.1,0));
-	indices.push_back(0);indices.push_back(1);indices.push_back(2);
+	vertices.push_back(vec3(-0.1,-0.1,0.01));
+	vertices.push_back(vec3(0,0.1,0.01));
+	vertices.push_back(vec3(0.1,-0.1,0.01));
+
+	//vertices.push_back(vec3(-0.1,-0.1,-0.1));
+	//vertices.push_back(vec3(0,0.1,-0.1));
+	//vertices.push_back(vec3(0.1,-0.1,-0.1));
+
+	indices.push_back(0);indices.push_back(2);indices.push_back(1);
+	//indices.push_back(3);indices.push_back(5);indices.push_back(4);
 	colors.push_back(vec3(0,1,0));
 	colors.push_back(vec3(0,1,0));
 	colors.push_back(vec3(0,1,0));
@@ -913,186 +920,3 @@ void Engine::initSimpleGeometry() {
     quad.modelMatrix = glm::scale(vec3(0.3,0.3,1));
     quad.modelMatrix = glm::translate(quad.modelMatrix,vec3(-2.2,-2.2,0));*/
 }
-
-void Engine::generate_frame_buffer_texture() 
-{  
-
-	/* create a framebuffer object */ 
-	CALL_GL(glGenFramebuffers(1, &fbo));     
-	/* attach the texture and the render buffer to the frame buffer */ 
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, fbo)); 
-
-	/* generate a texture id */ 
-	CALL_GL(glGenTextures(1, &tex)); 
-	/* bind the texture */ 
-	CALL_GL(glBindTexture(GL_TEXTURE_2D, tex)); 
-	/* create the texture in the GPU */ 
-	CALL_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WINDOW_SIZE_X, WINDOW_SIZE_Y 
-		, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr)); 
-
-	/* set texture parameters */ 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)); 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)); 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)); 
-	CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)); 
-
-	/* unbind the texture */ 
-	CALL_GL(glBindTexture(GL_TEXTURE_2D, 0)); 
-
-	/* create a renderbuffer object for the depth buffer */ 
-	CALL_GL(glGenRenderbuffers(1, &rbo)); 
-	/* bind the texture */ 
-	CALL_GL(glBindRenderbuffer(GL_RENDERBUFFER, rbo)); 
-	/* create the render buffer in the GPU */ 
-	CALL_GL(glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT 
-		, WINDOW_SIZE_X, WINDOW_SIZE_Y)); 
-
-	/* unbind the render buffer */ 
-	CALL_GL(glBindRenderbuffer(GL_RENDERBUFFER, 0));
-
-
-	/* attach the texture and the render buffer to the frame buffer */ 
-	CALL_GL(glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, tex, 0)); 
-	CALL_GL(glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT 
-		, GL_RENDERBUFFER, rbo)); 
-
-	// check the frame buffer 
-	if (glCheckFramebufferStatus( 
-		GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-			std::cout << "Framebuffer status not complete" << '\n';
-	}
-	/* handle an error : frame buffer incomplete */ 
-	/* return to the default frame buffer */ 
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0)); 
-
-	//CALL_GL(glEC("Texture Generation"));
-}
-
-GLuint Engine::picking() 
-{ 
-	GLubyte red, green, blue, alpha; 
-
-	/* bind the frame buffer */ 
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, fbo)); 
-
-	/* clear the frame buffer */ 
-	CALL_GL(glClearColor(0,0,0,0)); 
-	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)); 
-
-	/* select the shader program */ 
-	offscreenShader.use();
-
-	GLuint tempVao = cursor.getVaoId();
-
-	alpha = tempVao & 0xFF; 
-	blue  = (tempVao >> 8) & 0xFF; 
-	green = (tempVao >> 16) & 0xFF; 
-	red   = (tempVao >> 24) & 0xFF; 
-	
-	//upload vaoid to shader as color
-	offscreenShader["baseColor"] = vec4(red/255.0f, green/255.0f ,blue/255.0f, alpha/255.0f);
-	//upload ray's position as viewMatrix
-	//offscreenShader["pvm"] = projectionMatrix*glm::inverse(ray.modelMatrix)*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
-	offscreenShader["mvp"] = projectionMatrix*ray.modelMatrix*cursor.modelMatrix; //todo:this should be cycled through all objects!!!
-
-	/* draw the object*/ 
-	cursor.draw();
-
-	//check that our framebuffer is ok
-	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		std::cout << "Framebuffer Error" << '\n';
-	}
-
-	GLuint temp;
-
-	temp = get_object_id();
-
-
-	//glEC("off screen");
-
-	/* return to the default frame buffer */
-	CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0)); 
-
-	if (temp !=0) {
-		rayHit=true;
-		return temp; 
-	}
-	else {
-		rayHit=false;
-		return 0;
-	}
-}
-
-void Engine::generate_pixel_buffer_objects() 
-{ 
-	/* generate the pixel buffer object */ 
-	CALL_GL(glGenBuffers(1,&pbo_a));     
-	CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_a)); 
-	CALL_GL(glBufferData(GL_PIXEL_PACK_BUFFER, WINDOW_SIZE_X * WINDOW_SIZE_Y * 4, nullptr, GL_STREAM_READ)); 
-	/* to avoid weird behaviour the first frame the data is loaded */ 
-	CALL_GL(glReadPixels(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y, GL_BGRA, GL_UNSIGNED_BYTE, 0));     
-
-	/* generate the first pixel buffer objects 
-	glGenBuffers(1,&pbo_b);     
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_b); 
-	glBufferData(GL_PIXEL_PACK_BUFFER, WINDOW_SIZE_X * WINDOW_SIZE_Y * 4, nullptr, GL_STREAM_READ); 
-	// to avoid weird behaviour the first frame the data is loaded 
-	glReadPixels(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y, GL_BGRA, GL_UNSIGNED_BYTE, 0);     
-	// unbind 
-	glBindBuffer(GL_PIXEL_PACK_BUFFER, 0); */
-
-}
-
-
-GLuint Engine::get_object_id() 
-{ 
-	static int frame_event = 0; 
-	GLuint object_id; 
-	int x, y; 
-	GLuint red, green, blue, alpha, pixel_index; 
-	GLubyte* ptr; 
-
-	/* switch between pixel buffer objects 
-	if (frame_event == 0){ 
-	frame_event = 1; 
-	read_pbo = pbo_b; 
-	map_pbo = pbo_a; 
-	} 
-	else { 
-	frame_event = 0; 
-	map_pbo = pbo_a; 
-	read_pbo = pbo_b; 
-	} */
-
-
-	/* read one pixel buffer */ 
-	CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo_a)); 
-	/* map the other pixel buffer */  
-	CALL_GL(glReadPixels(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y, GL_BGRA, GL_UNSIGNED_BYTE, 0));
-	ptr = (GLubyte*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_WRITE); 
-	/* get the mouse coordinates */ 
-	/* OpenGL has the {0,0} at the down-left corner of the screen */ 
-	x = WINDOW_SIZE_X/2;
-	y = WINDOW_SIZE_Y/2;
-	object_id = -1; 
-	if (x >= 0 && x < WINDOW_SIZE_X && y >= 0 && y < WINDOW_SIZE_Y){ 
-		//std::cout << "x - y " << '\t' << x << '\t' << y << '\n';
-		pixel_index = (x + y * WINDOW_SIZE_X) * 4; 
-		blue = ptr[pixel_index]; 
-		green = ptr[pixel_index + 1]; 
-		red = ptr[pixel_index + 2]; 
-		alpha = ptr[pixel_index + 3]; 
-
-		/*std::cout << "received : ";
-		printf("0x%X\t", alpha);
-		printf("0x%X\t", blue);
-		printf("0x%X\t", green);
-		printf("0x%X\n", red);*/
-
-		object_id = alpha +(red << 24) + (green << 16) + (blue << 8);
-	} 
-
-	CALL_GL(glUnmapBuffer(GL_PIXEL_PACK_BUFFER)); 
-	CALL_GL(glBindBuffer(GL_PIXEL_PACK_BUFFER, 0)); 
-	return object_id; 
-} 

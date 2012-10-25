@@ -38,7 +38,7 @@ int main()
 	if (!glfwOpenWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,0,0,0,0,0,0,GLFW_WINDOW))
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
-	glfwSetWindowPos(600,0);
+	glfwSetWindowPos(2360,0);
 
     glfwSetWindowTitle("KeiMote");
 	//glfwEnable( GLFW_MOUSE_CURSOR );
@@ -60,6 +60,8 @@ int main()
     glfwSetMousePosCallback(&mouseFunkThunk2);
 
     engine->go();
+
+	delete engine;
 
 	glfwCloseWindow();
     glfwTerminate();

@@ -34,8 +34,11 @@ namespace pho {
 		bool loadToGPU();
 		glm::vec3 getPosition();
 		
+		glm::vec3 farthestVertex;
 		bool findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint);
 		bool rayTriangleIntersection(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection);
+		bool findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,glm::vec3& foundNormal);
+
 
 		bool simple; //for rays, simple lines
 

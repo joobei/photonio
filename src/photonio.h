@@ -99,8 +99,8 @@ namespace pho {
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-		static const int WINDOW_SIZE_X = 1920;
-		static const int WINDOW_SIZE_Y = 1200;
+		static const int WINDOW_SIZE_X = 800;
+		static const int WINDOW_SIZE_Y = 600;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -113,8 +113,6 @@ namespace pho {
 		void updateTuioCursor(TuioCursor *tcur);
 		void removeTuioCursor(TuioCursor *tcur);
 
-		void refresh(TuioTime frameTime);
-		void generate_frame_buffer_texture();
 		TuioClient* tuioClient;
 
 	private:
@@ -130,7 +128,6 @@ namespace pho {
 		AppMode appMode;
 
 
-		void glEC(const std::string place);
 		GLenum error;
 
 		mat4 orientation,calibration;
@@ -154,12 +151,9 @@ namespace pho {
 		pho::LightSource pointLight;
 
 		//Picking
-		GLuint picking();
 		GLuint hitObject;
 		bool rayHit;
 
-		void generate_pixel_buffer_objects();
-		GLuint get_object_id();
 		GLuint pickProgram;
 		GLuint tex; 
 		GLuint rbo; 
@@ -170,17 +164,19 @@ namespace pho {
 		bool restoreRay;
 		glm::vec3 grabOffset;
 		float grabbedDistance;
-
-		vec3 intersectionPoint;
 		
+		vec3 intersectionPoint;	
+		vec3 intersectionNormal;
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
 
+		//SmartPhone IO
 		boost::asio::io_service ioservice;
 		boost::thread* netThread;
 		udp_server _udpserver;
 
+		//Polhemus IO
 		boost::asio::io_service serialioservice;
 		boost::thread* serialThread;
 		Minicom_client _serialserver;
@@ -201,6 +197,7 @@ namespace pho {
 		float perspective;
 
 		//TUIO input stuff
+		void refresh(TuioTime frameTime);
 		glm::vec2 xyOrigin;
 		glm::vec3 tempOrigin;
 		TUIO::TuioCursor* trackedCursor;
