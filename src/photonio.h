@@ -51,17 +51,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "wiimote.h"
 #include "shader.h"
 #include "mesh.h"
-
-
 #include <GL/glfw.h>
 
 using namespace std;
 using namespace TUIO;
+using glm::vec2;
 using glm::vec3;
 using glm::vec4;
 using glm::mat3;
 using glm::mat4;
-
 
 namespace pho {
 
@@ -176,8 +174,9 @@ namespace pho {
 		float sphereIntersectionDistance; //not really needed
 
 		//arcball stuff
-		pho::Arcball cursorArcBall;
-
+		ArcBall_t cursorArcBall;
+		glm::quat quaternion;
+		
 		
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
@@ -235,8 +234,10 @@ namespace pho {
 		bool wii;
 
 
-		//mouse wheel
+		//mouse 
 		int prevMouseWheel;
+		vec2 prevMousePos;
+		bool prevMouseExists;
 
 		std::ofstream errorLog;
 

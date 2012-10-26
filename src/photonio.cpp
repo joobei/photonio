@@ -37,7 +37,8 @@ calibrate(false),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
 	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
 	wii(false),
-	cursorArcBall(false)
+	cursorArcBall((float)WINDOW_SIZE_X,(float)WINDOW_SIZE_Y),
+	prevMouseExists(false)
 {
 #define SIZE 30                     //Size of the moving average filter
 	accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -118,9 +119,6 @@ void Engine::initResources() {
 
 	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
-
-	cursorArcBall.setCenter(glm::vec3(cursor.modelMatrix[3]));
-	cursorArcBall.setRadius(glm::length(cursor.farthestVertex));
 }
 
 //checks event queue for events
@@ -266,27 +264,53 @@ bool Engine::computeRotationMatrix() {
 }
 
 void Engine::mouseButtonCallback(int button, int state) {
-	int xx,yy;
-	glfwGetMousePos(&xx,&yy);
-	glm::vec3 unprojected;
-	unprojected = glm::unProject(glm::vec3(xx,WINDOW_SIZE_Y-yy,0),cursor.modelMatrix,projectionMatrix,glm::vec4(0,0,WINDOW_SIZE_X,WINDOW_SIZE_Y));
+	vec2 MousePt;
+	int x,y;
+	glfwGetMousePos(&x,&y);
+
+	MousePt.x = x;
+	MousePt.y = y;
 
 	if ((button == 0) && (state == GLFW_PRESS)) 
 	{	
-		cursorArcBall.beginDrag(unprojected);
+		cursorArcBall.click(&MousePt);
 	}
 	if ((button == 0) && (state == GLFW_RELEASE)) 
 	{
-		cursorArcBall.endDrag(unprojected);
+		//cursorArcBall.endDrag(unprojected);
+	}
+	if ((button == GLFW_MOUSE_BUTTON_2)) {
+		prevMouseExists = true;
+		prevMousePos.x = x;
+		prevMousePos.y = -y;
 	}
 }
 
 void Engine::mouseMoveCallback(int xpos, int ypos) {
+	vec2 MousePt;
+	MousePt.x = xpos;
 	
+
 	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-		glm::vec3 unprojected;
-		unprojected = glm::unProject(glm::vec3(xpos,WINDOW_SIZE_Y-ypos,0),cursor.modelMatrix,projectionMatrix,glm::vec4(0,0,WINDOW_SIZE_X,WINDOW_SIZE_Y));
-		cursor.modelMatrix = cursor.modelMatrix*cursorArcBall.getRotation(unprojected);
+		MousePt.y = ypos;
+		cursorArcBall.drag(&MousePt,&quaternion);
+		//cursor.modelMatrix = cursor.modelMatrix*glm::toMat4(quaternion);
+		vec4 temp = cursor.modelMatrix[3];
+		cursor.modelMatrix = glm::toMat4(quaternion)*cursor.modelMatrix;
+		cursor.modelMatrix[3] = temp;
+	}
+	
+	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
+		
+		
+		MousePt.y = -ypos;
+		vec2 difference = MousePt-prevMousePos;
+		difference.x /= 10;
+		difference.y /= 10;
+		if(prevMouseExists) {
+		cursor.modelMatrix = glm::translate(cursor.modelMatrix,glm::vec3(difference,0));
+		}
+		prevMousePos = MousePt;
 	}
 }
 
