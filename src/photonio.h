@@ -152,7 +152,7 @@ namespace pho {
 
 		//Picking
 		GLuint hitObject;
-		bool rayHit;
+		bool objectHit,sphereHit;
 
 		GLuint pickProgram;
 		GLuint tex; 
@@ -165,8 +165,10 @@ namespace pho {
 		glm::vec3 grabOffset;
 		float grabbedDistance;
 		
-		vec3 intersectionPoint;	
-		vec3 intersectionNormal;
+		vec3 objectIntersectionPoint;	
+		vec3 sphereIntersectionPoint;
+		vec3 sphereIntersectionNormal;
+		float sphereIntersectionDistance; //not really needed
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;

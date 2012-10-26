@@ -267,29 +267,22 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 
 }
 
-bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,glm::vec3& foundNormal) {
+bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal) {
 	glm::vec3 rayOrigin;
 	glm::vec3 rayDirection;
 	glm::vec3 sphereOrigin;
 	float radius;
 
-	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the matrix
+	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the modelmatrix
 	rayDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
 	rayDirection = glm::normalize(rayDirection);
 	sphereOrigin = glm::vec3(modelMatrix[3]);
 	radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
 
-	if (glm::intersectRaySphere(rayOrigin,rayDirection,sphereOrigin,radius,foundPoint,foundNormal)) {
-		
-		static int count  = 0;
-
-		std::cout << count << " - Found x: \t" <<foundPoint.x << " \t" << foundPoint.y << " \t" << foundPoint.z << '\n'; 
-		count++;
-
-
-		return true;
-	}
-	else return false;
+	if (raySphereIntersection(rayDirection,rayOrigin,sphereOrigin,radius,foundPoint,foundDistance,foundNormal))
+	{
+		return true;	
+	} else return false;
 }
 
 bool pho::Mesh::rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection) {
@@ -337,4 +330,34 @@ bool pho::Mesh::rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2
 	intersection = lineOrigin + t*lineDirection;
 	return true;
 
+}
+
+inline float pho::Mesh::sum(const vec3& v)
+{
+return v[0] + v[1] + v[2];
+}
+
+bool pho::Mesh::raySphereIntersection(const vec3& raydir, const vec3& rayorig,const vec3& pos,const float& rad, vec3& hitpoint,float& distance, vec3& normal)
+{
+	float a = sum(raydir*raydir);
+	float b = sum(raydir * (2.0f * ( rayorig - pos)));
+	float c = sum(pos*pos) + sum(rayorig*rayorig) -2.0f*sum(rayorig*pos) - rad*rad;
+	float D = b*b + (-4.0f)*a*c;
+
+	// If ray can not intersect then stop
+	if (D < 0)
+		return false;
+	D=sqrtf(D);
+
+	// Ray can intersect the sphere, solve the closer hitpoint
+	float t = (-0.5f)*(b+D)/a;
+	if (t > 0.0f)
+	{
+		distance=sqrtf(a)*t;
+		hitpoint=rayorig + t*raydir;
+		normal=(hitpoint - pos) / rad;
+	}
+	else
+		return false;
+	return true;
 }

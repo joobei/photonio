@@ -76,7 +76,8 @@ calibrate(false),
 
 	prevMouseWheel = 0;
 	gyroData = false;
-	rayHit=false;
+	objectHit=false;
+	sphereHit=false;
 
 	axisChange[0][0] = 1; axisChange[0][1] =  0;  axisChange[0][2] =  0;
 	axisChange[1][0] = 0; axisChange[1][1] =  0;  axisChange[1][2] =  1;
@@ -322,12 +323,12 @@ void Engine::checkEvents() {
 
 		switch(appMode)  {
 		case rayCasting:
-			if (appInputState == idle && remote.Button.B() && rayHit) {   
+			if (appInputState == idle && remote.Button.B() && objectHit) {   
 				appInputState = translate;
 				grabbedDistance = rayLength;
 
 				//possibly costly calculation:
-				grabOffset = glm::vec3(cursor.modelMatrix[3])-intersectionPoint;
+				grabOffset = glm::vec3(cursor.modelMatrix[3])-objectIntersectionPoint;
 
 				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
 
@@ -402,8 +403,8 @@ void Engine::render() {
 
 	//If we are raycasting and there's a hit
 	if (appMode == rayCasting) {
-		if (cursor.findIntersection(ray.modelMatrix,intersectionPoint)) {
-			rayHit = true; //picked up by checkEvents in wii-mote mode switch
+		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
+			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
 			CALL_GL(glDisable(GL_DEPTH_TEST));
 			//render selection red border first with the flat color shader
@@ -414,27 +415,29 @@ void Engine::render() {
 			cursor.draw();
 
 			//Ray length calculation
-			rayLength = -glm::distance(vec3(ray.getPosition()),intersectionPoint);
+			rayLength = -glm::distance(vec3(ray.getPosition()),objectIntersectionPoint);
 			//Shorten the beam to match the object
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
 
 			restoreRay = true; //mark ray to be restored to full length
-		}
+		} else {objectHit = false; }
 
-		intersectionPoint = glm::vec3();
-		if (cursor.findSphereIntersection(ray.modelMatrix,intersectionPoint,intersectionNormal)) {
+		float intersectionDistance = -1;
+		if (cursor.findSphereIntersection(ray.modelMatrix,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
+			sphereHit = true;
 
 			//Ray length calculation
-			rayLength = -glm::distance(vec3(ray.getPosition()),intersectionPoint);
+			rayLength = -glm::distance(vec3(ray.getPosition()),sphereIntersectionPoint);
 
+			if(!objectHit) {
 			//Shorten the beam to match the object
-			//CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			//CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
-
+			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+			}
 			restoreRay = true; //mark ray to be restored to full length
 
-		}
+		} else {sphereHit = false; }
 	}
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
@@ -454,11 +457,18 @@ void Engine::render() {
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
 
-	if (restoreRay) {  //sign that the ray has been shortened so we hit something so we must draw
-		//point.modelMatrix = glm::translate(intersectionPoint);
-		point.modelMatrix = glm::translate(glm::vec3(cursor.modelMatrix[3])+intersectionPoint);
-		colorShader.use(); //back to drawing with colors
-		colorShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
+		point.modelMatrix = glm::translate(objectIntersectionPoint);
+		offscreenShader.use();
+		offscreenShader["baseColor"] = vec4(0.0f, 1.0f ,0.0f, 1.0f); //back to drawing with colors
+		offscreenShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+		point.draw();
+	}
+	if (sphereHit) {
+		point.modelMatrix = glm::translate(sphereIntersectionPoint);
+		offscreenShader.use();
+		offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 1.0f); //back to drawing with colors
+		offscreenShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
 		point.draw();
 	}
 

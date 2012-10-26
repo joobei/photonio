@@ -37,8 +37,9 @@ namespace pho {
 		glm::vec3 farthestVertex;
 		bool findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint);
 		bool rayTriangleIntersection(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection);
-		bool findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,glm::vec3& foundNormal);
-
+		bool raySphereIntersection(const vec3& raydir, const vec3& rayorig,const vec3& pos,const float& rad, vec3& hitpoint,float& distance, vec3& normal);
+		bool findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal);
+		float sum(const vec3& v);
 
 		bool simple; //for rays, simple lines
 
