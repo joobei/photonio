@@ -142,7 +142,6 @@ namespace pho {
 		mat3 orientation3;
 		mat4 projectionMatrix, viewMatrix;
 		vec3 acc,ma,gyro;
-		float arcBallPreviousPoint[2];
 		bool calibrate;
 		bool gyroData;
 		
@@ -176,6 +175,10 @@ namespace pho {
 		vec3 sphereIntersectionNormal;
 		float sphereIntersectionDistance; //not really needed
 
+		//arcball stuff
+		pho::Arcball cursorArcBall;
+
+		
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
 

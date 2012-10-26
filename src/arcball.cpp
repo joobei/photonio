@@ -2,65 +2,80 @@
 
 #include "arcball.h"
 
-glm::vec3 pho::util::getPointOnSphere(float px, float py) {
-    float x,y;
+pho::Arcball::Arcball(bool fullscreen): 
+	fullScreen(fullscreen),
+	center(glm::vec3(0)){ }
 
-    x = px/(pho::Engine::WINDOW_SIZE_X/2);
-    y = py/(pho::Engine::WINDOW_SIZE_Y/2);
-
-    x = x-1;
-    y = 1-y;
-
-    double z2 = 1 - x * x - y * y;
-    double z = z2 > 0 ? glm::sqrt(z2) : 0;
-
-    glm::vec3 p = glm::vec3(x, y, z);
-    p = glm::normalize(p);
-    //std::cout << "x:" << p.x << "\t y:" << p.y << "\t z:" << p.z << "\t px:" << px << "\t py:" << py << std::endl;
-    return p;
+void pho::Arcball::setCenter(glm::vec3 centre) {
+	center = centre;
 }
 
-glm::vec3 pho::util::getPointOnSphereTouch(float x, float py) {
-
-    float y = 1-py;
-
-    //std::cout << "GetPointOnSphereTouch: \t";
-
-    double z2 = 1 - x * x - y * y;
-    double z = z2 > 0 ? glm::sqrt(z2) : 0;
-
-    glm::vec3 p = glm::vec3(x, y, z);
-    p = glm::normalize(p);
-    //std::cout << "x:" << p.x << "\t y:" << p.y << "\t z:" << p.z << "\t px:" << x << "\t py:" << py << std::endl;
-    return p;
+void pho::Arcball::setRadius(float radiuse){
+	radius = radiuse;
 }
 
-glm::mat4 pho::util::getRotation(float oldx, float oldy, float newx, float newy, bool touch) {
+void pho::Arcball::beginDrag(glm::vec3 startingPoint){
+	
+	vec3 projectedNewPoint;
+	vec3 normal;
+	float distance;
 
-    glm::vec3 oldp,newp;
+	if (raySphereIntersection(vec3(0,0,-1),startingPoint,center,radius,projectedNewPoint,distance,normal)) {			
+		oldPoint = projectedNewPoint;	
+	}
+}
 
-    if (touch) {
-        oldp = getPointOnSphereTouch(oldx,oldy);
-        newp = getPointOnSphereTouch(newx,newy);
-    }
-    else {
-        oldp = getPointOnSphere(oldx,oldy);
-        newp = getPointOnSphere(newx,newy);
-    }
+glm::mat4 pho::Arcball::getRotation(glm::vec3 newPoint){
+	vec3 projectedNewPoint;
+	vec3 normal;
+	float distance;
 
-    glm::vec3 axis = glm::cross(oldp,newp);
-    float vangle = (glm::angle(oldp,newp)/50);
+	if (raySphereIntersection(vec3(0,0,-1),newPoint,center,radius,projectedNewPoint,distance,normal)) {		
+		vec3 axis,currentPoint;
+		float angle;
+		currentPoint = projectedNewPoint-center;
 
-    //glm::gtx::quaternion::quat rotation = glm::gtx::quaternion::angleAxis(vangle,axis.x,axis.y,axis.z);
-    glm::mat4 rotation;
+		axis = glm::cross(oldPoint,currentPoint);
+		angle = acosf((glm::dot(oldPoint,currentPoint))/glm::length(oldPoint)*glm::length(currentPoint));
 
-    rotation = glm::axisAngleMatrix(glm::vec3(axis.x,axis.y,axis.z),vangle);
+		oldPoint = projectedNewPoint;
 
-    //if the sum of squares of any row are not = 1 then we don't have a rotation matrix
-    if (rotation[0][0]*rotation[0][0]+rotation[0][1]*rotation[0][1]+rotation[0][2]*rotation[0][2]+rotation[0][3]*rotation[0][3]!=1) {
-        return glm::mat4();
-    }
-    else {
-        return rotation;
-    }
+		return glm::toMat4(glm::angleAxis(angle,axis));
+	}
+	else return glm::mat4(1);
+
+}
+
+void pho::Arcball::endDrag(glm::vec3 endPoint) {
+	
+}
+
+inline float pho::Arcball::sum(const vec3& v)
+{
+	return v[0] + v[1] + v[2];
+}
+
+bool pho::Arcball::raySphereIntersection(const vec3& raydir, const vec3& rayorig,const vec3& pos,const float& rad, vec3& hitpoint,float& distance, vec3& normal)
+{
+	float a = sum(raydir*raydir);
+	float b = sum(raydir * (2.0f * ( rayorig - pos)));
+	float c = sum(pos*pos) + sum(rayorig*rayorig) -2.0f*sum(rayorig*pos) - rad*rad;
+	float D = b*b + (-4.0f)*a*c;
+
+	// If ray can not intersect then stop
+	if (D < 0)
+		return false;
+	D=sqrtf(D);
+
+	// Ray can intersect the sphere, solve the closer hitpoint
+	float t = (-0.5f)*(b+D)/a;
+	if (t > 0.0f)
+	{
+		distance=sqrtf(a)*t;
+		hitpoint=rayorig + t*raydir;
+		normal=(hitpoint - pos) / rad;
+	}
+	else
+		return false;
+	return true;
 }

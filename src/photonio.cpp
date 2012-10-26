@@ -36,7 +36,8 @@ calibrate(false),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
 	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
-	wii(false)
+	wii(false),
+	cursorArcBall(false)
 {
 #define SIZE 30                     //Size of the moving average filter
 	accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -117,6 +118,9 @@ void Engine::initResources() {
 
 	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
+
+	cursorArcBall.setCenter(glm::vec3(cursor.modelMatrix[3]));
+	cursorArcBall.setRadius(glm::length(cursor.farthestVertex));
 }
 
 //checks event queue for events
@@ -262,25 +266,27 @@ bool Engine::computeRotationMatrix() {
 }
 
 void Engine::mouseButtonCallback(int button, int state) {
-	if ((button == 0) && (state == GLFW_PRESS)) {
-		int xx,yy;
-		glfwGetMousePos(&xx,&yy);
-		arcBallPreviousPoint[0] = xx*1.0f;
-		arcBallPreviousPoint[1] = yy*1.0f;
-		tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
+	int xx,yy;
+	glfwGetMousePos(&xx,&yy);
+	glm::vec3 unprojected;
+	unprojected = glm::unProject(glm::vec3(xx,WINDOW_SIZE_Y-yy,0),cursor.modelMatrix,projectionMatrix,glm::vec4(0,0,WINDOW_SIZE_X,WINDOW_SIZE_Y));
+
+	if ((button == 0) && (state == GLFW_PRESS)) 
+	{	
+		cursorArcBall.beginDrag(unprojected);
+	}
+	if ((button == 0) && (state == GLFW_RELEASE)) 
+	{
+		cursorArcBall.endDrag(unprojected);
 	}
 }
 
 void Engine::mouseMoveCallback(int xpos, int ypos) {
-	//std::cout << "movse moved x:" << xpos << "\t y:" << ypos << std::endl;
+	
 	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-		cursor.modelMatrix = glm::translate(cursor.modelMatrix,-tempOrigin);
-		mat4 rot;
-		rot = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],xpos*1.0f,ypos*1.0f, false);
-		cursor.modelMatrix = rot*cursor.modelMatrix;
-		cursor.modelMatrix = glm::translate(cursor.modelMatrix,tempOrigin);
-		arcBallPreviousPoint[0] = xpos*1.0f;
-		arcBallPreviousPoint[1] = ypos*1.0f;
+		glm::vec3 unprojected;
+		unprojected = glm::unProject(glm::vec3(xpos,WINDOW_SIZE_Y-ypos,0),cursor.modelMatrix,projectionMatrix,glm::vec4(0,0,WINDOW_SIZE_X,WINDOW_SIZE_Y));
+		cursor.modelMatrix = cursor.modelMatrix*cursorArcBall.getRotation(unprojected);
 	}
 }
 
@@ -371,14 +377,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 			
 			break;
 		case trackBall:
-			trackedCursorId = tcur->getCursorID();
-
-			float x = tcur->getX();
-			float y = tcur->getY();
-
-			arcBallPreviousPoint[0] = x;
-			arcBallPreviousPoint[1] = y;
-			tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
+			break;
 		}
 	}
 	if (verbose)
@@ -498,16 +497,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			break;
 		case trackBall:
 			//********************* TRACKBALL  *************************
-			x = tcur->getX();
-			y = tcur->getY();
-
-			cursor.modelMatrix = glm::translate(cursor.modelMatrix,-tempOrigin);
-
-			rotation = pho::util::getRotation(arcBallPreviousPoint[0],arcBallPreviousPoint[1],x,y,true);
-			cursor.modelMatrix = rotation*cursor.modelMatrix;
-			cursor.modelMatrix = glm::translate(cursor.modelMatrix,tempOrigin);
-			arcBallPreviousPoint[0] = x;
-			arcBallPreviousPoint[1] = y;
 			break;
 		}
 	}
@@ -933,9 +922,6 @@ void Engine::checkWiiMote() {
 				int xx,yy;
 				
 				glfwGetMousePos(&xx,&yy);
-				arcBallPreviousPoint[0] = xx*1.0f;
-				arcBallPreviousPoint[1] = yy*1.0f;
-				tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
 				break;
 			}
 			if (appInputState == rotate && !remote.Button.A()) {
