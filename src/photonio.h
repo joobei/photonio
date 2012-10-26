@@ -116,6 +116,12 @@ namespace pho {
 		TuioClient* tuioClient;
 
 	private:
+		void checkUDP();
+		void checkPolhemus();
+		void checkWiiMote();
+		void checkKeyboard();
+		
+
 		void initSimpleGeometry();
 
 		// map image filenames to textureIds

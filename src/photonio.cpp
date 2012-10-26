@@ -123,84 +123,6 @@ void Engine::initResources() {
 //and consumes them all
 void Engine::checkEvents() {
 	
-#define FACTOR 0.5f
-	if (glfwGetKey(GLFW_KEY_DOWN)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_4)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(0,1,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_6)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(0,1,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_8)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(1,0,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_5)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(1,0,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_7)) {
-		ray.modelMatrix[3][0] -=1;
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_9)) {
-		ray.modelMatrix[3][0] +=1;
-	}
-
-	if (glfwGetKey(GLFW_KEY_UP)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(0,0,FACTOR));
-	}
-	if (glfwGetKey(GLFW_KEY_LEFT)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(FACTOR,0,0));
-	}
-	if (glfwGetKey(GLFW_KEY_RIGHT)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(-FACTOR,0,0));
-	}
-	if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0));	
-	}
-	if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
-		viewMatrix = glm::translate(viewMatrix, vec3(0,FACTOR,0));
-	}
-	if (glfwGetKey(GLFW_KEY_HOME)) {
-		perspective +=1.0;
-		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
-		std::cout << "Perspective : " << perspective << '\n';
-		
-	}
-	if (glfwGetKey(GLFW_KEY_SPACE)) {
-		cursor.modelMatrix = glm::translate(0,0,-5);
-	}
-	if (glfwGetKey(GLFW_KEY_END)) {
-		perspective -=1.0;
-		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
-		std::cout << "Perspective : " << perspective << '\n';
-	}
-	
-	if (glfwGetKey('1') == GLFW_PRESS) {
-		rotTechnique = screenSpace;
-		std::cout << "Screen Space Rotation" << '\n';
-	}
-	if (glfwGetKey('2') == GLFW_PRESS) {
-		rotTechnique = singleAxis;
-		std::cout << "Single Axis Rotation" << '\n';
-	}
-	if (glfwGetKey('3') == GLFW_PRESS) {
-		rotTechnique = trackBall;
-		std::cout << "Virtual Trackball Rotation" << '\n';
-	}
-
-	if (glfwGetKey('4') == GLFW_PRESS) {
-		appMode = rayCasting;
-		std::cout << "RayCasting" << '\n';
-	}
-	
-
 	int wheel = glfwGetMouseWheel();
 	if (wheel != prevMouseWheel) {
 		int amount = wheel - prevMouseWheel;
@@ -208,181 +130,11 @@ void Engine::checkEvents() {
 		prevMouseWheel = wheel;
 	}
 
-	//UDP queue
-	boost::mutex::scoped_lock lock(ioMutex);
-	while (!eventQueue.isEmpty()) {
-		//assign event to local temp var
-		keimote::PhoneEvent tempEvent;
-		tempEvent = eventQueue.pop();
+	checkUDP();
+	checkPolhemus();
+	checkWiiMote();
+	checkKeyboard();
 
-		//check event to see what type it is
-		switch (tempEvent.type()) {
-		case keimote::ACCEL:
-			accelerometerX.update(tempEvent.x());
-			accelerometerY.update(tempEvent.y());
-			accelerometerZ.update(tempEvent.z());
-
-			acc.x = accelerometerX.get_result();
-			acc.y = accelerometerY.get_result();
-			acc.z = accelerometerZ.get_result();
-			gyroData = false;
-			break;
-		case keimote::MAG:
-			magnetometerX.update(tempEvent.x());
-			magnetometerY.update(tempEvent.y());
-			magnetometerZ.update(tempEvent.z());
-
-			ma.x = magnetometerX.get_result();
-			ma.y = magnetometerY.get_result();
-			ma.z = magnetometerZ.get_result();
-			gyroData = false;
-			break;
-		case keimote::GYRO:
-			plane.modelMatrix[0][0] = tempEvent.m11(); plane.modelMatrix[0][1] = tempEvent.m21(); plane.modelMatrix[2][0] = tempEvent.m31();
-			plane.modelMatrix[1][0] = tempEvent.m12(); plane.modelMatrix[1][1] = tempEvent.m22(); plane.modelMatrix[2][1] = tempEvent.m32();
-			plane.modelMatrix[2][0] = tempEvent.m13(); plane.modelMatrix[2][1] = tempEvent.m23(); plane.modelMatrix[2][2] = tempEvent.m33();
-			gyroData = true;
-			break;
-		case keimote::BUTTON:
-			switch (tempEvent.buttontype()) {
-			case 1:
-				calibrate = true;
-				break;
-			case 2:
-				if (appInputState != rotate) {
-					printf("idle-->rotate");
-					appInputState = rotate; }
-				else
-					{ appInputState = idle; 
-					printf("rotate-->idle");}
-				break;
-			case 3:
-				break;
-			default:
-				calibrate = true;
-				break;
-			}
-
-		};
-		if (computeRotationMatrix() && (!gyroData)) {
-			plane.modelMatrix[0][0] = orientation[0][0]; plane.modelMatrix[0][1] = orientation[0][1]; plane.modelMatrix[0][2] = orientation[0][2]; 
-			plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; plane.modelMatrix[1][2] = orientation[1][2]; 
-			plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2]; 
-		}
-	}
-
-
-	//SERIAL Queue
-	while(!eventQueue.isSerialEmpty()) {
-		boost::array<float,7> temp = eventQueue.serialPop();
-		vec3 position;
-		glm::quat orientation;
-		mat4 transform;
-
-		position = vec3(temp[0],temp[1],temp[2]);
-
-		orientation.w = temp[3];
-		orientation.x = temp[4];
-		orientation.y = temp[5];
-		orientation.z = temp[6];
-
-		//transform=glm::translate(transform,position);
-
-		transform=glm::toMat4(orientation);
-		
-		//Further rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
-		transform = transform*glm::toMat4(glm::angleAxis(180.0f,vec3(0,1,0))); //order is important 
-		transform = transform*glm::toMat4(glm::angleAxis(90.0f,vec3(0,0,1)));
-		
-		transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
-		transform[3][1] = position.y;
-		transform[3][2] = position.z;
-
-		//ray.modelMatrix = transform;
-		
-		/*if (wii) {  //just to debug polhemus positions
-			remote.RefreshState();
-
-			if (remote.Button.A()) {   
-				std::cout << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
-				errorLog << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
-			}
-		}*/
-
-
-		//std::cout << "x : " << transform[3][0] << "\ty : " << transform[3][1] << "\tz : " << transform[3][2] << '\n';
-	}
-	lock.unlock();
-
-
-	//if the connection to the wii-mote was successful
-	if (wii) {
-		remote.RefreshState();
-
-		switch(appMode)  {
-		case rayCasting:
-			if (appInputState == idle && remote.Button.B() && objectHit) {   
-				appInputState = translate;
-				grabbedDistance = rayLength;
-
-				//possibly costly calculation:
-				grabOffset = glm::vec3(cursor.modelMatrix[3])-objectIntersectionPoint;
-
-				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
-
-				cursor.modelMatrix[3][0] = newMat[3][0];
-				cursor.modelMatrix[3][1] = newMat[3][1];
-				cursor.modelMatrix[3][2] = newMat[3][2];
-				std::cout << "translate" << '\n';
-			}
-
-			if (appInputState == translate && remote.Button.B()) {
-			
-				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance)+grabOffset);
-				cursor.modelMatrix[3][0] = newMat[3][0];
-				cursor.modelMatrix[3][1] = newMat[3][1];
-				cursor.modelMatrix[3][2] = newMat[3][2];
-			}
-
-			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
-				grabbedDistance+=0.5;
-			}
-
-			if (appInputState == translate && remote.Button.Up()) {
-				grabbedDistance-=0.5;
-			}
-			if (appInputState == translate && !remote.Button.B()) {
-				appInputState = idle;
-				std::cout << "idle" << '\n';
-				break;
-			}
-			if (appInputState == idle && remote.Button.A()) {
-				appInputState = rotate;
-				rotTechnique = trackBall;
-
-				std::cout << "trackball" << '\n';
-
-				int xx,yy;
-				
-				glfwGetMousePos(&xx,&yy);
-				arcBallPreviousPoint[0] = xx*1.0f;
-				arcBallPreviousPoint[1] = yy*1.0f;
-				tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
-				break;
-			}
-			if (appInputState == rotate && !remote.Button.A()) {
-				appInputState = idle;
-				std::cout << "idle" << '\n';
-				break;
-			}
-//			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
-				//trackball rotate
-//				break;
-//			}
-		default:
-			break;
-		}
-	}
 
 }
 
@@ -939,4 +691,264 @@ void Engine::initSimpleGeometry() {
 
     quad.modelMatrix = glm::scale(vec3(0.3,0.3,1));
     quad.modelMatrix = glm::translate(quad.modelMatrix,vec3(-2.2,-2.2,0));*/
+}
+
+void Engine::checkUDP() {
+	//UDP queue
+	boost::mutex::scoped_lock lock(ioMutex);
+	while (!eventQueue.isEmpty()) {
+		//assign event to local temp var
+		keimote::PhoneEvent tempEvent;
+		tempEvent = eventQueue.pop();
+
+		//check event to see what type it is
+		switch (tempEvent.type()) {
+		case keimote::ACCEL:
+			accelerometerX.update(tempEvent.x());
+			accelerometerY.update(tempEvent.y());
+			accelerometerZ.update(tempEvent.z());
+
+			acc.x = accelerometerX.get_result();
+			acc.y = accelerometerY.get_result();
+			acc.z = accelerometerZ.get_result();
+			gyroData = false;
+			break;
+		case keimote::MAG:
+			magnetometerX.update(tempEvent.x());
+			magnetometerY.update(tempEvent.y());
+			magnetometerZ.update(tempEvent.z());
+
+			ma.x = magnetometerX.get_result();
+			ma.y = magnetometerY.get_result();
+			ma.z = magnetometerZ.get_result();
+			gyroData = false;
+			break;
+		case keimote::GYRO:
+			plane.modelMatrix[0][0] = tempEvent.m11(); plane.modelMatrix[0][1] = tempEvent.m21(); plane.modelMatrix[2][0] = tempEvent.m31();
+			plane.modelMatrix[1][0] = tempEvent.m12(); plane.modelMatrix[1][1] = tempEvent.m22(); plane.modelMatrix[2][1] = tempEvent.m32();
+			plane.modelMatrix[2][0] = tempEvent.m13(); plane.modelMatrix[2][1] = tempEvent.m23(); plane.modelMatrix[2][2] = tempEvent.m33();
+			gyroData = true;
+			break;
+		case keimote::BUTTON:
+			switch (tempEvent.buttontype()) {
+			case 1:
+				calibrate = true;
+				break;
+			case 2:
+				if (appInputState != rotate) {
+					printf("idle-->rotate");
+					appInputState = rotate; }
+				else
+					{ appInputState = idle; 
+					printf("rotate-->idle");}
+				break;
+			case 3:
+				break;
+			default:
+				calibrate = true;
+				break;
+			}
+
+		};
+		if (computeRotationMatrix() && (!gyroData)) {
+			plane.modelMatrix[0][0] = orientation[0][0]; plane.modelMatrix[0][1] = orientation[0][1]; plane.modelMatrix[0][2] = orientation[0][2]; 
+			plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; plane.modelMatrix[1][2] = orientation[1][2]; 
+			plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2]; 
+		}
+	}
+}
+
+void Engine::checkPolhemus() {
+	
+	boost::mutex::scoped_lock lock(ioMutex);
+	//SERIAL Queue
+	while(!eventQueue.isSerialEmpty()) {
+		boost::array<float,7> temp = eventQueue.serialPop();
+		vec3 position;
+		glm::quat orientation;
+		mat4 transform;
+
+		position = vec3(temp[0],temp[1],temp[2]);
+
+		orientation.w = temp[3];
+		orientation.x = temp[4];
+		orientation.y = temp[5];
+		orientation.z = temp[6];
+
+		//transform=glm::translate(transform,position);
+
+		transform=glm::toMat4(orientation);
+		
+		//Further rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
+		transform = transform*glm::toMat4(glm::angleAxis(180.0f,vec3(0,1,0))); //order is important 
+		transform = transform*glm::toMat4(glm::angleAxis(90.0f,vec3(0,0,1)));
+		
+		transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
+		transform[3][1] = position.y;
+		transform[3][2] = position.z;
+
+		//ray.modelMatrix = transform;
+		
+		/*if (wii) {  //just to debug polhemus positions
+			remote.RefreshState();
+
+			if (remote.Button.A()) {   
+				std::cout << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
+				errorLog << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
+			}
+		}*/
+
+
+		//std::cout << "x : " << transform[3][0] << "\ty : " << transform[3][1] << "\tz : " << transform[3][2] << '\n';
+	}
+	lock.unlock();
+
+}
+void Engine::checkKeyboard() {
+	#define FACTOR 0.5f
+	if (glfwGetKey(GLFW_KEY_DOWN)) {
+		viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_4)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(0,1,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_6)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(0,1,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_8)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(1,0,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_5)) {
+		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(1,0,0));
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_7)) {
+		ray.modelMatrix[3][0] -=1;
+	}
+
+	if (glfwGetKey(GLFW_KEY_KP_9)) {
+		ray.modelMatrix[3][0] +=1;
+	}
+
+	if (glfwGetKey(GLFW_KEY_UP)) {
+		viewMatrix = glm::translate(viewMatrix, vec3(0,0,FACTOR));
+	}
+	if (glfwGetKey(GLFW_KEY_LEFT)) {
+		viewMatrix = glm::translate(viewMatrix, vec3(FACTOR,0,0));
+	}
+	if (glfwGetKey(GLFW_KEY_RIGHT)) {
+		viewMatrix = glm::translate(viewMatrix, vec3(-FACTOR,0,0));
+	}
+	if (glfwGetKey(GLFW_KEY_PAGEUP)) {
+		viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0));	
+	}
+	if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
+		viewMatrix = glm::translate(viewMatrix, vec3(0,FACTOR,0));
+	}
+	if (glfwGetKey(GLFW_KEY_HOME)) {
+		perspective +=1.0;
+		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
+		std::cout << "Perspective : " << perspective << '\n';
+		
+	}
+	if (glfwGetKey(GLFW_KEY_SPACE)) {
+		cursor.modelMatrix = glm::translate(0,0,-5);
+	}
+	if (glfwGetKey(GLFW_KEY_END)) {
+		perspective -=1.0;
+		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
+		std::cout << "Perspective : " << perspective << '\n';
+	}
+	
+	if (glfwGetKey('1') == GLFW_PRESS) {
+		rotTechnique = screenSpace;
+		std::cout << "Screen Space Rotation" << '\n';
+	}
+	if (glfwGetKey('2') == GLFW_PRESS) {
+		rotTechnique = singleAxis;
+		std::cout << "Single Axis Rotation" << '\n';
+	}
+	if (glfwGetKey('3') == GLFW_PRESS) {
+		rotTechnique = trackBall;
+		std::cout << "Virtual Trackball Rotation" << '\n';
+	}
+
+	if (glfwGetKey('4') == GLFW_PRESS) {
+		appMode = rayCasting;
+		std::cout << "RayCasting" << '\n';
+	}
+}
+void Engine::checkWiiMote() {
+	//if the connection to the wii-mote was successful
+	if (wii) {
+		remote.RefreshState();
+
+		switch(appMode)  {
+		case rayCasting:
+			if (appInputState == idle && remote.Button.B() && objectHit) {   
+				appInputState = translate;
+				grabbedDistance = rayLength;
+
+				//possibly costly calculation:
+				grabOffset = glm::vec3(cursor.modelMatrix[3])-objectIntersectionPoint;
+
+				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
+
+				cursor.modelMatrix[3][0] = newMat[3][0];
+				cursor.modelMatrix[3][1] = newMat[3][1];
+				cursor.modelMatrix[3][2] = newMat[3][2];
+				std::cout << "translate" << '\n';
+			}
+
+			if (appInputState == translate && remote.Button.B()) {
+			
+				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance)+grabOffset);
+				cursor.modelMatrix[3][0] = newMat[3][0];
+				cursor.modelMatrix[3][1] = newMat[3][1];
+				cursor.modelMatrix[3][2] = newMat[3][2];
+			}
+
+			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
+				grabbedDistance+=0.5;
+			}
+
+			if (appInputState == translate && remote.Button.Up()) {
+				grabbedDistance-=0.5;
+			}
+			if (appInputState == translate && !remote.Button.B()) {
+				appInputState = idle;
+				std::cout << "idle" << '\n';
+				break;
+			}
+			if (appInputState == idle && remote.Button.A()) {
+				appInputState = rotate;
+				rotTechnique = trackBall;
+
+				std::cout << "trackball" << '\n';
+
+				int xx,yy;
+				
+				glfwGetMousePos(&xx,&yy);
+				arcBallPreviousPoint[0] = xx*1.0f;
+				arcBallPreviousPoint[1] = yy*1.0f;
+				tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
+				break;
+			}
+			if (appInputState == rotate && !remote.Button.A()) {
+				appInputState = idle;
+				std::cout << "idle" << '\n';
+				break;
+			}
+//			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
+				//trackball rotate
+//				break;
+//			}
+		default:
+			break;
+		}
+	}
 }
