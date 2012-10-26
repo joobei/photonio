@@ -63,8 +63,6 @@ calibrate(false),
 	//Polhemus
 	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
-	count=0;
-
 	wii=remote.Connect(wiimote::FIRST_AVAILABLE);
 
 	if (wii) { 	remote.SetLEDs(0x01); }

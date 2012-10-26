@@ -191,9 +191,6 @@ namespace pho {
         pho::Mesh plane;
         pho::Mesh ray;
 		pho::Mesh point;
-
-		//raycasting test
-		int count;
 		
 		//perspective matrix control
 		float perspective;
