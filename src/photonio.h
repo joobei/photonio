@@ -36,6 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <boost/timer.hpp> //for stopwatch and time output
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
+#include <boost/scoped_array.hpp>
 #include "eventQueue.h"
 #include "asio.h"
 #include "spuc/generic/running_average.h"
@@ -61,6 +62,8 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
+#define LOGITECH_VENDOR_ID 0x46d
+
 namespace pho {
 
 	enum InputState { //appInputState
@@ -79,7 +82,8 @@ namespace pho {
 
 	enum AppMode {  //appmode
 		planeCasting,
-		rayCasting
+		rayCasting,
+		spaceNavigator
 	};
 
 	class Engine: public TuioListener {
@@ -112,12 +116,15 @@ namespace pho {
 		void removeTuioCursor(TuioCursor *tcur);
 
 		TuioClient* tuioClient;
-
+		LRESULT APIENTRY SubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	private:
 		void checkUDP();
 		void checkPolhemus();
 		void checkWiiMote();
 		void checkKeyboard();
+		
+		//space navigator
+		boost::scoped_array<BYTE> saRawInput;
 		
 
 		void initSimpleGeometry();
