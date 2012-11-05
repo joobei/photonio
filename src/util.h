@@ -28,9 +28,6 @@
 #define CALL_GL(exp) exp
 #endif
 
-
-
-
 namespace pho {
 
 	class WiiButtonState {
