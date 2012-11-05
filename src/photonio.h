@@ -65,27 +65,6 @@ using glm::mat4;
 #define LOGITECH_VENDOR_ID 0x46d
 
 namespace pho {
-
-	enum InputState { //appInputState
-		idle,
-		translate,
-		rotate
-	};
-
-	enum RotateTechnique { //rotTechnique
-		singleAxis,
-		pinch2,
-		screenSpace,
-		pinch,
-		trackBall
-	};
-
-	enum AppMode {  //appmode
-		planeCasting,
-		rayCasting,
-		spaceNavigator
-	};
-
 	class Engine: public TuioListener {
 
 	public:

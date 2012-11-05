@@ -38,7 +38,7 @@ link_directories(C:/dev/assimp/lib/assimp_debug-dll_win32)
 link_directories(C:/dev/Assimpsdk/bin/x86)
 link_directories(C:/dev/devil-x86-1.7.8/lib)
 
-add_executable(${PROJECTNAME} assets/assimporter.h assets/assimporter.cpp iomanager.cpp iomanager.h assets/model.cpp assets/model.h wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} arcball.h arcball.cpp assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp "${CMAKE_SOURCE_DIR}/shaders/shader.vert" "${CMAKE_SOURCE_DIR}/shaders/shader.frag" "${CMAKE_SOURCE_DIR}/shaders/specular.vert" "${CMAKE_SOURCE_DIR}/shaders/specular.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert")
+add_executable(${PROJECTNAME} logger.h logger.cpp wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} arcball.h arcball.cpp assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp "${CMAKE_SOURCE_DIR}/shaders/shader.vert" "${CMAKE_SOURCE_DIR}/shaders/shader.frag" "${CMAKE_SOURCE_DIR}/shaders/specular.vert" "${CMAKE_SOURCE_DIR}/shaders/specular.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert")
 
 target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} debug libprotobufd optimized libprotobuf oscnetlib ip osc tuio opengl32 winmm)
 
