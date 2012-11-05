@@ -30,6 +30,7 @@ namespace pho {
         void setShader(pho::Shader* tehShader);
 		void draw();
 		void draw(bool wireframe);
+		void rotate(mat4 rotationMatrix);
 
 		bool loadToGPU();
 		glm::vec3 getPosition();

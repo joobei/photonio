@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/rotate_vector.hpp"
+#include "glm/gtx/quaternion.hpp"
 #include <sstream>
 #include "util.h"
 #include <boost/static_assert.hpp>
@@ -40,7 +41,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "eventQueue.h"
 #include "asio.h"
 #include "spuc/generic/running_average.h"
-#include "arcball.h"
+//#include "arcball.h"
 #include "assets.h"
 #include "TUIO/TuioClient.h"
 #include "TUIO/TuioListener.h"
@@ -160,9 +161,8 @@ namespace pho {
 		float sphereIntersectionDistance; //not really needed
 
 		//arcball stuff
-		ArcBall_t cursorArcBall;
-		glm::quat quaternion;
-		
+		int last_mx,last_my,cur_mx,cur_my;
+		glm::vec3 get_arcball_vector(int x, int y);
 		
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;

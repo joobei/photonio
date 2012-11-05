@@ -36,9 +36,7 @@ calibrate(false),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
 	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
-	wii(false),
-	cursorArcBall((float)WINDOW_SIZE_X,(float)WINDOW_SIZE_Y),
-	prevMouseExists(false)
+	wii(false)
 {
 #define SIZE 30                     //Size of the moving average filter
 	accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -87,6 +85,8 @@ calibrate(false),
 	deltat = -1.0f; //so as to not repeat keystrokes
 
 	perspective = 80.0f;
+
+	last_mx = last_my = cur_mx = cur_my = 0;
 }
 
 void Engine::initResources() {
@@ -264,53 +264,42 @@ bool Engine::computeRotationMatrix() {
 }
 
 void Engine::mouseButtonCallback(int button, int state) {
-	vec2 MousePt;
-	int x,y;
-	glfwGetMousePos(&x,&y);
+	glfwGetMousePos(&cur_mx,&cur_my);
 
-	MousePt.x = x;
-	MousePt.y = y;
 
 	if ((button == 0) && (state == GLFW_PRESS)) 
 	{	
-		cursorArcBall.click(&MousePt);
+		last_mx = cur_mx;
+		last_my = cur_my;
 	}
 	if ((button == 0) && (state == GLFW_RELEASE)) 
 	{
-		//cursorArcBall.endDrag(unprojected);
+		
 	}
 	if ((button == GLFW_MOUSE_BUTTON_2)) {
-		prevMouseExists = true;
-		prevMousePos.x = x;
-		prevMousePos.y = -y;
+		
 	}
 }
 
 void Engine::mouseMoveCallback(int xpos, int ypos) {
-	vec2 MousePt;
-	MousePt.x = xpos;
 	
+	cur_mx = xpos;
+	cur_my = ypos;
 
 	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
-		MousePt.y = ypos;
-		cursorArcBall.drag(&MousePt,&quaternion);
-		//cursor.modelMatrix = cursor.modelMatrix*glm::toMat4(quaternion);
-		vec4 temp = cursor.modelMatrix[3];
-		cursor.modelMatrix = glm::toMat4(quaternion)*cursor.modelMatrix;
-		cursor.modelMatrix[3] = temp;
+		glm::vec3 va = get_arcball_vector(last_mx, last_my);
+		glm::vec3 vb = get_arcball_vector( cur_mx,  cur_my);
+		float angle = acos(min(1.0f, glm::dot(va, vb)));
+		glm::vec3 axis_in_camera_coord = glm::cross(va, vb);
+		glm::mat3 camera2object = glm::inverse(glm::mat3(viewMatrix) * glm::mat3(cursor.modelMatrix));
+		glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
+		cursor.modelMatrix = glm::rotate(cursor.modelMatrix, glm::degrees(angle), axis_in_object_coord);
+		last_mx = cur_mx;
+		last_my = cur_my;
 	}  
 	
 	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
 		
-		
-		MousePt.y = -ypos;
-		vec2 difference = MousePt-prevMousePos;
-		difference.x /= 10;
-		difference.y /= 10;
-		if(prevMouseExists) {
-		cursor.modelMatrix = glm::translate(cursor.modelMatrix,glm::vec3(difference,0));
-		}
-		prevMousePos = MousePt;
 	}
 }
 
@@ -961,4 +950,23 @@ void Engine::checkWiiMote() {
 			break;
 		}
 	}
+}
+
+/**
+ * Get a normalized vector from the center of the virtual ball O to a
+ * point P on the virtual ball surface, such that P is aligned on
+ * screen's (X,Y) coordinates.  If (X,Y) is too far away from the
+ * sphere, return the nearest point on the virtual ball surface.
+ */
+glm::vec3 pho::Engine::get_arcball_vector(int x, int y) {
+  glm::vec3 P = glm::vec3(1.0*x/WINDOW_SIZE_X*2 - 1.0,
+                          1.0*y/WINDOW_SIZE_Y*2 - 1.0,
+                          0);
+  P.y = -P.y;
+  float OP_squared = P.x * P.x + P.y * P.y;
+  if (OP_squared <= 1*1)
+    P.z = sqrt(1*1 - OP_squared);  // Pythagore
+  else
+    P = glm::normalize(P);  // nearest point
+  return P;
 }

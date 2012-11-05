@@ -361,3 +361,12 @@ bool pho::Mesh::raySphereIntersection(const vec3& raydir, const vec3& rayorig,co
 		return false;
 	return true;
 }
+
+void pho::Mesh::rotate(glm::mat4 rotationMatrix) {
+	glm::vec4 tempPosition = modelMatrix[3];
+
+	modelMatrix = rotationMatrix*modelMatrix;
+
+	modelMatrix[3] = tempPosition;
+
+}
