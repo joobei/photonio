@@ -29,7 +29,17 @@
 #endif
 
 
+
+
 namespace pho {
+
+	class WiiButtonState {
+public:
+    WiiButtonState();
+    bool a,b,power,plus,minus,home,one,two,down,up,left,right;
+    void reset();
+};
+
     struct Buttons {
         WiiButtonState wiimote;
         bool mouse1, mouse2;
@@ -79,13 +89,6 @@ inline float sssTriangleC(glm::vec2 pa, glm::vec2 pb, glm::vec2 pc) {
 
 std::string readTextFile(std::string filename);
 
-
-class WiiButtonState {
-public:
-    WiiButtonState();
-    bool a,b,power,plus,minus,home,one,two,down,up,left,right;
-    void reset();
-};
 }
 
 
