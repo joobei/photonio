@@ -162,6 +162,7 @@ namespace pho {
 
 		//arcball stuff
 		int last_mx,last_my,cur_mx,cur_my;
+		bool mouseMove;
 		glm::vec3 get_arcball_vector(int x, int y);
 		
 		EventQueue eventQueue;

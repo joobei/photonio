@@ -36,7 +36,8 @@ calibrate(false),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
 	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
-	wii(false)
+	wii(false),
+	mouseMove(false)
 {
 #define SIZE 30                     //Size of the moving average filter
 	accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -141,7 +142,7 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-	CALL_GL(glClearColor(0,0,0,1));
+	CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	if (restoreRay) {
@@ -157,6 +158,9 @@ void Engine::render() {
 	if (appMode == rayCasting) {
 		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
+
+			//CALL_GL(glEnable(GL_BLEND));
+			//CALL_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 			CALL_GL(glDisable(GL_DEPTH_TEST));
 			//render selection red border first with the flat color shader
@@ -276,13 +280,22 @@ void Engine::mouseButtonCallback(int button, int state) {
 	{
 		
 	}
-	if ((button == GLFW_MOUSE_BUTTON_2)) {
+	if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_PRESS)) {
+		
+		mouseMove = true;
+		last_mx = cur_mx;
+		last_my = cur_my;
+	}
+	if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_RELEASE)) {
+		
+		mouseMove = false;
 		
 	}
 }
 
 void Engine::mouseMoveCallback(int xpos, int ypos) {
 	
+
 	cur_mx = xpos;
 	cur_my = ypos;
 
@@ -298,8 +311,25 @@ void Engine::mouseMoveCallback(int xpos, int ypos) {
 		last_my = cur_my;
 	}  
 	
+	
 	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
 		
+		glm::vec2 prev = glm::vec2(last_mx,last_my);
+		cur_mx = -ypos;
+		cur_my = xpos;
+		glm::vec2 cur = glm::vec2(cur_mx,cur_my);
+
+		glm::vec2 difference = cur-prev;
+		
+		difference.x /= 10;
+		difference.y /= 10;
+		
+		if(mouseMove) {
+		cursor.modelMatrix = glm::translate(cursor.modelMatrix,glm::vec3(difference,0));
+		}
+		last_mx = cur_mx;
+		last_my = cur_my;
+
 	}
 }
 
