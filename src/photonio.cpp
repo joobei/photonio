@@ -102,7 +102,7 @@ void Engine::initResources() {
     //load shaders from files
 	colorShader = pho::Shader("shaders/shader");  
 	offscreenShader = pho::Shader("shaders/offscreen");
-
+	circleShader = pho::Shader("shaders/circle");
 	
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -175,6 +175,23 @@ void Engine::render() {
 
 			restoreRay = true; //mark ray to be restored to full length
 		} else {objectHit = false; }
+
+		float intersectionDistance = -1;
+		if (cursor.findSphereIntersection(p,n,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
+			sphereHit = true;
+
+			//Ray length calculation
+			rayLength = -glm::distance(vec3(ray.getPosition()),sphereIntersectionPoint);
+
+			if(!objectHit) {
+			//Shorten the beam to match the object
+			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+			}
+			restoreRay = true; //mark ray to be restored to full length
+
+		} else {sphereHit = false; }
+
 	}
 
 	if (technique == rayCasting ) {
@@ -231,9 +248,16 @@ void Engine::render() {
     ray.draw(true);
 	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	cursor.draw();		
-	
+ 
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
+	circleShader.use();
+	circleShader["perspective"] = projectionMatrix;
+	circleShader["viewMatrix"] = viewMatrix;
+	circleShader["model"] = cursor.modelMatrix;
+	circleShader["baseColor"] = glm::vec4(1.0f,0,0,1);
+	cursor.drawPoint();
+
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
 		point.modelMatrix = glm::translate(objectIntersectionPoint);

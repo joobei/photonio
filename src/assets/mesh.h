@@ -29,6 +29,7 @@ namespace pho {
 		GLuint getVaoId();
         void setShader(pho::Shader* tehShader);
 		void draw();
+		void drawPoint();
 		void draw(bool wireframe);
 		void rotate(mat4 rotationMatrix);
 
@@ -42,12 +43,14 @@ namespace pho {
 		bool rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 rayOrigin, glm::vec3 rayDirection, float epsilon, glm::vec3 &intersection);
 		bool raySphereIntersection(const vec3& raydir, const vec3& rayorig,const vec3& pos,const float& rad, vec3& hitpoint,float& distance, vec3& normal);
 		bool findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal);
+		bool findSphereIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal);
 		float sum(const vec3& v);
 
 		bool simple; //for rays, simple lines
 
 		unsigned int numFaces, numVertices;
         GLuint vaoId;
+		GLuint circlevaoId;
 		GLuint wfvaoId;
 		GLuint ibId;
 		GLuint vertexVboId;
@@ -55,6 +58,7 @@ namespace pho {
 		GLuint wfibId; //indices for wireframe rendering
 		GLuint texIndex;
 		GLuint uniformBlockIndex;
+		GLuint circleVboId;  //just one vertex to draw a point for the center of the circle
 
 		std::vector<pho::Face> faces;
 		glm::mat4 modelMatrix;

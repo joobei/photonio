@@ -134,7 +134,7 @@ namespace pho {
 		glm::vec3 cameraDirection;
 
 		//Shaders
-        pho::Shader colorShader,offscreenShader;
+        pho::Shader colorShader,offscreenShader,circleShader;
 
 		//Lights
 		GLuint lightSource;

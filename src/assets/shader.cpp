@@ -10,14 +10,15 @@ pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec4& data){ CA
 pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mat4& data){ CALL_GL(glUniformMatrix4fv(location,1,GL_FALSE,glm::value_ptr(data))); return (*this);}
 
 pho::Shader::Shader() {
-
+	vertex = fragment = geometry = 0;
 }
 
 pho::Shader::Shader(std::string filename) {
-	GLuint vertex,fragment;
 	vertex = CreateShader(GL_VERTEX_SHADER,pho::readTextFile(filename+".vert"));
 	fragment = CreateShader(GL_FRAGMENT_SHADER,pho::readTextFile(filename+".frag"));
-	program = CreateProgram(vertex, fragment);
+	geometry = CreateShader(GL_GEOMETRY_SHADER,pho::readTextFile(filename+".geom"));
+
+	program = CreateProgram(vertex, fragment, geometry);
 }
 
 GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile) {
@@ -47,16 +48,21 @@ GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShade
 
 		fprintf(stderr, "Compile failure in %s shader:\n%s\n", strShaderType, strInfoLog);
 		delete[] strInfoLog;
+
+		return 0;
 	}
 
 	return shader;
 }
 
-GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag) {
+GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag, const GLuint geom) {
 	GLuint program = glCreateProgram();
 
 	glAttachShader(program, vert);
 	glAttachShader(program, frag);
+	if (geom !=0) {
+	glAttachShader(program, geom);
+	}
 
 	CALL_GL(glBindAttribLocation(program,vertexLoc,"in_Position"));
 	CALL_GL(glBindAttribLocation(program,colorLoc,"in_Color"));

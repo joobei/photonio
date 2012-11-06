@@ -38,12 +38,12 @@ namespace pho {
 		GLuint program;
 		const char* filename;
 		GLuint CreateShader(GLenum eShaderType, const std::string &strShaderFile);
-		GLuint CreateProgram(const GLuint vert, const GLuint frag);
+		GLuint CreateProgram(const GLuint vert, const GLuint frag, const GLuint geom);
 		void SetAttribute(char * name, int val);
 		std::map<std::string,GLint> attributes;
 		GLint getUniform(const std::string& uniform_name);
         void use();
-
+		GLuint vertex,fragment, geometry;
 		pho::UniformAssigner operator[](const std::string& uniform_name);
 	};
 

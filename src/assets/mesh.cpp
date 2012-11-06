@@ -88,6 +88,18 @@ vertices(vertixes),
 	CALL_GL(glEnableVertexAttribArray(colorLoc));
 
 	CALL_GL(glBindVertexArray(0));
+
+	glm::vec3 center = glm::vec3(0,0,0);
+
+	CALL_GL(glGenVertexArrays(1,&circlevaoId)); 
+	CALL_GL(glGenBuffers(1,&circleVboId));
+
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,circleVboId));
+	CALL_GL(glBufferData(GL_ARRAY_BUFFER,3*sizeof(GLfloat),glm::value_ptr(center),GL_STATIC_DRAW));
+	CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
+	CALL_GL(glEnableVertexAttribArray(vertexLoc));
+
+	CALL_GL(glBindVertexArray(0));
 }
 
 //loads a simple mesh (like ray and plane)
@@ -204,8 +216,12 @@ glm::vec3 pho::Mesh::getPosition() {
 	return glm::vec3(modelMatrix[3]);
 }
 
+void pho::Mesh::drawPoint() {
+	CALL_GL(glBindVertexArray(circlevaoId));
+	CALL_GL(glDrawArrays(GL_POINTS,0,1));
+}
+
 void pho::Mesh::draw() {
-	
 	CALL_GL(glBindVertexArray(vaoId));
 	CALL_GL(glDrawElements(GL_TRIANGLES,indices.size(),GL_UNSIGNED_SHORT,NULL));
 }
@@ -296,7 +312,6 @@ bool pho::Mesh::findIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, gl
 
 }
 
-
 bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal) {
 	glm::vec3 rayOrigin;
 	glm::vec3 rayDirection;
@@ -306,6 +321,19 @@ bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint
 	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the modelmatrix
 	rayDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
 	rayDirection = glm::normalize(rayDirection);
+	sphereOrigin = glm::vec3(modelMatrix[3]);
+	radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
+
+	if (raySphereIntersection(rayDirection,rayOrigin,sphereOrigin,radius,foundPoint,foundDistance,foundNormal))
+	{
+		return true;	
+	} else return false;
+}
+
+bool pho::Mesh::findSphereIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal) {
+	
+	glm::vec3 sphereOrigin;
+	float radius;
 	sphereOrigin = glm::vec3(modelMatrix[3]);
 	radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
 
