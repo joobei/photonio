@@ -164,7 +164,8 @@ namespace pho {
 		int last_mx,last_my,cur_mx,cur_my;
 		bool mouseMove;
 		glm::vec3 get_arcball_vector(int x, int y);
-		
+		glm::vec3 p,n;
+
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
 

@@ -267,6 +267,36 @@ bool pho::Mesh::findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint) {
 
 }
 
+bool pho::Mesh::findIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3& foundPoint) {
+	
+
+	double epsilon = 0.000001;
+
+	glm::vec4 v0,v1,v2; //three vertices of the triangle to be tested
+
+	//iterate through all faces
+	for (std::vector<Face>::size_type i=0;i < faces.size(); i++) {
+
+		v0 = glm::vec4(vertices[faces[i].a],1.0f); //vertices are kept in another vector object
+		v1 = glm::vec4(vertices[faces[i].b],1.0f); //I fetch them using indices
+		v2 = glm::vec4(vertices[faces[i].c],1.0f);
+
+		v0 = modelMatrix*v0;  //Transform the vertex from model space ---> world space
+		v1 = modelMatrix*v1;
+		v2 = modelMatrix*v2;
+		
+
+		if (rayTriangleIntersection(glm::vec3(v0),glm::vec3(v1),glm::vec3(v2),rayOrigin, rayDirection,epsilon,foundPoint)) {
+			return true;
+
+		}
+
+	}
+	return false;
+
+}
+
+
 bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal) {
 	glm::vec3 rayOrigin;
 	glm::vec3 rayDirection;
@@ -331,6 +361,55 @@ bool pho::Mesh::rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2
 	return true;
 
 }
+
+bool pho::Mesh::rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 rayOrigin, glm::vec3 rayDirection, float epsilon, glm::vec3 &intersection) {
+
+	glm::vec3 lineDirection = rayDirection;
+	glm::vec3 lineOrigin = rayOrigin;
+
+	glm::vec3 e1,e2,p,s,q;
+
+	float t,u,v,tmp;
+
+	e1 = v1-v0;
+	e2 = v2-v0;
+	p=glm::cross(lineDirection,e2);
+	tmp = glm::dot(p,e1);
+
+	if((tmp > -epsilon) && (tmp < epsilon)) {
+		return false;
+	}
+
+	tmp = 1.0f/tmp;
+	s = lineOrigin - v0;
+
+	u=tmp*glm::dot(s,p);
+	if (u < 00 || u > 1.0) {
+		return false;
+	}
+
+	q = glm::cross(s,e1);
+	v = tmp * glm::dot(lineDirection,q);
+
+	if(v<0.0||v>1.0) {
+		return false;
+	}
+
+	if (u+v > 1.0) {
+		return false;
+	}
+
+	t = tmp * glm::dot(e2,q);
+
+	//info here (probably barycentric coordinates)
+
+	//intersection point
+	intersection = lineOrigin + t*lineDirection;
+	return true;
+
+}
+
+
 
 inline float pho::Mesh::sum(const vec3& v)
 {

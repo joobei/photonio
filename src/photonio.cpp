@@ -154,8 +154,30 @@ void Engine::render() {
 		restoreRay = false;  //we already restored, no need to do it every frame
 	}
 
+	
 	//If we are raycasting and there's a hit
-	if (technique == rayCasting || technique == mouse) {
+	if (technique == mouse) {
+		if (cursor.findIntersection(p,n,objectIntersectionPoint)) {
+			objectHit = true; //picked up by checkEvents in wii-mote mode switch
+			CALL_GL(glDisable(GL_DEPTH_TEST));
+			//render selection red border first with the flat color shader
+			offscreenShader.use();
+			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.6f);
+			offscreenShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
+			// draw the object
+			cursor.draw();
+
+			//Ray length calculation
+			rayLength = -glm::distance(vec3(ray.getPosition()),objectIntersectionPoint);
+			//Shorten the beam to match the object
+			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+
+			restoreRay = true; //mark ray to be restored to full length
+		} else {objectHit = false; }
+	}
+
+	if (technique == rayCasting ) {
 		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
@@ -300,22 +322,22 @@ void Engine::mouseButtonCallback(int button, int state) {
 	}
 }
 
-void Engine::mouseMoveCallback(int xpos, int ypos) {
+void Engine::mouseMoveCallback(int x, int y) {
 	
 
-	cur_mx = xpos;
-	cur_my = ypos;
+	cur_mx = x;
+	cur_my = y;
 	
-	glm::vec3 P = glm::vec3(1.0*xpos/WINDOW_SIZE_X*2 - 1.0,
-		-(1.0*ypos/WINDOW_SIZE_Y*2 - 1.0),
-		viewMatrix[3].z);
+	float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
+	float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
 
-	vec4 pos = glm::vec4(P,1.0);
+	glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
 
-	ray.modelMatrix[3] = pos;
+	glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;	
+
+	p = glm::vec3(viewMatrix[3]);
+	n = glm::normalize(glm::vec3(mouse_world)-p);
 	
-
-
 	if (appInputState == rotate) {
 		glm::vec3 va = get_arcball_vector(last_mx, last_my);
 		glm::vec3 vb = get_arcball_vector( cur_mx,  cur_my);
@@ -332,16 +354,18 @@ void Engine::mouseMoveCallback(int xpos, int ypos) {
 	if (appInputState == translate) {
 		vec2 MousePt;
 
-		MousePt.x = xpos;
-		MousePt.y = ypos;
+		MousePt.x = x;
+		MousePt.y = y;
 
 		vec2 difference = MousePt-prevMousePos;
 		difference.x /= 100;
 		difference.y /= 100;
 		difference.y = -difference.y;
+		
 		if(prevMouseExists) {
 		cursor.modelMatrix = glm::translate(glm::vec3(difference,0))*cursor.modelMatrix;
 		}
+
 		prevMousePos = MousePt;
 
 	}
