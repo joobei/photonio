@@ -70,8 +70,8 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
-	appMode = rayCasting;
-	rotTechnique = screenSpace;
+	technique = mouse;
+	rotTechnique = trackBall;
 
 	prevMouseWheel = 0;
 	gyroData = false;
@@ -155,7 +155,7 @@ void Engine::render() {
 	}
 
 	//If we are raycasting and there's a hit
-	if (appMode == rayCasting) {
+	if (technique == rayCasting || technique == mouse) {
 		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
@@ -200,7 +200,7 @@ void Engine::render() {
 	
 	colorShader.use(); //bind the standard shader for default colored objects
 
-	if (appMode == planeCasting) {
+	if (technique == planeCasting) {
 	colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
     plane.draw(true);
 	}
@@ -271,25 +271,32 @@ void Engine::mouseButtonCallback(int button, int state) {
 	glfwGetMousePos(&cur_mx,&cur_my);
 
 
-	if ((button == 0) && (state == GLFW_PRESS)) 
+	if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_PRESS)) 
 	{	
 		last_mx = cur_mx;
 		last_my = cur_my;
-	}
-	if ((button == 0) && (state == GLFW_RELEASE)) 
-	{
 		
+		appInputState = rotate;
+	}
+	if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_RELEASE)) 
+	{
+		appInputState = idle;
 	}
 	if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_PRESS)) {
 		
 		mouseMove = true;
-		last_mx = cur_mx;
-		last_my = cur_my;
+		prevMouseExists = true;
+		prevMousePos = glm::vec2(cur_mx,cur_my);
+
+		appInputState = translate;
+
 	}
 	if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_RELEASE)) {
 		
 		mouseMove = false;
+		prevMouseExists = false;
 		
+		appInputState = idle;
 	}
 }
 
@@ -298,8 +305,18 @@ void Engine::mouseMoveCallback(int xpos, int ypos) {
 
 	cur_mx = xpos;
 	cur_my = ypos;
+	
+	glm::vec3 P = glm::vec3(1.0*xpos/WINDOW_SIZE_X*2 - 1.0,
+		-(1.0*ypos/WINDOW_SIZE_Y*2 - 1.0),
+		viewMatrix[3].z);
 
-	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS) {
+	vec4 pos = glm::vec4(P,1.0);
+
+	ray.modelMatrix[3] = pos;
+	
+
+
+	if (appInputState == rotate) {
 		glm::vec3 va = get_arcball_vector(last_mx, last_my);
 		glm::vec3 vb = get_arcball_vector( cur_mx,  cur_my);
 		float angle = acos(min(1.0f, glm::dot(va, vb)));
@@ -312,23 +329,20 @@ void Engine::mouseMoveCallback(int xpos, int ypos) {
 	}  
 	
 	
-	if (glfwGetMouseButton(GLFW_MOUSE_BUTTON_2) == GLFW_PRESS) {
-		
-		glm::vec2 prev = glm::vec2(last_mx,last_my);
-		cur_mx = -ypos;
-		cur_my = xpos;
-		glm::vec2 cur = glm::vec2(cur_mx,cur_my);
+	if (appInputState == translate) {
+		vec2 MousePt;
 
-		glm::vec2 difference = cur-prev;
-		
-		difference.x /= 10;
-		difference.y /= 10;
-		
-		if(mouseMove) {
-		cursor.modelMatrix = glm::translate(cursor.modelMatrix,glm::vec3(difference,0));
+		MousePt.x = xpos;
+		MousePt.y = ypos;
+
+		vec2 difference = MousePt-prevMousePos;
+		difference.x /= 100;
+		difference.y /= 100;
+		difference.y = -difference.y;
+		if(prevMouseExists) {
+		cursor.modelMatrix = glm::translate(glm::vec3(difference,0))*cursor.modelMatrix;
 		}
-		last_mx = cur_mx;
-		last_my = cur_my;
+		prevMousePos = MousePt;
 
 	}
 }
@@ -910,7 +924,7 @@ void Engine::checkKeyboard() {
 	}
 
 	if (glfwGetKey('4') == GLFW_PRESS) {
-		appMode = rayCasting;
+		technique = rayCasting;
 		std::cout << "RayCasting" << '\n';
 	}
 }
@@ -919,7 +933,7 @@ void Engine::checkWiiMote() {
 	if (wii) {
 		remote.RefreshState();
 
-		switch(appMode)  {
+		switch(technique)  {
 		case rayCasting:
 			if (appInputState == idle && remote.Button.B() && objectHit) {   
 				appInputState = translate;
@@ -989,14 +1003,14 @@ void Engine::checkWiiMote() {
  * sphere, return the nearest point on the virtual ball surface.
  */
 glm::vec3 pho::Engine::get_arcball_vector(int x, int y) {
-  glm::vec3 P = glm::vec3(1.0*x/WINDOW_SIZE_X*2 - 1.0,
-                          1.0*y/WINDOW_SIZE_Y*2 - 1.0,
-                          0);
-  P.y = -P.y;
-  float OP_squared = P.x * P.x + P.y * P.y;
-  if (OP_squared <= 1*1)
-    P.z = sqrt(1*1 - OP_squared);  // Pythagore
-  else
-    P = glm::normalize(P);  // nearest point
-  return P;
+	glm::vec3 P = glm::vec3(1.0*x/WINDOW_SIZE_X*2 - 1.0,
+		1.0*y/WINDOW_SIZE_Y*2 - 1.0,
+		0);
+	P.y = -P.y;
+	float OP_squared = P.x * P.x + P.y * P.y;
+	if (OP_squared <= 1*1)
+		P.z = sqrt(1*1 - OP_squared);  // Pythagore
+	else
+		P = glm::normalize(P);  // nearest point
+	return P;
 }

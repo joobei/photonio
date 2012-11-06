@@ -58,13 +58,12 @@ enum RotateTechnique { //rotTechnique
     trackBall
 };
 
-enum AppMode {  //appmode
+enum Technique {  //appmode
     planeCasting,
     rayCasting,
     spaceNavigator,
     mouse
 };
-
 
 
 // The sampler uniform for textured models

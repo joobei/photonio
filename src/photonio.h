@@ -116,7 +116,7 @@ namespace pho {
 
 		InputState appInputState;
 		RotateTechnique rotTechnique;
-		AppMode appMode;
+		Technique technique;
 
 
 		GLenum error;
