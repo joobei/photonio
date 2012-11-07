@@ -99,11 +99,7 @@ void Engine::initResources() {
 	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
 	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
 
-    //load shaders from files
-	colorShader = pho::Shader("shaders/shader");  
-	offscreenShader = pho::Shader("shaders/offscreen");
-	circleShader = pho::Shader("shaders/circle");
-	
+   
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
@@ -114,12 +110,19 @@ void Engine::initResources() {
 
 	glEnable (GL_DEPTH_TEST);
 	glEnable (GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_TRUE);
 
 	restoreRay=false; //make ray long again if NOT intersecting
 
 	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
+
+	 //load shaders from files
+	colorShader = pho::Shader("shaders/shader");  
+	offscreenShader = pho::Shader("shaders/offscreen");
+	circleShader = pho::Shader("shaders/circle");
+	
 }
 
 //checks event queue for events
@@ -129,7 +132,7 @@ void Engine::checkEvents() {
 	int wheel = glfwGetMouseWheel();
 	if (wheel != prevMouseWheel) {
 		int amount = wheel - prevMouseWheel;
-		cursor.modelMatrix = glm::translate(cursor.modelMatrix, vec3(0,0,-amount));
+		cursor.modelMatrix = glm::translate(vec3(0,0,-amount))*cursor.modelMatrix;
 		prevMouseWheel = wheel;
 	}
 
@@ -198,13 +201,10 @@ void Engine::render() {
 		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
-			//CALL_GL(glEnable(GL_BLEND));
-			//CALL_GL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
-
 			CALL_GL(glDisable(GL_DEPTH_TEST));
 			//render selection red border first with the flat color shader
 			offscreenShader.use();
-			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.6f);
+			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.5f);
 			offscreenShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
 			// draw the object
 			cursor.draw();
@@ -252,10 +252,10 @@ void Engine::render() {
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
 	circleShader.use();
-	circleShader["perspective"] = projectionMatrix;
-	circleShader["viewMatrix"] = viewMatrix;
-	circleShader["model"] = cursor.modelMatrix;
-	circleShader["baseColor"] = glm::vec4(1.0f,0,0,1);
+	//circleShader["radius"] = glm::length(cursor.farthestVertex);
+	circleShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+	circleShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
+	CALL_GL(glLineWidth(4.0f));
 	cursor.drawPoint();
 
 

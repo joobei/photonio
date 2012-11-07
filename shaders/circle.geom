@@ -1,23 +1,22 @@
 /* [GEOMETRY] */
 #version 330 
 
-uniform mat4 projection;
-uniform mat4 view;
-uniform mat4 model;
-#define pi 3.141592653589793238462643383279
+//uniform float radius;
 
 layout(points) in;
-layout(line_strip, max_vertices = 40)out;
+layout(line_strip, max_vertices = 200)out;
 
 void main() 
 {
-    vec4 pos = vec4(0,0,0,1);
-    pos = projection*view*model*pos;
+	float radius = 1.0f;
 
-    for(float i = 0; i < 6.28 ; i+=0.4)
-	 {
-        gl_Position = vec4(pos.x+0.5*cos(i),pos.y+0.5*sin(i),pos.z,1.0);
+	//float PI = 3.14159265358979323846264;  //unused
+	vec4 pos = vec4(gl_in[0].gl_Position);
+
+    for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
+	{
+        gl_Position = vec4(pos.x+radius*cos(i),pos.y+radius*sin(i),pos.z,pos.w);
 		EmitVertex();        
     }
-  
+	EndPrimitive();
 } 
