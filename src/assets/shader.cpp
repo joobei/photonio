@@ -2,6 +2,8 @@
 
 #include "shader.h"
 
+using namespace boost::filesystem;
+
 pho::UniformAssigner& pho::UniformAssigner::operator=(int data) { CALL_GL(glUniform1i(location,data)); return (*this); }
 pho::UniformAssigner& pho::UniformAssigner::operator=(float data) { CALL_GL(glUniform1f(location,data)); return (*this);}
 pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec2& data){ CALL_GL(glUniform2f(location,data.x,data.y)); return (*this);}
@@ -16,9 +18,13 @@ pho::Shader::Shader() {
 pho::Shader::Shader(std::string filename) {
 	vertex = CreateShader(GL_VERTEX_SHADER,pho::readTextFile(filename+".vert"));
 	fragment = CreateShader(GL_FRAGMENT_SHADER,pho::readTextFile(filename+".frag"));
+	if (exists(filename+".geom")) {
 	geometry = CreateShader(GL_GEOMETRY_SHADER,pho::readTextFile(filename+".geom"));
-
 	program = CreateProgram(vertex, fragment, geometry);
+	}
+	else {
+		program = CreateProgram(vertex, fragment);
+	}
 }
 
 GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile) {
@@ -63,6 +69,34 @@ GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag, const GL
 	if (geom !=0) {
 	glAttachShader(program, geom);
 	}
+
+	CALL_GL(glBindAttribLocation(program,vertexLoc,"in_Position"));
+	CALL_GL(glBindAttribLocation(program,colorLoc,"in_Color"));
+	CALL_GL(glBindAttribLocation(program,texCoordLoc,"in_TexCoord"));
+	CALL_GL(glBindAttribLocation(program,normalLoc,"in_Normal"));
+
+	CALL_GL(glLinkProgram(program));
+
+	GLint status;
+	CALL_GL(glGetProgramiv (program, GL_LINK_STATUS, &status));
+	if (status == GL_FALSE)
+	{
+		GLint infoLogLength;
+		CALL_GL(glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength));
+
+		GLchar *strInfoLog = new GLchar[infoLogLength + 1];
+		CALL_GL(glGetProgramInfoLog(program, infoLogLength, NULL, strInfoLog));
+		fprintf(stderr, "Linker failure: %s\n", strInfoLog);
+		delete[] strInfoLog;
+	}
+	return program;
+}
+
+GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag) {
+	GLuint program = glCreateProgram();
+
+	glAttachShader(program, vert);
+	glAttachShader(program, frag);
 
 	CALL_GL(glBindAttribLocation(program,vertexLoc,"in_Position"));
 	CALL_GL(glBindAttribLocation(program,colorLoc,"in_Color"));

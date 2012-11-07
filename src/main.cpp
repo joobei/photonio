@@ -62,7 +62,7 @@ int main()
 
     engine->go();
 
-	glfwCloseWindow();
+	//glfwCloseWindow();
     glfwTerminate();
     return 0;
 }

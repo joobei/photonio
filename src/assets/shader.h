@@ -5,6 +5,7 @@
 #include "GL/glew.h"
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
+#include <boost/filesystem.hpp>
 #include <vector>
 #include <map>
 #include "util.h"
@@ -39,6 +40,7 @@ namespace pho {
 		const char* filename;
 		GLuint CreateShader(GLenum eShaderType, const std::string &strShaderFile);
 		GLuint CreateProgram(const GLuint vert, const GLuint frag, const GLuint geom);
+		GLuint CreateProgram(const GLuint vert, const GLuint frag);
 		void SetAttribute(char * name, int val);
 		std::map<std::string,GLint> attributes;
 		GLint getUniform(const std::string& uniform_name);

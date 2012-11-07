@@ -352,8 +352,8 @@ void Engine::mouseMoveCallback(int x, int y) {
 	n = glm::normalize(glm::vec3(mouse_world)-p);
 	
 	if (appInputState == rotate) {
-		glm::vec3 va = get_arcball_vector(last_mx, last_my);
-		glm::vec3 vb = get_arcball_vector( cur_mx,  cur_my);
+		glm::vec3 va = get_arcball_vector(glm::vec3(cursor.modelMatrix[3]),0.5f,last_mx, last_my);
+		glm::vec3 vb = get_arcball_vector(glm::vec3(cursor.modelMatrix[3]),0.5f,cur_mx,  cur_my);
 		float angle = acos(min(1.0f, glm::dot(va, vb)));
 		glm::vec3 axis_in_camera_coord = glm::cross(va, vb);
 		glm::mat3 camera2object = glm::inverse(glm::mat3(viewMatrix) * glm::mat3(cursor.modelMatrix));
@@ -1039,7 +1039,7 @@ void Engine::checkWiiMote() {
  * screen's (X,Y) coordinates.  If (X,Y) is too far away from the
  * sphere, return the nearest point on the virtual ball surface.
  */
-glm::vec3 pho::Engine::get_arcball_vector(int x, int y) {
+glm::vec3 pho::Engine::get_arcball_vector(glm::vec3 sphereOrigin, float radius, int x, int y) {
 	glm::vec3 P = glm::vec3(1.0*x/WINDOW_SIZE_X*2 - 1.0,
 		1.0*y/WINDOW_SIZE_Y*2 - 1.0,
 		0);
