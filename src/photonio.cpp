@@ -160,25 +160,6 @@ void Engine::render() {
 	
 	//If we are raycasting and there's a hit
 	if (technique == mouse) {
-		if (cursor.findIntersection(p,n,objectIntersectionPoint)) {
-			objectHit = true; //picked up by checkEvents in wii-mote mode switch
-			CALL_GL(glDisable(GL_DEPTH_TEST));
-			//render selection red border first with the flat color shader
-			offscreenShader.use();
-			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.6f);
-			offscreenShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
-			// draw the object
-			cursor.draw();
-
-			//Ray length calculation
-			rayLength = -glm::distance(vec3(ray.getPosition()),objectIntersectionPoint);
-			//Shorten the beam to match the object
-			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
-
-			restoreRay = true; //mark ray to be restored to full length
-		} else {objectHit = false; }
-
 		float intersectionDistance = -1;
 		if (cursor.findSphereIntersection(p,n,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
 			sphereHit = true;
@@ -193,7 +174,8 @@ void Engine::render() {
 			}
 			restoreRay = true; //mark ray to be restored to full length
 
-		} else {sphereHit = false; }
+		}
+		else {sphereHit = false; }
 
 	}
 
@@ -251,12 +233,7 @@ void Engine::render() {
  
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
-	circleShader.use();
-	//circleShader["radius"] = glm::length(cursor.farthestVertex);
-	circleShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-	circleShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
-	CALL_GL(glLineWidth(4.0f));
-	cursor.drawPoint();
+	
 
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
@@ -264,15 +241,27 @@ void Engine::render() {
 		offscreenShader.use();
 		offscreenShader["baseColor"] = vec4(0.0f, 1.0f ,0.0f, 1.0f); //back to drawing with colors
 		offscreenShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+		//CALL_GL(glPointSize(13.0f));
 		point.draw();
 	}
-	if (sphereHit) {
+	if (sphereHit || (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)) {
+		circleShader.use();
+		//circleShader["radius"] = glm::length(cursor.farthestVertex);
+		circleShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+		circleShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
+		CALL_GL(glLineWidth(4.0f));
+		cursor.drawPoint();
+
 		point.modelMatrix = glm::translate(sphereIntersectionPoint);
 		offscreenShader.use();
 		offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 1.0f); //back to drawing with colors
 		offscreenShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+		//CALL_GL(glPointSize(13.0f));
 		point.draw();
-	}
+	} 
+
+	
+
 
 	glfwSwapBuffers();
 }
@@ -959,21 +948,21 @@ void Engine::checkKeyboard() {
 	}
 	
 	if (glfwGetKey('1') == GLFW_PRESS) {
-		rotTechnique = screenSpace;
-		std::cout << "Screen Space Rotation" << '\n';
+		technique = mouse;
+		std::cout << "Mouse" << '\n';
 	}
 	if (glfwGetKey('2') == GLFW_PRESS) {
-		rotTechnique = singleAxis;
-		std::cout << "Single Axis Rotation" << '\n';
+		technique = rayCasting;
+		std::cout << "Raycasting" << '\n';
 	}
 	if (glfwGetKey('3') == GLFW_PRESS) {
-		rotTechnique = trackBall;
-		std::cout << "Virtual Trackball Rotation" << '\n';
+		technique = spaceNavigator;
+		std::cout << "Space Navigator" << '\n';
 	}
 
 	if (glfwGetKey('4') == GLFW_PRESS) {
-		technique = rayCasting;
-		std::cout << "RayCasting" << '\n';
+		technique = planeCasting;
+		std::cout << "PlaneCasting" << '\n';
 	}
 }
 void Engine::checkWiiMote() {

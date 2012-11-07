@@ -51,8 +51,6 @@ vertices(vertixes),
 
 	CALL_GL(glBindVertexArray(vaoId));
 
-	
-
 	CALL_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,ibId));
 	CALL_GL(glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.size()*sizeof(GLushort),indices.data(),GL_STATIC_DRAW));
 
@@ -217,8 +215,14 @@ glm::vec3 pho::Mesh::getPosition() {
 }
 
 void pho::Mesh::drawPoint() {
+	if (!simple) {
 	CALL_GL(glBindVertexArray(circlevaoId));
 	CALL_GL(glDrawArrays(GL_POINTS,0,1));
+	}
+	else {
+		CALL_GL(glBindVertexArray(vaoId));
+	CALL_GL(glDrawArrays(GL_POINTS,0,1));
+	}
 }
 
 void pho::Mesh::draw() {
