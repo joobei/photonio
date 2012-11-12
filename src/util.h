@@ -28,7 +28,9 @@
 #define CALL_GL(exp) exp
 #endif
 
-namespace pho {
+#define ARCBALL_RADIUS 0.5f
+
+namespace pho {	
 
 	class WiiButtonState {
 public:

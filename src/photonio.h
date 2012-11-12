@@ -65,6 +65,8 @@ using glm::mat4;
 
 #define LOGITECH_VENDOR_ID 0x46d
 
+#define FILTER_SIZE 30                     //Size of the moving average filter
+
 namespace pho {
 	class Engine: public TuioListener {
 
@@ -163,8 +165,9 @@ namespace pho {
 		//arcball stuff
 		int last_mx,last_my,cur_mx,cur_my;
 		bool mouseMove;
-		glm::vec3 get_arcball_vector(glm::vec3 sphereOrigin, float radius,int x, int y);
-		glm::vec3 p,n;
+		bool raySphereIntersectionClosest(const vec3& raydir, const vec3& rayorig,const vec3& pos,const float& rad, vec3& hitpoint,float& distance, vec3& normal);
+		glm::vec3 rayOrigin,rayDirection;
+		glm::vec3 prevPoint;
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;

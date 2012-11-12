@@ -316,37 +316,6 @@ bool pho::Mesh::findIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, gl
 
 }
 
-bool pho::Mesh::findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal) {
-	glm::vec3 rayOrigin;
-	glm::vec3 rayDirection;
-	glm::vec3 sphereOrigin;
-	float radius;
-
-	rayOrigin = glm::vec3(rayMatrix[3]);  //pick up position of ray from the modelmatrix
-	rayDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
-	rayDirection = glm::normalize(rayDirection);
-	sphereOrigin = glm::vec3(modelMatrix[3]);
-	radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
-
-	if (raySphereIntersection(rayDirection,rayOrigin,sphereOrigin,radius,foundPoint,foundDistance,foundNormal))
-	{
-		return true;	
-	} else return false;
-}
-
-bool pho::Mesh::findSphereIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal) {
-	
-	glm::vec3 sphereOrigin;
-	float radius;
-	sphereOrigin = glm::vec3(modelMatrix[3]);
-	radius = glm::length(farthestVertex); //since the farthest vertex is from the origin 0,0,0 then lehgth() should just give us the sphere radius
-
-	if (raySphereIntersection(rayDirection,rayOrigin,sphereOrigin,radius,foundPoint,foundDistance,foundNormal))
-	{
-		return true;	
-	} else return false;
-}
-
 bool pho::Mesh::rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection) {
 
 	glm::vec3 lineDirection = glm::mat3(rayMatrix)*glm::vec3(0,0,-1);  //direction of ray
@@ -448,11 +417,13 @@ inline float pho::Mesh::sum(const vec3& v)
 return v[0] + v[1] + v[2];
 }
 
-bool pho::Mesh::raySphereIntersection(const vec3& raydir, const vec3& rayorig,const vec3& pos,const float& rad, vec3& hitpoint,float& distance, vec3& normal)
+bool pho::Mesh::findSphereIntersection(const vec3& rayDirection, const vec3& rayOrigin, vec3& intersectOrClosestPoint)
 {
-	float a = sum(raydir*raydir);
-	float b = sum(raydir * (2.0f * ( rayorig - pos)));
-	float c = sum(pos*pos) + sum(rayorig*rayorig) -2.0f*sum(rayorig*pos) - rad*rad;
+	glm::vec3 spherePosition = glm::vec3(modelMatrix[3]);
+
+	float a = sum(rayDirection*rayDirection);
+	float b = sum(rayDirection * (2.0f * ( rayOrigin - spherePosition)));
+	float c = sum(spherePosition*spherePosition) + sum(rayOrigin*rayOrigin) -2.0f*sum(rayOrigin*spherePosition) - ARCBALL_RADIUS*ARCBALL_RADIUS;
 	float D = b*b + (-4.0f)*a*c;
 
 	// If ray can not intersect then stop
@@ -464,9 +435,9 @@ bool pho::Mesh::raySphereIntersection(const vec3& raydir, const vec3& rayorig,co
 	float t = (-0.5f)*(b+D)/a;
 	if (t > 0.0f)
 	{
-		distance=sqrtf(a)*t;
-		hitpoint=rayorig + t*raydir;
-		normal=(hitpoint - pos) / rad;
+		//distance=sqrtf(a)*t;
+		intersectOrClosestPoint=rayOrigin + t*rayDirection;
+		//normal=(intersectOrClosestPoint - spherePosition) / rad;
 	}
 	else
 		return false;

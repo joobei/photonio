@@ -41,9 +41,7 @@ namespace pho {
 		bool findIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3& foundPoint);
 		bool rayTriangleIntersection(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, glm::mat4 rayMatrix, float epsilon, glm::vec3 &intersection);
 		bool rayTriangleIntersection(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, glm::vec3 rayOrigin, glm::vec3 rayDirection, float epsilon, glm::vec3 &intersection);
-		bool raySphereIntersection(const vec3& raydir, const vec3& rayorig,const vec3& pos,const float& rad, vec3& hitpoint,float& distance, vec3& normal);
-		bool findSphereIntersection(glm::mat4 rayMatrix,glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal);
-		bool findSphereIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3& foundPoint,float& foundDistance,glm::vec3& foundNormal);
+		bool findSphereIntersection(const vec3& rayDirection, const vec3& rayOrigin, vec3& intersectOrClosestPoint);
 		float sum(const vec3& v);
 
 		bool simple; //for rays, simple lines

@@ -39,13 +39,12 @@ calibrate(false),
 	wii(false),
 	mouseMove(false)
 {
-#define SIZE 30                     //Size of the moving average filter
-	accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
-	accelerometerY.set_size(SIZE);
-	accelerometerZ.set_size(SIZE);
-	magnetometerX.set_size(SIZE);
-	magnetometerY.set_size(SIZE);
-	magnetometerZ.set_size(SIZE);
+	accelerometerX.set_size(FILTER_SIZE);  //Around 30 is good performance without gyro
+	accelerometerY.set_size(FILTER_SIZE);
+	accelerometerZ.set_size(FILTER_SIZE);
+	magnetometerX.set_size(FILTER_SIZE);
+	magnetometerY.set_size(FILTER_SIZE);
+	magnetometerZ.set_size(FILTER_SIZE);
 
 	errorLog.open("error.log",std::ios_base::app);
 
@@ -129,16 +128,21 @@ void Engine::initResources() {
 //and consumes them all
 void Engine::checkEvents() {
 	
-	int wheel = glfwGetMouseWheel();
-	if (wheel != prevMouseWheel) {
-		int amount = wheel - prevMouseWheel;
-		cursor.modelMatrix = glm::translate(vec3(0,0,-amount))*cursor.modelMatrix;
-		prevMouseWheel = wheel;
+	if (technique == mouse) {
+		int wheel = glfwGetMouseWheel();
+		if (wheel != prevMouseWheel) {
+			int amount = wheel - prevMouseWheel;
+			cursor.modelMatrix = glm::translate(vec3(0,0,-amount))*cursor.modelMatrix;
+			prevMouseWheel = wheel;
+		}
 	}
 
-	checkUDP();
-	checkPolhemus();
-	checkWiiMote();
+	if (technique == planeCasting) { checkUDP(); }
+	if (technique == rayCasting) { 
+		checkPolhemus(); 
+		checkWiiMote();
+	}
+
 	checkKeyboard();
 
 
@@ -161,8 +165,8 @@ void Engine::render() {
 	//If we are raycasting and there's a hit
 	if (technique == mouse) {
 		float intersectionDistance = -1;
-		if (cursor.findSphereIntersection(p,n,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
-			sphereHit = true;
+		if (sphereHit) {
+			
 
 			//Ray length calculation
 			rayLength = -glm::distance(vec3(ray.getPosition()),sphereIntersectionPoint);
@@ -201,7 +205,7 @@ void Engine::render() {
 		} else {objectHit = false; }
 
 		float intersectionDistance = -1;
-		if (cursor.findSphereIntersection(ray.modelMatrix,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
+		if (cursor.findSphereIntersection(rayDirection,rayOrigin,sphereIntersectionPoint)) {
 			sphereHit = true;
 
 			//Ray length calculation
@@ -310,6 +314,8 @@ void Engine::mouseButtonCallback(int button, int state) {
 	{	
 		last_mx = cur_mx;
 		last_my = cur_my;
+
+		cursor.findSphereIntersection(rayOrigin,rayDirection,prevPoint);
 		
 		appInputState = rotate;
 	}
@@ -348,19 +354,27 @@ void Engine::mouseMoveCallback(int x, int y) {
 
 	glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;	
 
-	p = glm::vec3(viewMatrix[3]);
-	n = glm::normalize(glm::vec3(mouse_world)-p);
-	
+	rayOrigin = glm::vec3(viewMatrix[3]);
+	rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
+
 	if (appInputState == rotate) {
-		glm::vec3 va = get_arcball_vector(glm::vec3(cursor.modelMatrix[3]),0.5f,last_mx, last_my);
-		glm::vec3 vb = get_arcball_vector(glm::vec3(cursor.modelMatrix[3]),0.5f,cur_mx,  cur_my);
+		glm::vec3 va,vb;
+		va = glm::normalize(prevPoint-glm::vec3(cursor.modelMatrix[3])); //get previous point vector
+
+		if (cursor.findSphereIntersection(rayOrigin,rayDirection,sphereIntersectionPoint)) {
+			sphereHit = true;
+			vb = glm::normalize(sphereIntersectionPoint-glm::vec3(cursor.modelMatrix[3]));
+		}
+		else { sphereHit = false; }
+
 		float angle = acos(min(1.0f, glm::dot(va, vb)));
 		glm::vec3 axis_in_camera_coord = glm::cross(va, vb);
 		glm::mat3 camera2object = glm::inverse(glm::mat3(viewMatrix) * glm::mat3(cursor.modelMatrix));
 		glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
 		cursor.modelMatrix = glm::rotate(cursor.modelMatrix, glm::degrees(angle), axis_in_object_coord);
-		last_mx = cur_mx;
-		last_my = cur_my;
+		
+
+		prevPoint = sphereIntersectionPoint;
 	}  
 	
 	
@@ -870,7 +884,10 @@ void Engine::checkPolhemus() {
 		transform[3][1] = position.y;
 		transform[3][2] = position.z;
 
-		//ray.modelMatrix = transform;
+		ray.modelMatrix = transform;
+
+		rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
+		rayOrigin = position;
 		
 		/*if (wii) {  //just to debug polhemus positions
 			remote.RefreshState();
@@ -1031,23 +1048,4 @@ void Engine::checkWiiMote() {
 			break;
 		}
 	}
-}
-
-/**
- * Get a normalized vector from the center of the virtual ball O to a
- * point P on the virtual ball surface, such that P is aligned on
- * screen's (X,Y) coordinates.  If (X,Y) is too far away from the
- * sphere, return the nearest point on the virtual ball surface.
- */
-glm::vec3 pho::Engine::get_arcball_vector(glm::vec3 sphereOrigin, float radius, int x, int y) {
-	glm::vec3 P = glm::vec3(1.0*x/WINDOW_SIZE_X*2 - 1.0,
-		1.0*y/WINDOW_SIZE_Y*2 - 1.0,
-		0);
-	P.y = -P.y;
-	float OP_squared = P.x * P.x + P.y * P.y;
-	if (OP_squared <= 1*1)
-		P.z = sqrt(1*1 - OP_squared);  // Pythagore
-	else
-		P = glm::normalize(P);  // nearest point
-	return P;
 }
