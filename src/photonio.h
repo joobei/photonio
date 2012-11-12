@@ -165,6 +165,10 @@ namespace pho {
 		bool mouseMove;
 		glm::vec3 get_arcball_vector(glm::vec3 sphereOrigin, float radius,int x, int y);
 		glm::vec3 p,n;
+		//arcball
+		bool startDrag(const vec3& rayDirection, const vec3& rayOrigin);
+		void Drag(const vec3& raydir, const vec3& rayOrigin, glm::mat4 viewMatrix);
+		glm::vec3 previousVector;
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;

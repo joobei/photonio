@@ -318,7 +318,7 @@ void Engine::mouseButtonCallback(int button, int state) {
 		p = glm::vec3(viewMatrix[3]);
 		n = glm::normalize(glm::vec3(mouse_world)-p);
 
-		cursor.startDrag(n,p);
+		startDrag(n,p);
 		
 		appInputState = rotate;
 	}
@@ -357,7 +357,7 @@ void Engine::mouseMoveCallback(int x, int y) {
 	n = glm::normalize(glm::vec3(mouse_world)-p);
 	
 	if (appInputState == rotate) {
-		cursor.Drag(n,p,viewMatrix);
+		Drag(n,p,viewMatrix);
 	}  
 	
 	
@@ -1047,4 +1047,34 @@ glm::vec3 pho::Engine::get_arcball_vector(glm::vec3 sphereOrigin, float radius, 
 	else
 		P = glm::normalize(P);  // nearest point
 	return P;
+}
+
+bool pho::Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
+	vec3 tempPoint;
+	float tempFloat;
+	if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,glm::vec3())) {
+		previousVector = glm::normalize(glm::vec3(cursor.modelMatrix[3])-tempPoint);
+		return true;
+	}
+	else return false;
+
+}
+
+void pho::Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 viewMatrix) {
+	glm::vec3 currentVector;
+	glm::vec3 tempPoint;
+	float tempFloat;
+
+	if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,glm::vec3())) {
+		
+		currentVector = glm::normalize(glm::vec3(cursor.modelMatrix[3])-tempPoint);
+
+		float angle = acos(glm::min(1.0f, glm::dot(previousVector, currentVector)));
+		glm::vec3 axis_in_camera_coord = glm::cross(previousVector, currentVector);
+		glm::mat3 camera2object = glm::inverse(glm::mat3(viewMatrix) * glm::mat3(cursor.modelMatrix));
+		glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
+		cursor.modelMatrix = glm::rotate(cursor.modelMatrix,glm::degrees(angle), axis_in_object_coord);
+
+		previousVector = currentVector;
+	}
 }
