@@ -164,7 +164,7 @@ namespace pho {
 		int last_mx,last_my,cur_mx,cur_my;
 		bool mouseMove;
 		glm::vec3 get_arcball_vector(glm::vec3 sphereOrigin, float radius,int x, int y);
-		glm::vec3 p,n;
+		glm::vec3 rayOrigin,rayDirection;
 		//arcball
 		bool startDrag(const vec3& rayDirection, const vec3& rayOrigin);
 		void Drag(const vec3& raydir, const vec3& rayOrigin, glm::mat4 viewMatrix);

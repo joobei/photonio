@@ -70,7 +70,7 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
-	technique = mouse;
+	technique = rayCasting;
 	rotTechnique = trackBall;
 
 	prevMouseWheel = 0;
@@ -122,26 +122,34 @@ void Engine::initResources() {
 	colorShader = pho::Shader("shaders/shader");  
 	offscreenShader = pho::Shader("shaders/offscreen");
 	circleShader = pho::Shader("shaders/circle");
+	circleShader.use();
+	circleShader["radius"]= ARCBALL_RADIUS;
 	
 }
 
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
-	
-	int wheel = glfwGetMouseWheel();
-	if (wheel != prevMouseWheel) {
-		int amount = wheel - prevMouseWheel;
-		cursor.modelMatrix = glm::translate(vec3(0,0,-amount))*cursor.modelMatrix;
-		prevMouseWheel = wheel;
-	}
 
-	checkUDP();
-	checkPolhemus();
-	checkWiiMote();
 	checkKeyboard();
 
+	if (technique == mouse) {
+		int wheel = glfwGetMouseWheel();
+		if (wheel != prevMouseWheel) {
+			int amount = wheel - prevMouseWheel;
+			cursor.modelMatrix = glm::translate(vec3(0,0,-amount))*cursor.modelMatrix;
+			prevMouseWheel = wheel;
+		}
+	}
+	
+	if (technique == planeCasting) {
+	checkUDP();
+	}
 
+	if (technique == rayCasting && wii) {
+		checkPolhemus();
+		checkWiiMote();
+	}
 }
 
 void Engine::render() {
@@ -156,12 +164,10 @@ void Engine::render() {
 
 		restoreRay = false;  //we already restored, no need to do it every frame
 	}
-
 	
-	//If we are raycasting and there's a hit
 	if (technique == mouse) {
 		float intersectionDistance = -1;
-		if (cursor.findSphereIntersection(p,n,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
+		if (cursor.findSphereIntersection(rayOrigin,rayDirection,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
 			sphereHit = true;
 
 			//Ray length calculation
@@ -180,6 +186,9 @@ void Engine::render() {
 	}
 
 	if (technique == rayCasting ) {
+
+		
+
 		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
@@ -192,13 +201,16 @@ void Engine::render() {
 			cursor.draw();
 
 			//Ray length calculation
-			rayLength = -glm::distance(vec3(ray.getPosition()),objectIntersectionPoint);
+			rayLength = -glm::distance(ray.getPosition(),objectIntersectionPoint);
 			//Shorten the beam to match the object
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
 
 			restoreRay = true; //mark ray to be restored to full length
 		} else {objectHit = false; }
+
+		
+
 
 		float intersectionDistance = -1;
 		if (cursor.findSphereIntersection(ray.modelMatrix,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
@@ -222,19 +234,17 @@ void Engine::render() {
 	colorShader.use(); //bind the standard shader for default colored objects
 
 	if (technique == planeCasting) {
-	colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
-    plane.draw(true);
+		colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+		plane.draw(true);
 	}
     //cursor.draw();
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-    ray.draw(true);
+	ray.draw(true);
 	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	cursor.draw();		
  
 	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	//target.draw();
-	
-
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
 		point.modelMatrix = glm::translate(objectIntersectionPoint);
@@ -246,7 +256,6 @@ void Engine::render() {
 	}
 	if (sphereHit || (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)) {
 		circleShader.use();
-		//circleShader["radius"] = glm::length(cursor.farthestVertex);
 		circleShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 		circleShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
 		CALL_GL(glLineWidth(4.0f));
@@ -315,10 +324,10 @@ void Engine::mouseButtonCallback(int button, int state) {
 
 		glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;	
 
-		p = glm::vec3(viewMatrix[3]);
-		n = glm::normalize(glm::vec3(mouse_world)-p);
+		rayOrigin = glm::vec3(viewMatrix[3]);
+		rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 
-		startDrag(n,p);
+		startDrag(rayDirection,rayOrigin);
 		
 		appInputState = rotate;
 	}
@@ -353,11 +362,11 @@ void Engine::mouseMoveCallback(int x, int y) {
 
 	glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;	
 
-	p = glm::vec3(viewMatrix[3]);
-	n = glm::normalize(glm::vec3(mouse_world)-p);
+	rayOrigin = glm::vec3(viewMatrix[3]);
+	rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 	
 	if (appInputState == rotate) {
-		Drag(n,p,viewMatrix);
+		Drag(rayDirection,rayOrigin,viewMatrix);
 	}  
 	
 	
@@ -867,7 +876,10 @@ void Engine::checkPolhemus() {
 		transform[3][1] = position.y;
 		transform[3][2] = position.z;
 
-		//ray.modelMatrix = transform;
+		ray.modelMatrix = transform;
+
+		rayOrigin = position;
+		rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
 		
 		/*if (wii) {  //just to debug polhemus positions
 			remote.RefreshState();
@@ -964,12 +976,10 @@ void Engine::checkKeyboard() {
 }
 void Engine::checkWiiMote() {
 	//if the connection to the wii-mote was successful
-	if (wii) {
+	
 		remote.RefreshState();
 
-		switch(technique)  {
-		case rayCasting:
-			if (appInputState == idle && remote.Button.B() && objectHit) {   
+	if (appInputState == idle && remote.Button.B() && objectHit) {   
 				appInputState = translate;
 				grabbedDistance = rayLength;
 
@@ -978,75 +988,47 @@ void Engine::checkWiiMote() {
 
 				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
 
-				cursor.modelMatrix[3][0] = newMat[3][0];
-				cursor.modelMatrix[3][1] = newMat[3][1];
-				cursor.modelMatrix[3][2] = newMat[3][2];
+				cursor.modelMatrix[3] = newMat[3];
 				std::cout << "translate" << '\n';
 			}
 
 			if (appInputState == translate && remote.Button.B()) {
 			
 				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance)+grabOffset);
-				cursor.modelMatrix[3][0] = newMat[3][0];
-				cursor.modelMatrix[3][1] = newMat[3][1];
-				cursor.modelMatrix[3][2] = newMat[3][2];
-			}
-
-			if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
-				grabbedDistance+=0.5;
-			}
-
-			if (appInputState == translate && remote.Button.Up()) {
-				grabbedDistance-=0.5;
-			}
-			if (appInputState == translate && !remote.Button.B()) {
-				appInputState = idle;
-				std::cout << "idle" << '\n';
-				break;
-			}
-			if (appInputState == idle && remote.Button.A()) {
-				appInputState = rotate;
-				rotTechnique = trackBall;
-
-				std::cout << "trackball" << '\n';
-
-				int xx,yy;
+				cursor.modelMatrix[3]= newMat[3];
 				
-				glfwGetMousePos(&xx,&yy);
-				break;
 			}
-			if (appInputState == rotate && !remote.Button.A()) {
-				appInputState = idle;
-				std::cout << "idle" << '\n';
-				break;
-			}
-//			if (appInputState == rotate && rotTechnique = trackBall && remote.Button.A()) {
-				//trackball rotate
-//				break;
-//			}
-		default:
-			break;
-		}
-	}
-}
 
-/**
- * Get a normalized vector from the center of the virtual ball O to a
- * point P on the virtual ball surface, such that P is aligned on
- * screen's (X,Y) coordinates.  If (X,Y) is too far away from the
- * sphere, return the nearest point on the virtual ball surface.
- */
-glm::vec3 pho::Engine::get_arcball_vector(glm::vec3 sphereOrigin, float radius, int x, int y) {
-	glm::vec3 P = glm::vec3(1.0*x/WINDOW_SIZE_X*2 - 1.0,
-		1.0*y/WINDOW_SIZE_Y*2 - 1.0,
-		0);
-	P.y = -P.y;
-	float OP_squared = P.x * P.x + P.y * P.y;
-	if (OP_squared <= 1*1)
-		P.z = sqrt(1*1 - OP_squared);  // Pythagore
-	else
-		P = glm::normalize(P);  // nearest point
-	return P;
+		if (appInputState == translate && !remote.Button.B()) {
+			appInputState = idle;
+			std::cout << "idle" << '\n';
+		}
+
+
+		if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
+			grabbedDistance+=0.5;
+		}
+
+		if (appInputState == translate && remote.Button.Up()) {
+			grabbedDistance-=0.5;
+		}
+		if (appInputState == idle && remote.Button.A()) {
+			
+			if(startDrag(rayDirection,rayOrigin)) {
+				std::cout << "trackball" << '\n';			
+				appInputState = rotate;
+			}
+
+		}
+
+		if (appInputState == rotate && remote.Button.A()) {
+			Drag(rayDirection,rayOrigin,viewMatrix);
+		}
+		if (appInputState == rotate && !remote.Button.A()) {
+			appInputState = idle;
+			std::cout << "idle" << '\n';	
+		}	
+	
 }
 
 bool pho::Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {

@@ -1,15 +1,13 @@
 /* [GEOMETRY] */
 #version 330 
 
-//uniform float radius;
+uniform float radius;
 
 layout(points) in;
 layout(line_strip, max_vertices = 200)out;
 
 void main() 
 {
-	float radius = 1.0f;
-
 	//float PI = 3.14159265358979323846264;  //unused
 	vec4 pos = vec4(gl_in[0].gl_Position);
 

@@ -11,6 +11,8 @@
 
 //errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
 
+#define ARCBALL_RADIUS 2.0f
+
 #define GLDEBUG
 
 #if defined (GLDEBUG)

@@ -452,7 +452,7 @@ bool pho::Mesh::raySphereIntersection(const vec3& raydir, const vec3& rayorig,co
 {
 	float a = sum(raydir*raydir);
 	float b = sum(raydir * (2.0f * ( rayorig - pos)));
-	float c = sum(pos*pos) + sum(rayorig*rayorig) -2.0f*sum(rayorig*pos) - rad*rad;
+	float c = sum(pos*pos) + sum(rayorig*rayorig) -2.0f*sum(rayorig*pos) - ARCBALL_RADIUS*ARCBALL_RADIUS;
 	float D = b*b + (-4.0f)*a*c;
 
 	// If ray can not intersect then stop
@@ -466,7 +466,7 @@ bool pho::Mesh::raySphereIntersection(const vec3& raydir, const vec3& rayorig,co
 	{
 		distance=sqrtf(a)*t;
 		hitpoint=rayorig + t*raydir;
-		normal=(hitpoint - pos) / rad;
+		normal=(hitpoint - pos) / ARCBALL_RADIUS;
 	}
 	else
 		return false;
