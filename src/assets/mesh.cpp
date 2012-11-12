@@ -481,3 +481,30 @@ void pho::Mesh::rotate(glm::mat4 rotationMatrix) {
 	modelMatrix[3] = tempPosition;
 
 }
+
+bool pho::Mesh::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
+	vec3 tempPoint;
+	float tempFloat;
+	if (findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,glm::vec3())) {
+		previousVector = glm::normalize(glm::vec3(modelMatrix[3])-tempPoint);
+		return true;
+	}
+	else return false;
+
+}
+
+void pho::Mesh::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 viewMatrix) {
+	glm::vec3 currentVector;
+	glm::vec3 tempPoint;
+	float tempFloat;
+
+	if (findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,glm::vec3())) {
+		currentVector = glm::normalize(glm::vec3(modelMatrix[3])-tempPoint);
+		
+	float angle = acos(glm::min(1.0f, glm::dot(previousVector, currentVector)));
+		glm::vec3 axis_in_camera_coord = glm::cross(previousVector, currentVector);
+		glm::mat3 camera2object = glm::inverse(glm::mat3(viewMatrix) * glm::mat3(modelMatrix));
+		glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
+		modelMatrix = glm::rotate(modelMatrix, glm::degrees(angle), axis_in_object_coord);
+	}
+}

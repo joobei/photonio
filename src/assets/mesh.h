@@ -73,6 +73,11 @@ namespace pho {
 		bool uploaded;
 		float* texCoords;
 		pho::Material material;
+
+		//arcball
+		bool startDrag(const vec3& rayDirection, const vec3& rayOrigin);
+		void Drag(const vec3& raydir, const vec3& rayOrigin, glm::mat4 viewMatrix);
+		glm::vec3 previousVector;
 		
 	}; 
 

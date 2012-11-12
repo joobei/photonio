@@ -308,8 +308,17 @@ void Engine::mouseButtonCallback(int button, int state) {
 
 	if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_PRESS)) 
 	{	
-		last_mx = cur_mx;
-		last_my = cur_my;
+		float norm_x = 1.0*cur_mx/WINDOW_SIZE_X*2 - 1.0;
+		float norm_y = -(1.0*cur_my/WINDOW_SIZE_Y*2 - 1.0);
+
+		glm::vec4 mouse_clip = glm::vec4((float)cur_mx * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(cur_my) * 2 / float(WINDOW_SIZE_Y),0,1);
+
+		glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;	
+
+		p = glm::vec3(viewMatrix[3]);
+		n = glm::normalize(glm::vec3(mouse_world)-p);
+
+		cursor.startDrag(n,p);
 		
 		appInputState = rotate;
 	}
@@ -337,10 +346,6 @@ void Engine::mouseButtonCallback(int button, int state) {
 
 void Engine::mouseMoveCallback(int x, int y) {
 	
-
-	cur_mx = x;
-	cur_my = y;
-	
 	float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
 	float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
 
@@ -352,15 +357,7 @@ void Engine::mouseMoveCallback(int x, int y) {
 	n = glm::normalize(glm::vec3(mouse_world)-p);
 	
 	if (appInputState == rotate) {
-		glm::vec3 va = get_arcball_vector(glm::vec3(cursor.modelMatrix[3]),0.5f,last_mx, last_my);
-		glm::vec3 vb = get_arcball_vector(glm::vec3(cursor.modelMatrix[3]),0.5f,cur_mx,  cur_my);
-		float angle = acos(min(1.0f, glm::dot(va, vb)));
-		glm::vec3 axis_in_camera_coord = glm::cross(va, vb);
-		glm::mat3 camera2object = glm::inverse(glm::mat3(viewMatrix) * glm::mat3(cursor.modelMatrix));
-		glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
-		cursor.modelMatrix = glm::rotate(cursor.modelMatrix, glm::degrees(angle), axis_in_object_coord);
-		last_mx = cur_mx;
-		last_my = cur_my;
+		cursor.Drag(n,p,viewMatrix);
 	}  
 	
 	
