@@ -187,8 +187,6 @@ void Engine::render() {
 
 	if (technique == rayCasting ) {
 
-		
-
 		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
@@ -202,6 +200,7 @@ void Engine::render() {
 
 			//Ray length calculation
 			rayLength = -glm::distance(ray.getPosition(),objectIntersectionPoint);
+			rayLengthObject = rayLength;
 			//Shorten the beam to match the object
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
@@ -979,25 +978,25 @@ void Engine::checkWiiMote() {
 	
 		remote.RefreshState();
 
-	if (appInputState == idle && remote.Button.B() && objectHit) {   
-				appInputState = translate;
-				grabbedDistance = rayLength;
+		if (appInputState == translate && remote.Button.B()) {
+			//mat4 newMat = glm::translate(ray.modelMatrix,);
+			cursor.setPosition(
 
-				//possibly costly calculation:
-				grabOffset = glm::vec3(cursor.modelMatrix[3])-objectIntersectionPoint;
-
-				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance));
-
-				cursor.modelMatrix[3] = newMat[3];
-				std::cout << "translate" << '\n';
-			}
-
-			if (appInputState == translate && remote.Button.B()) {
-			
-				//mat4 newMat = glm::translate(ray.modelMatrix,);
-				cursor.modelMatrix[3] = glm::vec4(glm::mat3(ray.modelMatrix)*(vec3(0,0,grabbedDistance)+grabOffset),1.0f);
+				//ray.getPosition()+glm::mat3(ray.modelMatrix)*glm::vec3(0,0,grabbedDistance)+grabOffset
+				ray.getPosition()+glm::mat3(ray.modelMatrix)*glm::vec3(0,0,grabbedDistance) +grabOffset
 				
-			}
+				);
+		}
+
+		if (appInputState == idle && remote.Button.B() && objectHit) {   
+			appInputState = translate;
+			grabbedDistance = rayLengthObject;
+			grabbedVector = objectIntersectionPoint-ray.getPosition();
+
+			//possibly costly calculation:
+			grabOffset = cursor.getPosition()-objectIntersectionPoint;
+			std::cout << "translate" << '\n';
+		}	
 
 		if (appInputState == translate && !remote.Button.B()) {
 			appInputState = idle;
@@ -1012,18 +1011,19 @@ void Engine::checkWiiMote() {
 		if (appInputState == translate && remote.Button.Up()) {
 			grabbedDistance-=0.5;
 		}
-		if (appInputState == idle && remote.Button.A()) {
-			
-			if(startDrag(rayDirection,rayOrigin)) {
-				std::cout << "trackball" << '\n';			
-				appInputState = rotate;
-			}
-
-		}
 
 		if (appInputState == rotate && remote.Button.A()) {
 			Drag(rayDirection,rayOrigin,viewMatrix);
 		}
+
+		if (appInputState == idle && remote.Button.A()) {
+			
+			if(startDrag(rayDirection,rayOrigin)) {
+				std::cout << "rotate" << '\n';			
+				appInputState = rotate;
+			}
+		}
+		
 		if (appInputState == rotate && !remote.Button.A()) {
 			appInputState = idle;
 			std::cout << "idle" << '\n';	

@@ -482,3 +482,6 @@ void pho::Mesh::rotate(glm::mat4 rotationMatrix) {
 
 }
 
+void pho::Mesh::setPosition(const glm::vec3 &position) {
+	modelMatrix[3] = glm::vec4(position,1.0f);
+}

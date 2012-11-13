@@ -151,10 +151,12 @@ namespace pho {
 		GLuint pbo_a,pbo_b;
 		GLenum DrawBuffers[2];
 		float rayLength;
+		float rayLengthObject;
 		bool restoreRay;
 		glm::vec3 grabOffset;
 		float grabbedDistance;
-		
+		glm::vec3 grabbedVector;
+
 		vec3 objectIntersectionPoint;	
 		vec3 sphereIntersectionPoint;
 		vec3 sphereIntersectionNormal;

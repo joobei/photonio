@@ -35,7 +35,8 @@ namespace pho {
 
 		bool loadToGPU();
 		glm::vec3 getPosition();
-		
+		void setPosition(const glm::vec3 &position);
+
 		glm::vec3 farthestVertex;
 		bool findIntersection(glm::mat4 rayMatrix, glm::vec3& foundPoint);
 		bool findIntersection(glm::vec3 rayOrigin, glm::vec3 rayDirection, glm::vec3& foundPoint);
