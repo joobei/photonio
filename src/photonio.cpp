@@ -70,8 +70,8 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
-	technique = rayCasting;
-	rotTechnique = trackBall;
+	technique = planeCasting;
+	rotTechnique = singleAxis;
 
 	prevMouseWheel = 0;
 	gyroData = false;
@@ -230,20 +230,21 @@ void Engine::render() {
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
 	
-	colorShader.use(); //bind the standard shader for default colored objects
+	
 
 	if (technique == planeCasting) {
-		colorShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+		offscreenShader.use(); //bind the standard shader for default colored objects
+		offscreenShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+		offscreenShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
+		CALL_GL(glLineWidth(7.0f));
 		plane.draw(true);
 	}
-    //cursor.draw();
+   
+	colorShader.use(); //bind the standard shader for default colored objects
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 	ray.draw(true);
 	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	cursor.draw();		
- 
-	//colorShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
-	//target.draw();
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
 		point.modelMatrix = glm::translate(objectIntersectionPoint);
@@ -258,7 +259,7 @@ void Engine::render() {
 		circleShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 		circleShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
 		CALL_GL(glLineWidth(4.0f));
-		cursor.drawPoint();
+		cursor.drawCircle();
 
 		point.modelMatrix = glm::translate(sphereIntersectionPoint);
 		offscreenShader.use();
@@ -440,43 +441,23 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 	switch (appInputState) {
 	case idle:
 		appInputState = translate;
-		std::cout << "idle --> translate" << std::endl;
+		std::cout << "translate" << std::endl;
 		break;
 	case translate:
-		/*if (numberOfCursors == 2) {
-			appInputState = trackBall;
-
-			trackedCursor = tcur;
-
-			float x = tcur->getX();
-			float y = tcur->getY();
-			std::cout << "translate --> trackball" << std::endl;
-
-			arcBallPreviousPoint[0] = x;
-			arcBallPreviousPoint[1] = y;
-			tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
-		}*/
 		break;
 	case rotate:
-		switch (rotTechnique) {
-		case screenSpace:
-			if (numberOfCursors == 1) {
-				p1p.x = tcur->getX();
-				p1p.y = tcur->getY();
-				f1id = tcur->getCursorID();	
-				
-			}
-			if (numberOfCursors == 2) {
-				rotTechnique = pinch;
-				std::cout << "pinch rotate" << '\n';
-				p2p.x = tcur->getX();
-				p2p.y = tcur->getY();
-				f2id = tcur->getCursorID();
-			}
-			
-			break;
-		case trackBall:
-			break;
+		if (numberOfCursors == 1) {
+			p1p.x = tcur->getX();
+			p1p.y = tcur->getY();
+			f1id = tcur->getCursorID();	
+
+		}
+		if (numberOfCursors == 2) {
+			rotTechnique = pinch;
+			std::cout << "pinch rotate" << '\n';
+			p2p.x = tcur->getX();
+			p2p.y = tcur->getY();
+			f2id = tcur->getCursorID();
 		}
 	}
 	if (verbose)
@@ -713,10 +694,12 @@ void Engine::initSimpleGeometry() {
 	colors.push_back(vec3(0,0,1));
 	colors.push_back(vec3(0,0,1));
 
-	indices.clear(); indices.push_back(0); indices.push_back(1);indices.push_back(1);indices.push_back(2);
+	indices.clear(); 
+	
+	indices.push_back(0); indices.push_back(1);indices.push_back(1);indices.push_back(2);
 	indices.push_back(2);indices.push_back(3);indices.push_back(3);indices.push_back(0);
 
-    plane = pho::Mesh(vertices,indices,colors, true);
+    plane = pho::Mesh(vertices,indices,colors, Plane);
 
 	vertices.clear();
 	colors.clear();
@@ -730,7 +713,7 @@ void Engine::initSimpleGeometry() {
 	indices.push_back(0);
 	indices.push_back(1);
 
-    ray = pho::Mesh(vertices,indices,colors, true);
+    ray = pho::Mesh(vertices,indices,colors, Ray);
 
 	indices.clear();
 	vertices.clear();
@@ -749,7 +732,7 @@ void Engine::initSimpleGeometry() {
 	colors.push_back(vec3(0,1,0));
 	colors.push_back(vec3(0,1,0));
 	colors.push_back(vec3(0,1,0));
-	point = pho::Mesh(vertices,indices,colors,true);
+	point = pho::Mesh(vertices,indices,colors,Point);
 
 	/*std::vector<glm::vec2> texcoords;
 
@@ -895,6 +878,7 @@ void Engine::checkPolhemus() {
 	lock.unlock();
 
 }
+
 void Engine::checkKeyboard() {
 	#define FACTOR 0.5f
 	if (glfwGetKey(GLFW_KEY_DOWN)) {
@@ -948,6 +932,7 @@ void Engine::checkKeyboard() {
 	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		cursor.modelMatrix = glm::translate(0,0,-5);
+		plane.modelMatrix = glm::translate(0,0,-5); 
 	}
 	if (glfwGetKey(GLFW_KEY_END)) {
 		perspective -=1.0;
@@ -973,6 +958,7 @@ void Engine::checkKeyboard() {
 		std::cout << "PlaneCasting" << '\n';
 	}
 }
+
 void Engine::checkWiiMote() {
 	//if the connection to the wii-mote was successful
 	

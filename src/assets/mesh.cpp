@@ -101,14 +101,29 @@ vertices(vertixes),
 }
 
 //loads a simple mesh (like ray and plane)
-pho::Mesh::Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec3> colorz, bool simplex):
+pho::Mesh::Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec3> colorz, pho::PrimitiveType type):
 vertices(vertixes),
 	indices(indixes),
-	colors(colorz),
-	simple(simplex)
+	colors(colorz)
 {
-	wfindices.push_back(indixes[0]);
-	wfindices.push_back(indixes[1]);
+	switch (type) {
+	case Ray:
+		wfindices.push_back(indixes[0]);
+		wfindices.push_back(indixes[1]);
+		break;
+	case Plane:
+		wfindices.push_back(indixes[0]);
+		wfindices.push_back(indixes[1]);
+		wfindices.push_back(indixes[2]);
+		wfindices.push_back(indixes[3]);
+		wfindices.push_back(indixes[4]);
+		wfindices.push_back(indixes[5]);
+		wfindices.push_back(indixes[6]);
+		wfindices.push_back(indixes[7]);
+		break;
+	case Point:
+		break;
+	}
 
 	modelMatrix = glm::mat4();
 	CALL_GL(glGenVertexArrays(1,&vaoId));
@@ -214,15 +229,19 @@ glm::vec3 pho::Mesh::getPosition() {
 	return glm::vec3(modelMatrix[3]);
 }
 
-void pho::Mesh::drawPoint() {
-	if (!simple) {
+void pho::Mesh::drawCircle() {
+	
 	CALL_GL(glBindVertexArray(circlevaoId));
 	CALL_GL(glDrawArrays(GL_POINTS,0,1));
-	}
-	else {
-		CALL_GL(glBindVertexArray(vaoId));
+	
+	//CALL_GL(glBindVertexArray(vaoId));
+	//CALL_GL(glDrawArrays(GL_POINTS,0,1));
+}
+
+void pho::Mesh::drawPoint() {
+	
+	CALL_GL(glBindVertexArray(vaoId));
 	CALL_GL(glDrawArrays(GL_POINTS,0,1));
-	}
 }
 
 void pho::Mesh::draw() {
@@ -234,7 +253,6 @@ void pho::Mesh::draw() {
 void pho::Mesh::draw(bool wireframe) {
 
 	CALL_GL(glBindVertexArray(wfvaoId));
-	CALL_GL(glLineWidth(2.5));
 	CALL_GL(glDrawElements(GL_LINES,wfindices.size(),GL_UNSIGNED_SHORT,NULL));
 }
 
