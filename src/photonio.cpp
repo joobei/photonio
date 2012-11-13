@@ -197,7 +197,7 @@ void Engine::render() {
 			offscreenShader.use();
 			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.5f);
 			offscreenShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
-			// draw the object
+			// draw the object's outline
 			cursor.draw();
 
 			//Ray length calculation
@@ -254,7 +254,7 @@ void Engine::render() {
 		//CALL_GL(glPointSize(13.0f));
 		point.draw();
 	}
-	if (sphereHit || (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)) {
+	if ((sphereHit || (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)) && (appInputState != translate)) {
 		circleShader.use();
 		circleShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 		circleShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
@@ -994,8 +994,8 @@ void Engine::checkWiiMote() {
 
 			if (appInputState == translate && remote.Button.B()) {
 			
-				mat4 newMat = glm::translate(ray.modelMatrix,vec3(0,0,grabbedDistance)+grabOffset);
-				cursor.modelMatrix[3]= newMat[3];
+				//mat4 newMat = glm::translate(ray.modelMatrix,);
+				cursor.modelMatrix[3] = glm::vec4(glm::mat3(ray.modelMatrix)*(vec3(0,0,grabbedDistance)+grabOffset),1.0f);
 				
 			}
 
