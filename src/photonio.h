@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/rotate_vector.hpp"
 #include "glm/gtx/quaternion.hpp"
+#include "glm/gtx/compatibility.hpp"
 #include <sstream>
 #include "util.h"
 #include <boost/static_assert.hpp>
@@ -183,7 +184,7 @@ namespace pho {
 		//Polhemus IO
 		boost::asio::io_service serialioservice;
 		boost::thread* serialThread;
-		Minicom_client _serialserver;
+		//Minicom_client _serialserver;
 
 		boost::mutex ioMutex; //locks the message queue for thread access
 

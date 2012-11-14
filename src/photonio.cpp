@@ -35,7 +35,7 @@ calibrate(false),
 	eventQueue(),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
+	//_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
 	wii(false),
 	mouseMove(false)
 {
@@ -62,7 +62,7 @@ calibrate(false),
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 	//Polhemus
-	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
+	//serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
 	wii=remote.Connect(wiimote::FIRST_AVAILABLE);
 
@@ -71,7 +71,7 @@ calibrate(false),
 
 	appInputState = idle; 
 	technique = planeCasting;
-	rotTechnique = singleAxis;
+	rotTechnique = screenSpace;
 
 	prevMouseWheel = 0;
 	gyroData = false;
@@ -232,7 +232,7 @@ void Engine::render() {
 	
 	
 
-	if (technique == planeCasting) {
+	if (technique == planeCasting && appInputState != rotate) {
 		offscreenShader.use(); //bind the standard shader for default colored objects
 		offscreenShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
 		offscreenShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
@@ -406,8 +406,8 @@ void Engine::go() {
 void Engine::shutdown() {
 
 	netThread->interrupt();
-	_serialserver.shutDown();
-	serialThread->interrupt();
+	//_serialserver.shutDown();
+	//serialThread->interrupt();
 	errorLog.close();
 }
 
@@ -502,7 +502,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 		break;
 		  
-	
+	   //*********************   ROTATE  ****************************
 	case rotate:
 		switch (rotTechnique) {
 		case singleAxis:
@@ -511,22 +511,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		case screenSpace:
 			//********************* screenSpace  *************************
 			if (numberOfCursors == 1) {
-
-				vec3 location;
-				location.x = cursor.modelMatrix[3][0];
-				location.y = cursor.modelMatrix[3][1];
-				location.z = cursor.modelMatrix[3][2];  
-
-				cursor.modelMatrix[3][0] = 0;
-				cursor.modelMatrix[3][1] = 0;
-				cursor.modelMatrix[3][2] = 0;
-
-				cursor.modelMatrix = glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0))*cursor.modelMatrix;
-				cursor.modelMatrix = glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0))*cursor.modelMatrix;
-
-				cursor.modelMatrix[3][0] = location.x;
-				cursor.modelMatrix[3][1] = location.y;
-				cursor.modelMatrix[3][2] = location.z;
+				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
+				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));	
 			}
 			break;
 		case pinch:
@@ -552,23 +538,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
 			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 			
-			location.x = cursor.modelMatrix[3][0];
-			location.y = cursor.modelMatrix[3][1];
-			location.z = cursor.modelMatrix[3][2];
-
-			cursor.modelMatrix[3][0] = 0;
-			cursor.modelMatrix[3][1] = 0;
-			cursor.modelMatrix[3][2] = 0;
-
-			cursor.modelMatrix = glm::rotate((newAngle-referenceAngle)*(-2),vec3(0,0,1))*cursor.modelMatrix;
+			cursor.rotate(glm::rotate((newAngle-referenceAngle)*(-2),vec3(0,0,1)));
 			
-			cursor.modelMatrix = glm::rotate(ft.x*5,vec3(0,1,0))*cursor.modelMatrix;
-			cursor.modelMatrix = glm::rotate(ft.y*5,vec3(1,0,0))*cursor.modelMatrix;
+			cursor.rotate(glm::rotate(ft.x*5,vec3(0,1,0)));
+			cursor.rotate(glm::rotate(ft.y*5,vec3(1,0,0)));
 				
-			cursor.modelMatrix[3][0] = location.x;
-			cursor.modelMatrix[3][1] = location.y;
-			cursor.modelMatrix[3][2] = location.z;
-
 			
 			//update to latest values
 			//referenceAngle = newAngle; ???????????? doesn't seem to make a difference
@@ -807,13 +781,19 @@ void Engine::checkUDP() {
 				break;
 			case 2:
 				if (appInputState != rotate) {
-					printf("idle-->rotate");
+					printf("rotate");
 					appInputState = rotate; }
 				else
 					{ appInputState = idle; 
-					printf("rotate-->idle");}
+					printf("idle");}
 				break;
 			case 3:
+				if (appInputState != rotate) {
+					printf("rotate");
+					appInputState = rotate; }
+				else
+					{ appInputState = idle; 
+					printf("idle");}
 				break;
 			default:
 				calibrate = true;
