@@ -69,7 +69,7 @@ calibrate(false),
 	if (wii) { 	remote.SetLEDs(0x01); }
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
-	appInputState = idle; 
+	appInputState = rotate; 
 	technique = planeCasting;
 	rotTechnique = screenSpace;
 
@@ -88,6 +88,8 @@ calibrate(false),
 	perspective = 80.0f;
 
 	last_mx = last_my = cur_mx = cur_my = 0;
+
+	consumed = false;
 }
 
 void Engine::initResources() {
@@ -143,7 +145,30 @@ void Engine::checkEvents() {
 	}
 	
 	if (technique == planeCasting) {
-	checkUDP();
+		checkUDP();
+
+		if (appInputState == rotate && rotTechnique == pinch && (consumed == false)) {
+			vec2 ft;
+			float newAngle;
+
+			p1t = p1c-p1p;
+			p2t = p2c-p2p;
+
+			ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
+			ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
+
+			referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
+			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
+			
+			cursor.rotate(glm::rotate((newAngle-referenceAngle)*(-50),vec3(0,0,1)));
+			
+			cursor.rotate(glm::rotate(ft.x*50,vec3(0,1,0)));
+			cursor.rotate(glm::rotate(ft.y*50,vec3(1,0,0)));
+
+			consumed = true;
+
+		}
+
 	}
 
 	if (technique == rayCasting && wii) {
@@ -447,17 +472,19 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 		break;
 	case rotate:
 		if (numberOfCursors == 1) {
-			p1p.x = tcur->getX();
-			p1p.y = tcur->getY();
+			p1c.x = tcur->getX();
+			p1c.y = tcur->getY();
 			f1id = tcur->getCursorID();	
 
 		}
 		if (numberOfCursors == 2) {
 			rotTechnique = pinch;
 			std::cout << "pinch rotate" << '\n';
-			p2p.x = tcur->getX();
-			p2p.y = tcur->getY();
+			p2c.x = tcur->getX();
+			p2c.y = tcur->getY();
 			f2id = tcur->getCursorID();
+
+			consumed = true;
 		}
 	}
 	if (verbose)
@@ -471,19 +498,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	y = tcur->getY();
 	mat3 tempMat;
 	mat4 newLocationMatrix;
-	mat4 rotation;
-	tempOrigin = vec3(cursor.modelMatrix[3][0],cursor.modelMatrix[3][1],cursor.modelMatrix[3][2]);
-	glm::vec2 ftranslation;
-
-	glm::vec2 f1translationVec,f2translationVec;
-	glm::vec2 f1curr,f2curr;
-	vec3 location;
-	float newAngle;
-	glm::vec2 ft;
 
 	short numberOfCursors = tuioClient->getTuioCursors().size();
-	std::list<TUIO::TuioCursor*> cursorList;
-	cursorList = tuioClient->getTuioCursors();
+	//std::list<TUIO::TuioCursor*> cursorList;
+	//cursorList = tuioClient->getTuioCursors();
 
 
 	switch (appInputState) {
@@ -509,45 +527,39 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			//todo: add code for aligned axis
 			break;
 		case screenSpace:
-			//********************* screenSpace  *************************
 			if (numberOfCursors == 1) {
+				p1p = p1c;
+
 				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
-				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));	
+				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+
+				p1c.x = tcur->getX();
+				p1c.y = tcur->getY();
 			}
 			break;
 		case pinch:
-			//********************* PINCH  *************************
+			// ***  PINCH  *************************
 
 
 			if (tcur->getCursorID() == f1id) {
+
+				p1p = p1c;
+
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
-				p1t = p1c-p1p;
+
+				consumed = false;
 			}
 
 			if (tcur->getCursorID() == f2id) {
+				p2p = p2c;	
+
 				p2c.x = tcur->getX();
 				p2c.y = tcur->getY();
 				
-				p2t = p2c-p2p;				
+				consumed = false;			
 			}
 
-			ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
-			ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
-
-			referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
-			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
-			
-			cursor.rotate(glm::rotate((newAngle-referenceAngle)*(-2),vec3(0,0,1)));
-			
-			cursor.rotate(glm::rotate(ft.x*5,vec3(0,1,0)));
-			cursor.rotate(glm::rotate(ft.y*5,vec3(1,0,0)));
-				
-			
-			//update to latest values
-			//referenceAngle = newAngle; ???????????? doesn't seem to make a difference
-			//if (tcur->getCursorID() == f1id) {	p1p = p1c; }
-			//if (tcur->getCursorID() == f2id) {	p2p = p2c; }
 			break;
 		case trackBall:
 			//********************* TRACKBALL  *************************
@@ -595,6 +607,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 		case pinch:
 			rotTechnique = screenSpace;
 			std::cout << "pinch --> screenSpace" << '\n';
+			break;
 		}
 	}
 

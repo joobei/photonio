@@ -214,6 +214,7 @@ namespace pho {
 		glm::vec2 p1p,p2p,p1c,p2c;
 		glm::vec2 p1t,p2t;
 		bool both;
+		bool consumed;
 
 		//**************NEW ALGORITHM v2*******************
 
