@@ -63,6 +63,7 @@ namespace pho {
 		GLuint ibId;
 		GLuint vertexVboId;
 		GLuint colorVboId;
+		GLuint normalVboId;
 		GLuint wfibId; //indices for wireframe rendering
 		GLuint texIndex;
 		GLuint uniformBlockIndex;

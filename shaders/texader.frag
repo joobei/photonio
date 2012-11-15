@@ -2,11 +2,11 @@
 #version 330
 
 in vec2 UV;
-layout(location = 0) out vec3 color;
+out vec4 fragColor;;
 
 uniform sampler2D texturex;
 
 void main()
 {
-    color = texture(texturex, UV).rgb;
+    fragColor = vec4(texture(texturex, UV).rgb,1);
 }

@@ -55,6 +55,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "shader.h"
 #include "mesh.h"
 #include <GL/glfw.h>
+#include "gli/gli/gli.hpp"
+#include "gli/gli/gtx/gl_texture2d.hpp"
 
 using namespace std;
 using namespace TUIO;
@@ -135,7 +137,11 @@ namespace pho {
 		glm::vec3 cameraDirection;
 
 		//Shaders
-        pho::Shader colorShader,offscreenShader,circleShader;
+        pho::Shader colorShader;
+		pho::Shader offscreenShader;
+		pho::Shader circleShader;
+		pho::Shader textureShader;
+		pho::Shader directionalShader;
 
 		//Lights
 		GLuint lightSource;
@@ -184,7 +190,7 @@ namespace pho {
 		//Polhemus IO
 		boost::asio::io_service serialioservice;
 		boost::thread* serialThread;
-		//Minicom_client _serialserver;
+		Minicom_client _serialserver;
 
 		boost::mutex ioMutex; //locks the message queue for thread access
 
@@ -216,13 +222,6 @@ namespace pho {
 		bool both;
 		bool consumed;
 
-		//**************NEW ALGORITHM v2*******************
-
-		glm::vec2 f1c,f1p,f2c,f2p;
-
-
-		//*************************************************
-
 
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;
@@ -240,6 +239,11 @@ namespace pho {
 		//time
 		boost::posix_time::time_facet *tf;
 		float deltat;
+
+		//Textures
+		GLuint floorVAO,floorVBO, floorIBO, texCoordVBO;
+		GLuint floorTexture;
+		glm::mat4 floorMatrix;
 	};
 
 }

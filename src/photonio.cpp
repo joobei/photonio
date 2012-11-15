@@ -35,7 +35,7 @@ calibrate(false),
 	eventQueue(),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	//_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
+	_serialserver(serialioservice,115200,"COM19",&eventQueue,&ioMutex),
 	wii(false),
 	mouseMove(false)
 {
@@ -62,15 +62,15 @@ calibrate(false),
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 	//Polhemus
-	//serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
+	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
 	wii=remote.Connect(wiimote::FIRST_AVAILABLE);
 
 	if (wii) { 	remote.SetLEDs(0x01); }
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
-	appInputState = rotate; 
-	technique = planeCasting;
+	appInputState = idle; 
+	technique = mouse;
 	rotTechnique = screenSpace;
 
 	prevMouseWheel = 0;
@@ -111,22 +111,27 @@ void Engine::initResources() {
 	viewMatrix = glm::translate(cameraPosition); 
 
 	glEnable (GL_DEPTH_TEST);
-	glEnable (GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable (GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_TRUE);
 
-	restoreRay=false; //make ray long again if NOT intersecting
+	restoreRay=false; //used to make ray long again if NOT intersecting
 
 	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
 
 	 //load shaders from files
 	colorShader = pho::Shader("shaders/shader");  
+	
 	offscreenShader = pho::Shader("shaders/offscreen");
+	
 	circleShader = pho::Shader("shaders/circle");
 	circleShader.use();
 	circleShader["radius"]= ARCBALL_RADIUS;
 	
+	textureShader = pho::Shader("shaders/texader");
+
+	directionalShader = pho::Shader("shaders/specular");
 }
 
 //checks event queue for events
@@ -203,6 +208,7 @@ void Engine::render() {
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
 			}
+
 			restoreRay = true; //mark ray to be restored to full length
 
 		}
@@ -268,7 +274,9 @@ void Engine::render() {
 	colorShader.use(); //bind the standard shader for default colored objects
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 	ray.draw(true);
-	colorShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+	directionalShader.use();
+	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.draw();		
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
@@ -294,9 +302,12 @@ void Engine::render() {
 		point.draw();
 	} 
 
+	textureShader.use();
+	textureShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
+	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));
+	CALL_GL(glBindVertexArray(floorVAO));
+	CALL_GL(glDrawElements(GL_TRIANGLES,12,GL_UNSIGNED_SHORT,NULL));
 	
-
-
 	glfwSwapBuffers();
 }
 
@@ -431,8 +442,8 @@ void Engine::go() {
 void Engine::shutdown() {
 
 	netThread->interrupt();
-	//_serialserver.shutDown();
-	//serialThread->interrupt();
+	_serialserver.shutDown();
+	serialThread->interrupt();
 	errorLog.close();
 }
 
@@ -650,8 +661,11 @@ void Engine::refresh(TuioTime frameTime) {
 
 void Engine::initSimpleGeometry() {
 
+
+
 	std::vector<GLushort> indices;
 	std::vector<vec3> vertices;
+	std::vector<vec3> normals;
 	std::vector<vec3> colors;
 
 	//COUNTER CLOCKWISE TRIANGLE ORDER IMPORTANT FOR glm::intersectRayTriangle!!!!!!!!!!!!!!!
@@ -750,34 +764,60 @@ void Engine::initSimpleGeometry() {
 	colors.push_back(vec3(0,1,0));
 	point = pho::Mesh(vertices,indices,colors,Point);
 
-	/*std::vector<glm::vec2> texcoords;
+	vertices.clear();
+	
+	//FLOOOOOOOOOOOR **************************
+	
+	std::vector<glm::vec2> texcoords;
+
+	vertices.push_back(vec3(-1, 1,0));
+	texcoords.push_back(glm::vec2(0,1));
 
 	vertices.push_back(vec3(-1,-1,0));
 	texcoords.push_back(glm::vec2(0,0));
 
-	vertices.push_back(vec3(-1, 1,0));
-	texcoords.push_back(glm::vec2(0,1));
-
 	vertices.push_back(vec3( 1,-1,0));
 	texcoords.push_back(glm::vec2(1,0));
-
-	vertices.push_back(vec3( 1,-1,0));
-	texcoords.push_back(glm::vec2(1,0));
-
-	vertices.push_back(vec3(-1, 1,0));
-	texcoords.push_back(glm::vec2(0,1));
 
 	vertices.push_back(vec3( 1, 1,0));
 	texcoords.push_back(glm::vec2(1,1));
 
 	indices.push_back(0);indices.push_back(1);indices.push_back(2);
-	indices.push_back(3);indices.push_back(4);indices.push_back(5);	
+	indices.push_back(3);indices.push_back(0);indices.push_back(2);	
 
-    //Simple quad to Render off-screen buffer
-    quad = pho::Asset::Asset(vertices,indices,texcoords,"quad");
+	
 
-    quad.modelMatrix = glm::scale(vec3(0.3,0.3,1));
-    quad.modelMatrix = glm::translate(quad.modelMatrix,vec3(-2.2,-2.2,0));*/
+	CALL_GL(glGenVertexArrays(1,&floorVAO));
+	CALL_GL(glGenBuffers(1,&floorIBO));
+	CALL_GL(glGenBuffers(1,&floorVBO));
+	CALL_GL(glGenBuffers(1,&texCoordVBO));
+	
+	CALL_GL(glBindVertexArray(floorVAO));
+
+	CALL_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,floorIBO));
+	CALL_GL(glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.size()*sizeof(GLushort),indices.data(),GL_STATIC_DRAW));
+
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,floorVBO));
+	CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
+	CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
+	CALL_GL(glEnableVertexAttribArray(vertexLoc));
+
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,texCoordVBO));
+	CALL_GL(glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW));
+	CALL_GL(glVertexAttribPointer(texCoordLoc,3,GL_FLOAT,GL_FALSE,0,0));
+	CALL_GL(glEnableVertexAttribArray(texCoordLoc));
+
+	
+	floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(5,5,0));
+	floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(1,0,0))*floorMatrix;
+	floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
+	floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
+
+	CALL_GL(glBindVertexArray(0));
+
+	//Texture Loading
+	floorTexture = gli::createTexture2D("textures/grid.dds");
+	
 }
 
 void Engine::checkUDP() {
@@ -954,7 +994,8 @@ void Engine::checkKeyboard() {
 	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		cursor.modelMatrix = glm::translate(0,0,-5);
-		plane.modelMatrix = glm::translate(0,0,-5); 
+		plane.modelMatrix = glm::translate(0,0,-5);
+		viewMatrix = mat4();
 	}
 	if (glfwGetKey(GLFW_KEY_END)) {
 		perspective -=1.0;

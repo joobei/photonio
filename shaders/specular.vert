@@ -4,19 +4,17 @@
 in vec3 in_Position;
 in vec3 in_Color;
 in vec3 in_Normal;
-in vec2 in_bumpMap;
 
-uniform mat4 MV;
-uniform mat4 MVP;
+uniform mat4 modelMatrix;
+uniform mat4 mvp;
 uniform int numberOfTextures;
 
-out vec4 ex_color;
-out vec3 ex_normal;
+out vec4 ex_Color;
+out vec3 ex_Normal;
 
 void main()
 {
-
-
     gl_Position = mvp*vec4(in_Position,1.0);
-    ex_color = vec4(in_Color,1.0);
+    ex_Color = vec4(in_Color,1.0);
+	ex_Normal = (modelMatrix*vec4(in_Normal,0.0)).xyz;
 }

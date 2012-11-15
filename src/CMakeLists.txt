@@ -16,7 +16,7 @@ ENDIF()
 
 include_directories(C:/dev/winddk/inc)
 include_directories(C:/dev/glew-1.7.0/include)
-include_directories(C:/dev/glfw-2.7.3/include)
+include_directories(C:/dev/glfw-2.7.7/include)
 include_directories(C:/dev/winddk/inc/api)
 include_directories(C:/dev/boost_1_51_0)
 include_directories(C:/dev/assimp/include)
@@ -27,8 +27,8 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 
 link_directories(C:/dev/TUIO_CPP/Release)
 link_directories(C:/dev/oscpacklib/Release)
-link_directories(C:/dev/glfw-2.7.3/support/msvc100/Release)
-link_directories(C:/dev/glfw-2.7.3/lib/win32)
+link_directories(C:/dev/glfw-2.7.7/support/msvc100/Debug)
+##link_directories(C:/dev/glfw-2.7.3/lib/win32)
 link_directories(C:/dev/glew-1.7.0/lib)
 link_directories(C:/dev/winddk/lib/win7/i386)
 link_directories(C:/dev/boost_1_51_0/stage/lib)
@@ -38,7 +38,7 @@ link_directories(C:/dev/assimp/lib/assimp_debug-dll_win32)
 link_directories(C:/dev/Assimpsdk/bin/x86)
 link_directories(C:/dev/devil-x86-1.7.8/lib)
 
-add_executable(${PROJECTNAME} wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp "${CMAKE_SOURCE_DIR}/shaders/shader.vert" "${CMAKE_SOURCE_DIR}/shaders/shader.frag" "${CMAKE_SOURCE_DIR}/shaders/specular.vert" "${CMAKE_SOURCE_DIR}/shaders/specular.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.frag" "${CMAKE_SOURCE_DIR}/shaders/circle.geom")
+add_executable(${PROJECTNAME} wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp "${CMAKE_SOURCE_DIR}/shaders/shader.vert" "${CMAKE_SOURCE_DIR}/shaders/shader.frag" "${CMAKE_SOURCE_DIR}/shaders/specular.vert" "${CMAKE_SOURCE_DIR}/shaders/specular.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.frag" "${CMAKE_SOURCE_DIR}/shaders/circle.geom" "${CMAKE_SOURCE_DIR}/shaders/texader.frag" "${CMAKE_SOURCE_DIR}/shaders/texader.vert")
 
 target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} debug libprotobufd optimized libprotobuf oscnetlib ip osc tuio opengl32 winmm)
 
