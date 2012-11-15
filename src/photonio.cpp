@@ -132,6 +132,8 @@ void Engine::initResources() {
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
+	vec2 ft;
+	float newAngle;
 
 	checkKeyboard();
 
@@ -143,14 +145,12 @@ void Engine::checkEvents() {
 			prevMouseWheel = wheel;
 		}
 	}
-	
+	  
 	if (technique == planeCasting) {
 		checkUDP();
 
 		if (appInputState == rotate && rotTechnique == pinch && (consumed == false)) {
-			vec2 ft;
-			float newAngle;
-
+			
 			p1t = p1c-p1p;
 			p2t = p2c-p2p;
 
@@ -161,9 +161,9 @@ void Engine::checkEvents() {
 			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 			
 			cursor.rotate(glm::rotate((newAngle-referenceAngle)*(-50),vec3(0,0,1)));
-			
-			cursor.rotate(glm::rotate(ft.x*50,vec3(0,1,0)));
-			cursor.rotate(glm::rotate(ft.y*50,vec3(1,0,0)));
+
+			cursor.rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
+			cursor.rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
 
 			consumed = true;
 
@@ -474,7 +474,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 		if (numberOfCursors == 1) {
 			p1c.x = tcur->getX();
 			p1c.y = tcur->getY();
-			f1id = tcur->getCursorID();	
+			f1id = tcur->getCursorID();
+
+			p1p = p1c;  //when first putting finger down there must be
+						// a previous spot otherwise when the other finger moves it goes crazy
 
 		}
 		if (numberOfCursors == 2) {
@@ -484,8 +487,14 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 			p2c.y = tcur->getY();
 			f2id = tcur->getCursorID();
 
+			p2p = p2c;   //when first putting finger down there must be
+			            // a previous spot otherwise when the other finger moves it goes crazy
+
 			consumed = true;
 		}
+
+
+
 	}
 	if (verbose)
 		std::cout << "add cur " << tcur->getCursorID() << " (" <<  tcur->getSessionID() << ") " << tcur->getX() << " " << tcur->getY() << std::endl;
@@ -498,7 +507,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	y = tcur->getY();
 	mat3 tempMat;
 	mat4 newLocationMatrix;
-
+	
 	short numberOfCursors = tuioClient->getTuioCursors().size();
 	//std::list<TUIO::TuioCursor*> cursorList;
 	//cursorList = tuioClient->getTuioCursors();
@@ -528,6 +537,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			break;
 		case screenSpace:
 			if (numberOfCursors == 1) {
+
+				if (tcur->getCursorID() == f1id) {
+
 				p1p = p1c;
 
 				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
@@ -535,6 +547,20 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
+			}
+
+			if (tcur->getCursorID() == f2id) {
+				
+				p2p = p2c;	
+
+				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
+				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+
+				p2c.x = tcur->getX();
+				p2c.y = tcur->getY();
+
+			}	
+
 			}
 			break;
 		case pinch:
@@ -548,17 +574,20 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
 
-				consumed = false;
+				consumed = true;
 			}
 
 			if (tcur->getCursorID() == f2id) {
+				
 				p2p = p2c;	
 
 				p2c.x = tcur->getX();
 				p2c.y = tcur->getY();
-				
-				consumed = false;			
-			}
+
+				consumed = false;
+
+			}	
+
 
 			break;
 		case trackBall:
@@ -606,7 +635,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 		switch (rotTechnique) {
 		case pinch:
 			rotTechnique = screenSpace;
-			std::cout << "pinch --> screenSpace" << '\n';
+			std::cout << "screenSpace" << '\n';
 			break;
 		}
 	}
