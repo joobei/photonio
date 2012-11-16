@@ -142,6 +142,7 @@ namespace pho {
 		pho::Shader circleShader;
 		pho::Shader textureShader;
 		pho::Shader directionalShader;
+		pho::Shader normalShader;
 
 		//Lights
 		GLuint lightSource;

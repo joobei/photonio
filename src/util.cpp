@@ -5,7 +5,7 @@
 std::string pho::readTextFile(std::string filename) {
 	std::fstream shaderFile(filename,std::ios::in);
 	std::string shader;
-
+	
 	std::stringstream buffer;
 	buffer << shaderFile.rdbuf();
 	shader = buffer.str();

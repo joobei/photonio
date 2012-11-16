@@ -38,8 +38,14 @@ link_directories(C:/dev/assimp/lib/assimp_debug-dll_win32)
 link_directories(C:/dev/Assimpsdk/bin/x86)
 link_directories(C:/dev/devil-x86-1.7.8/lib)
 
-add_executable(${PROJECTNAME} wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp "${CMAKE_SOURCE_DIR}/shaders/shader.vert" "${CMAKE_SOURCE_DIR}/shaders/shader.frag" "${CMAKE_SOURCE_DIR}/shaders/specular.vert" "${CMAKE_SOURCE_DIR}/shaders/specular.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.frag" "${CMAKE_SOURCE_DIR}/shaders/circle.geom" "${CMAKE_SOURCE_DIR}/shaders/texader.frag" "${CMAKE_SOURCE_DIR}/shaders/texader.vert")
-
+add_executable(${PROJECTNAME} wiimote.cpp main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp 
+${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp 
+"${CMAKE_SOURCE_DIR}/shaders/shader.vert" "${CMAKE_SOURCE_DIR}/shaders/shader.frag" 
+"${CMAKE_SOURCE_DIR}/shaders/specular.vert"  "${CMAKE_SOURCE_DIR}/shaders/specular.frag" 
+"${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert" 
+"${CMAKE_SOURCE_DIR}/shaders/circle.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.geom" "${CMAKE_SOURCE_DIR}/shaders/circle.frag"  
+"${CMAKE_SOURCE_DIR}/shaders/texader.frag" "${CMAKE_SOURCE_DIR}/shaders/texader.vert" 
+"${CMAKE_SOURCE_DIR}/shaders/normals.vert" "${CMAKE_SOURCE_DIR}/shaders/normals.geom" "${CMAKE_SOURCE_DIR}/shaders/normals.frag"   )
 target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} debug libprotobufd optimized libprotobuf oscnetlib ip osc tuio opengl32 winmm)
 
 ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
