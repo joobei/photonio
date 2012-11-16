@@ -284,10 +284,12 @@ void Engine::render() {
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.draw();	
-	normalShader.use();
+	
+	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	normalShader["modelMatrix"] = cursor.modelMatrix;
-	cursor.draw();		
+	CALL_GL(glLineWidth(1.0f));
+	cursor.draw();		*/
 
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
@@ -424,8 +426,8 @@ void Engine::mouseMoveCallback(int x, int y) {
 		MousePt.y = y;
 
 		vec2 difference = MousePt-prevMousePos;
-		difference.x /= 100;
-		difference.y /= 100;
+		difference.x /= 50;
+		difference.y /= 50;
 		difference.y = -difference.y;
 		
 		if(prevMouseExists) {
@@ -682,100 +684,40 @@ void Engine::initSimpleGeometry() {
 
 	//COUNTER CLOCKWISE TRIANGLE ORDER IMPORTANT FOR glm::intersectRayTriangle!!!!!!!!!!!!!!!
 	indices.push_back(1); indices.push_back(0); indices.push_back(3);
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left 
-	vertices.push_back(vec3(-0.5,-0.5,0.5));//0 front bottom left  
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-
 	indices.push_back(3); indices.push_back(2); indices.push_back(1);
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
 
 	indices.push_back(2); indices.push_back(8); indices.push_back(1);
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	vertices.push_back(vec3(0.0,1.0,0.5)); //8
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
 	colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-
 	indices.push_back(2); indices.push_back(3); indices.push_back(7);
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
 	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
 
 	indices.push_back(7); indices.push_back(6); indices.push_back(2);
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
-
+	 colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
 	indices.push_back(6); indices.push_back(8); indices.push_back(2);
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(0.0,1.0,0.5)); //8
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-
-
-
-
 	indices.push_back(7); indices.push_back(6); indices.push_back(4);
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-
+	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
 	indices.push_back(6); indices.push_back(5); indices.push_back(4);
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-
+	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
 	indices.push_back(5); indices.push_back(8); indices.push_back(6);
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(0.0,1.0,0.5)); //8
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
 	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
-	
-
-
-
-
 	indices.push_back(4); indices.push_back(0); indices.push_back(5);
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(-0.5,-0.5,0.5));//0 front bottom left 
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
 	colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); //yellow
-	
-
 	indices.push_back(5); indices.push_back(0); indices.push_back(1);
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(-0.5,-0.5,0.5));//0 front bottom left 
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
 	colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); //yellow
-
 	indices.push_back(5); indices.push_back(1); indices.push_back(8);
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
-	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
-	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-
+	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
 
 	//bottom?
 	indices.push_back(4); indices.push_back(0); indices.push_back(3);
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
 	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
-
 	indices.push_back(4); indices.push_back(7); indices.push_back(3);
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
 	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
+	
 
-	/*
+	
 	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
 	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
 	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
@@ -785,15 +727,18 @@ void Engine::initSimpleGeometry() {
 	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
 	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
 	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
-	*/
+	
 
-    /*for (std::vector<GLushort>::size_type i=0; i != indices.size(); ++i) {
+    for (std::vector<GLushort>::size_type i=0; i != indices.size(); ++i) {
 		vertixes.push_back(vertices[indices[i]]);
 		colorx.push_back(colors[indices[i]]);
-	}*/
+		indixes.push_back(i);
+	}
 	
-	target = pho::Mesh(vertices,indices,colors);
-	cursor = pho::Mesh(vertices,indices,colors);
+	cursor = pho::Mesh(vertixes,indixes,colors);
+	target = pho::Mesh(vertixes,indixes,colorx);
+	
+	
 	vertices.clear();
 
 	vertices.push_back(vec3(-0.7,0,1));
