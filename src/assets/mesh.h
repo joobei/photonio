@@ -30,6 +30,7 @@ namespace pho {
 	class Mesh {
 	public:
 		Mesh();
+		Mesh(std::vector<glm::vec3> vertixes);
 		Mesh(std::vector<glm::vec3> vertices, std::vector<GLushort> indices, std::vector<glm::vec3> colors);
 		Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec3> colorz, pho::PrimitiveType type);
 		GLuint getVaoId();

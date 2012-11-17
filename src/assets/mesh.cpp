@@ -6,6 +6,24 @@ pho::Mesh::Mesh() {
 	selected = false;
 }
 
+pho::Mesh::Mesh(std::vector<glm::vec3> vertixes) : vertices(vertixes)
+{
+	modelMatrix = glm::mat4();
+	CALL_GL(glGenVertexArrays(1,&vaoId));
+	CALL_GL(glGenBuffers(1,&ibId));
+	CALL_GL(glGenBuffers(1,&vertexVboId));
+	CALL_GL(glGenBuffers(1,&colorVboId));
+
+	CALL_GL(glBindVertexArray(vaoId));
+
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,vertexVboId));
+	CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
+	CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
+	CALL_GL(glEnableVertexAttribArray(vertexLoc));
+
+	CALL_GL(glBindVertexArray(0));
+}
+
 //loads data and uploads to GPU
 pho::Mesh::Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec3> colorz):
 vertices(vertixes),
@@ -114,18 +132,6 @@ vertices(vertixes),
 	CALL_GL(glBufferData(GL_ARRAY_BUFFER,colors.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
 	CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_FALSE,0,0));
 	CALL_GL(glEnableVertexAttribArray(normalLoc));
-
-	CALL_GL(glBindVertexArray(0));
-
-	glm::vec3 center = glm::vec3(0,0,0);
-
-	CALL_GL(glGenVertexArrays(1,&circlevaoId)); 
-	CALL_GL(glGenBuffers(1,&circleVboId));
-
-	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,circleVboId));
-	CALL_GL(glBufferData(GL_ARRAY_BUFFER,3*sizeof(GLfloat),glm::value_ptr(center),GL_STATIC_DRAW));
-	CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
-	CALL_GL(glEnableVertexAttribArray(vertexLoc));
 
 	CALL_GL(glBindVertexArray(0));
 }
@@ -261,11 +267,9 @@ glm::vec3 pho::Mesh::getPosition() {
 
 void pho::Mesh::drawCircle() {
 	
-	CALL_GL(glBindVertexArray(circlevaoId));
-	CALL_GL(glDrawArrays(GL_POINTS,0,1));
-	
-	//CALL_GL(glBindVertexArray(vaoId));
-	//CALL_GL(glDrawArrays(GL_POINTS,0,1));
+	CALL_GL(glBindVertexArray(vaoId));
+	CALL_GL(glDrawArrays(GL_LINE_LOOP,0,vertices.size()));
+
 }
 
 void pho::Mesh::drawPoint() {

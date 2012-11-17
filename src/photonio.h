@@ -84,8 +84,8 @@ namespace pho {
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-		static const int WINDOW_SIZE_X = 800;
-		static const int WINDOW_SIZE_Y = 800;
+		static const int WINDOW_SIZE_X = 1920;
+		static const int WINDOW_SIZE_Y = 1080;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -138,8 +138,7 @@ namespace pho {
 
 		//Shaders
         pho::Shader colorShader;
-		pho::Shader offscreenShader;
-		pho::Shader circleShader;
+		pho::Shader flatShader;
 		pho::Shader textureShader;
 		pho::Shader directionalShader;
 		pho::Shader normalShader;
@@ -201,6 +200,7 @@ namespace pho {
         pho::Mesh plane;
         pho::Mesh ray;
 		pho::Mesh point;
+		pho::Mesh circle;
 		
 		//perspective matrix control
 		float perspective;
@@ -231,7 +231,7 @@ namespace pho {
 
 
 		//mouse 
-		int prevMouseWheel;
+		float prevMouseWheel;
 		vec2 prevMousePos;
 		bool prevMouseExists;
 
@@ -245,6 +245,15 @@ namespace pho {
 		GLuint floorVAO,floorVBO, floorIBO, texCoordVBO;
 		GLuint floorTexture;
 		glm::mat4 floorMatrix;
+
+		//Shadowmap ****************************
+		// Hold id of the framebuffer for light POV rendering
+		GLuint fboId;
+
+		// Z values will be rendered to this texture when using fboId framebuffer
+		GLuint depthTextureId;
+		void generateShadowFBO();
+		float SHADOW_MAP_RATIO;
 	};
 
 }

@@ -35,7 +35,7 @@ calibrate(false),
 	eventQueue(),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	_serialserver(serialioservice,115200,"COM19",&eventQueue,&ioMutex),
+	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
 	wii(false),
 	mouseMove(false)
 {
@@ -90,16 +90,15 @@ calibrate(false),
 	last_mx = last_my = cur_mx = cur_my = 0;
 
 	consumed = false;
+
+	SHADOW_MAP_RATIO = 1.0f;
 }
 
 void Engine::initResources() {
 
 	initSimpleGeometry();
 
-	//for lighting, not used yet
-	glGenBuffers(1,&(pointLight.uniformBlockIndex)); //generate buffer and store it's location in pointLight's member variable
-	glBindBuffer(GL_UNIFORM_BUFFER,pointLight.uniformBlockIndex); 
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(LightSource), (void *)(&pointLight), GL_STATIC_DRAW);
+	generateShadowFBO();
 
    
 	//Create the perspective matrix
@@ -111,8 +110,8 @@ void Engine::initResources() {
 	viewMatrix = glm::translate(cameraPosition); 
 
 	glEnable (GL_DEPTH_TEST);
-	//glEnable (GL_BLEND);
-	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable (GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_TRUE);
 
 	restoreRay=false; //used to make ray long again if NOT intersecting
@@ -123,11 +122,7 @@ void Engine::initResources() {
 	 //load shaders from files
 	colorShader = pho::Shader("shaders/shader");  
 	
-	offscreenShader = pho::Shader("shaders/offscreen");
-	
-	circleShader = pho::Shader("shaders/circle");
-	circleShader.use();
-	circleShader["radius"]= ARCBALL_RADIUS;
+	flatShader = pho::Shader("shaders/offscreen");
 	
 	textureShader = pho::Shader("shaders/texader");
 
@@ -145,9 +140,9 @@ void Engine::checkEvents() {
 	checkKeyboard();
 
 	if (technique == mouse) {
-		int wheel = glfwGetMouseWheel();
+		float wheel = glfwGetMouseWheel();
 		if (wheel != prevMouseWheel) {
-			int amount = wheel - prevMouseWheel;
+			float amount = (wheel - prevMouseWheel)/10;
 			cursor.modelMatrix = glm::translate(vec3(0,0,-amount))*cursor.modelMatrix;
 			prevMouseWheel = wheel;
 		}
@@ -225,9 +220,9 @@ void Engine::render() {
 
 			CALL_GL(glDisable(GL_DEPTH_TEST));
 			//render selection red border first with the flat color shader
-			offscreenShader.use();
-			offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.5f);
-			offscreenShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
+			flatShader.use();
+			flatShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.5f);
+			flatShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
 			// draw the object's outline
 			cursor.draw();
 
@@ -266,9 +261,9 @@ void Engine::render() {
 	
 
 	if (technique == planeCasting && appInputState != rotate) {
-		offscreenShader.use(); //bind the standard shader for default colored objects
-		offscreenShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
-		offscreenShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
+		flatShader.use(); //bind the standard shader for default colored objects
+		flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+		flatShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
 		CALL_GL(glLineWidth(7.0f));
 		plane.draw(true);
 	}
@@ -284,7 +279,13 @@ void Engine::render() {
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.draw();	
-	
+
+	directionalShader.use();
+	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
+	directionalShader["modelMatrix"] = target.modelMatrix;
+	CALL_GL(glLineWidth(1.0f));
+	target.draw(true);
+
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	normalShader["modelMatrix"] = cursor.modelMatrix;
@@ -294,23 +295,25 @@ void Engine::render() {
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
 		point.modelMatrix = glm::translate(objectIntersectionPoint);
-		offscreenShader.use();
-		offscreenShader["baseColor"] = vec4(0.0f, 1.0f ,0.0f, 1.0f); //back to drawing with colors
-		offscreenShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+		flatShader.use();
+		flatShader["baseColor"] = vec4(0.0f, 1.0f ,0.0f, 1.0f); //back to drawing with colors
+		flatShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
 		//CALL_GL(glPointSize(13.0f));
 		point.draw();
 	}
 	if ((sphereHit || (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)) && (appInputState != translate)) {
-		circleShader.use();
-		circleShader["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-		circleShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
+		circle.modelMatrix[3] = cursor.modelMatrix[3];
+
+		flatShader.use();
+		flatShader["mvp"] = projectionMatrix*viewMatrix*circle.modelMatrix;
+		flatShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
 		CALL_GL(glLineWidth(4.0f));
-		cursor.drawCircle();
+		circle.drawCircle();
 
 		point.modelMatrix = glm::translate(sphereIntersectionPoint);
-		offscreenShader.use();
-		offscreenShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 1.0f); //back to drawing with colors
-		offscreenShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
+		flatShader.use();
+		flatShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 1.0f); //back to drawing with colors
+		flatShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
 		//CALL_GL(glPointSize(13.0f));
 		point.draw();
 	} 
@@ -541,7 +544,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	case translate:
 		//********************* TRANSLATE ****************************
 		tempMat = mat3(orientation);
-#define TFACTOR 3
+#define TFACTOR 2
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
 		newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
@@ -736,8 +739,10 @@ void Engine::initSimpleGeometry() {
 	}
 	
 	cursor = pho::Mesh(vertixes,indixes,colors);
-	target = pho::Mesh(vertixes,indixes,colorx);
 	
+	target = pho::Mesh(vertixes,indixes,colors);
+	target.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-2,2,-5));
+
 	
 	vertices.clear();
 
@@ -845,6 +850,20 @@ void Engine::initSimpleGeometry() {
 
 	//Texture Loading
 	floorTexture = gli::createTexture2D("textures/grid.dds");
+
+
+	vertices.clear();
+	colors.clear();
+	normals.clear();
+	texcoords.clear();
+	indices.clear();
+
+	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
+	{
+		vertices.push_back(glm::vec3(ARCBALL_RADIUS*cos(i),ARCBALL_RADIUS*sin(i),0));
+    }
+
+	circle = pho::Mesh::Mesh(vertices);
 	
 }
 
@@ -1108,7 +1127,7 @@ void Engine::checkWiiMote() {
 	
 }
 
-bool pho::Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
+bool Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
 	vec3 tempPoint;
 	float tempFloat;
 	if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,glm::vec3())) {
@@ -1119,7 +1138,7 @@ bool pho::Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
 
 }
 
-void pho::Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 viewMatrix) {
+void Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 viewMatrix) {
 	glm::vec3 currentVector;
 	glm::vec3 tempPoint;
 	float tempFloat;
@@ -1137,3 +1156,46 @@ void pho::Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat
 		previousVector = currentVector;
 	}
 }
+
+void Engine::generateShadowFBO()
+	{
+	  int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
+	  int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
+	
+	  GLenum FBOstatus;
+
+	  // Try to use a texture depth component
+	  glGenTextures(1, &depthTextureId);
+	  glBindTexture(GL_TEXTURE_2D, depthTextureId);
+
+	  // GL_LINEAR does not make sense for depth texture. However, next tutorial shows usage of GL_LINEAR and PCF
+	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	  // Remove artifact on the edges of the shadowmap
+	  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
+	  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+
+	  // No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available
+	  glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
+	  glBindTexture(GL_TEXTURE_2D, 0);
+
+	  // create a framebuffer object
+	  glGenFramebuffersEXT(1, &fboId);
+	  glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
+
+	  // Instruct openGL that we won't bind a color texture with the currently bound FBO
+	  glDrawBuffer(GL_NONE);
+	  glReadBuffer(GL_NONE);
+ 
+	  // attach the texture to FBO depth attachment point
+	  glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,GL_TEXTURE_2D, depthTextureId, 0);
+
+	  // check FBO status
+	  FBOstatus = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+	  if(FBOstatus != GL_FRAMEBUFFER_COMPLETE_EXT)
+		  printf("GL_FRAMEBUFFER_COMPLETE_EXT failed, CANNOT use FBO\n");
+
+	  // switch back to window-system-provided framebuffer
+	  glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	}			

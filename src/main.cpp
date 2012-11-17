@@ -39,10 +39,10 @@ int main()
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
 	//glfwSetWindowPos(2360,0);  //for dual display
-	glfwSetWindowPos(800,0);
+	glfwSetWindowPos(-6,-27);
 
     glfwSetWindowTitle("KeiMote");
-	//glfwEnable( GLFW_MOUSE_CURSOR );
+	glfwEnable( GLFW_MOUSE_CURSOR );
 
     GLenum err = glewInit();
     if (GLEW_OK != err)
