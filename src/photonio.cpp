@@ -31,7 +31,7 @@ calibrate(false),
 	eventQueue(),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	_serialserver(serialioservice,115200,"COM3",&eventQueue,&ioMutex),
+	_serialserver(serialioservice,115200,"COM4",&eventQueue,&ioMutex),
 	wii(false),
 	mouseMove(false)
 {
@@ -284,7 +284,10 @@ void Engine::render() {
 	colorShader.use(); //bind the standard shader for default colored objects
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 	ray.draw(true);
-
+	flatShader.use();
+	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
+	flatShader["baseColor"] = vec4(1.0f, 0.5f ,1.0f, 1.0f);
+	cylinder.draw();
 	
 	
 	/// CURSOR ////////////////////////////////////////
@@ -339,14 +342,13 @@ void Engine::render() {
 	
 	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));
 
-	/*textureShader.use();
+	textureShader.use();
 	textureShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
 	CALL_GL(glBindVertexArray(floorVAO));
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));*/
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
 
 	normalShader.use();
 	normalShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
-	CALL_GL(glBindVertexArray(floorVAO));
 	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
 	
 	glfwSwapBuffers();
@@ -910,6 +912,21 @@ void Engine::initSimpleGeometry() {
 
 	circle = pho::Mesh::Mesh(vertices);
 	
+	float radius = 0.01f;
+
+	vertices.clear();
+
+
+	//RAY Cylindrical
+	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
+	{
+		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),0));		
+		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),-1000));	
+	}
+
+	cylinder = pho::Mesh(vertices);
+
+
 }
 
 void Engine::checkUDP() {
@@ -1241,7 +1258,7 @@ void Engine::generateShadowFBO()
 
     glEnable(GL_DEPTH_TEST);
 
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
 
 	// Needed when rendering the shadow map. This will avoid artifacts.
     glPolygonOffset(1.0f, 0.0f);

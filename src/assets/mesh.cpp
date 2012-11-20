@@ -50,10 +50,6 @@ vertices(vertixes),
 		normals.push_back(glm::normalize(glm::cross(U,V)));
 	}
 
-
-	farthestVertex = vertices[indices[0]];
-	GLushort farthestIndex=0;
-
 	for (std::vector<GLushort>::size_type i=0; i != indices.size(); i+=3) {
 		
 		Face temp;
@@ -70,16 +66,6 @@ vertices(vertixes),
 		wfindices.push_back(indixes[i+2]);
 		wfindices.push_back(indixes[i]);
 	}
-
-	//find farthest vertex and save for sphere radius
-	for (std::vector<glm::vec3>::size_type i=0; i!= vertices.size(); i++) {
-
-		if(glm::distance(vertices[i],glm::vec3(0,0,0)) > glm::distance(vertices[farthestIndex],glm::vec3(0,0,0))) {
-			farthestVertex = vertices[farthestIndex];
-			farthestIndex = i;
-		}
-	}
-
 
 	modelMatrix = glm::mat4();
 	CALL_GL(glGenVertexArrays(1,&vaoId));
@@ -280,7 +266,12 @@ void pho::Mesh::drawPoint() {
 
 void pho::Mesh::draw() {
 	CALL_GL(glBindVertexArray(vaoId));
-	CALL_GL(glDrawElements(GL_TRIANGLES,indices.size(),GL_UNSIGNED_SHORT,NULL));
+	if (indices.size() > 0) {
+		CALL_GL(glDrawElements(GL_TRIANGLES,indices.size(),GL_UNSIGNED_SHORT,NULL));}
+	else {
+		CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,vertices.size()));
+	}
+
 }
 
 //draw wireframe (to be improved)

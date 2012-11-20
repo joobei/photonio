@@ -86,8 +86,8 @@ namespace pho {
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-		static const int WINDOW_SIZE_X = 640;
-		static const int WINDOW_SIZE_Y = 480;
+		static const int WINDOW_SIZE_X = 1920;
+		static const int WINDOW_SIZE_Y = 1080;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -152,13 +152,7 @@ namespace pho {
 		//Picking
 		GLuint hitObject;
 		bool objectHit,sphereHit;
-
-		GLuint pickProgram;
-		GLuint tex; 
-		GLuint rbo; 
-		GLuint fbo;
-		GLuint pbo_a,pbo_b;
-		GLenum DrawBuffers[2];
+		
 		float rayLength;
 		float rayLengthObject;
 		bool restoreRay;
@@ -203,6 +197,7 @@ namespace pho {
         pho::Mesh ray;
 		pho::Mesh point;
 		pho::Mesh circle;
+		pho::Mesh cylinder;
 		
 		//perspective matrix control
 		float perspective;
