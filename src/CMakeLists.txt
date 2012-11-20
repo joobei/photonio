@@ -15,7 +15,7 @@ IF(PROTOBUF_FOUND)
 ENDIF()
 
 include_directories(C:/dev/winddk/inc)
-include_directories(C:/dev/glew-1.7.0/include)
+include_directories(C:/dev/glew-1.9.0/include)
 include_directories(C:/dev/glfw-2.7.7/include)
 include_directories(C:/dev/winddk/inc/api)
 include_directories(C:/dev/boost_1_49_0)
@@ -23,12 +23,13 @@ include_directories(C:/dev/assimp/include)
 include_directories(C:/dev/devil-x86-1.7.8/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/assets)
 include_directories(${CMAKE_SOURCE_DIR}/src)
+include_directories("C:/Program Files (x86)/3Dconnexion/3DxWare SDK/Inc" )
 
 
 link_directories(C:/dev/TUIO_CPP/Release)
 link_directories(C:/dev/oscpacklib/Release)
 link_directories(C:/dev/glfw-2.7.7/support/msvc100/Debug)
-link_directories(C:/dev/glew-1.7.0/lib)
+link_directories(C:/dev/glew-1.9.0/lib)
 link_directories(C:/dev/winddk/lib/win7/i386)
 link_directories(C:/dev/boost_1_49_0/stage/lib)
 link_directories(C:/dev/protobuf-2.4.1/vsprojects/Debug)
@@ -43,21 +44,15 @@ ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h asse
 "${CMAKE_SOURCE_DIR}/shaders/specular.vert"  "${CMAKE_SOURCE_DIR}/shaders/specular.frag" 
 "${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert" 
 "${CMAKE_SOURCE_DIR}/shaders/texader.frag" "${CMAKE_SOURCE_DIR}/shaders/texader.vert" 
+"${CMAKE_SOURCE_DIR}/shaders/renderShadow.frag" "${CMAKE_SOURCE_DIR}/shaders/renderShadow.vert" 
+"${CMAKE_SOURCE_DIR}/shaders/useShadow.frag" "${CMAKE_SOURCE_DIR}/shaders/useShadow.vert" 
+"${CMAKE_SOURCE_DIR}/shaders/normals.geom" "${CMAKE_SOURCE_DIR}/shaders/normals.frag" "${CMAKE_SOURCE_DIR}/shaders/normals.vert" 
 )
 
-##"${CMAKE_SOURCE_DIR}/shaders/normals.vert" "${CMAKE_SOURCE_DIR}/shaders/normals.geom" "${CMAKE_SOURCE_DIR}/shaders/normals.frag"   
-target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} debug libprotobufd optimized libprotobuf oscnetlib ip osc tuio opengl32 winmm)
+target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} libprotobuf oscnetlib ip osc tuio opengl32 winmm)
 
 ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
-          POST_BUILD
-
-		  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/debug/glew32d.dll ${PROJECT_BINARY_DIR}
-		  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/debug/Assimp32d.dll ${PROJECT_BINARY_DIR}
-		  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/Release/Assimp32.dll ${PROJECT_BINARY_DIR}
-		  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/debug/DevIL.dll ${PROJECT_BINARY_DIR}
-		  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/debug/GLFW.dll ${PROJECT_BINARY_DIR}
-		  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/debug/ILU.dll ${PROJECT_BINARY_DIR}
-		  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/lib/debug/ILUT.dll ${PROJECT_BINARY_DIR}
+          PRE_BUILD
 
 		  COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/src/shaders
           COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/shaders ${PROJECT_BINARY_DIR}/src/shaders
@@ -65,8 +60,4 @@ ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
           COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/src/assets
           COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${PROJECT_BINARY_DIR}/src/assets
 
-		  #COMMAND ${CMAKE_COMMAND} -E copy ${PROJECT_BINARY_DIR}/${PROJECTNAME}.exe C:/Users/jubei/
 )
-
-#set(CMAKE_INSTALL_PREFIX "C:\Users\jubei\Google Drive\dev")
-#INSTALL(TARGETS ${PROJECTNAME} RUNTIME DESTINATION C:\Users\jubei\Google Drive\dev)

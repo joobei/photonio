@@ -8,6 +8,7 @@ pho::Mesh::Mesh() {
 
 pho::Mesh::Mesh(std::vector<glm::vec3> vertixes) : vertices(vertixes)
 {
+	
 	modelMatrix = glm::mat4();
 	CALL_GL(glGenVertexArrays(1,&vaoId));
 	CALL_GL(glGenBuffers(1,&ibId));
@@ -33,8 +34,7 @@ vertices(vertixes),
 	simple = false;
 
 	//calculate normals
-	/*/for (std::vector<GLushort>::size_type i=0; i != 3; i+=3) {
-	short i = 0;	
+	for (std::vector<GLushort>::size_type i=0; i != 3; i+=3) {
 		glm::vec3 v0,v1,v2;
 		v0 = vertices[indices[i]];
 		v1 = vertices[indices[i+1]];
@@ -48,7 +48,7 @@ vertices(vertixes),
 		normals.push_back(glm::normalize(glm::cross(U,V)));
 		normals.push_back(glm::normalize(glm::cross(U,V)));
 		normals.push_back(glm::normalize(glm::cross(U,V)));
-	//}*/
+	}
 
 
 	farthestVertex = vertices[indices[0]];
@@ -103,7 +103,7 @@ vertices(vertixes),
 	CALL_GL(glEnableVertexAttribArray(colorLoc));
 
 	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,normalVboId));
-	CALL_GL(glBufferData(GL_ARRAY_BUFFER,colors.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
+	CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
 	CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
 	CALL_GL(glEnableVertexAttribArray(normalLoc));
 
@@ -129,7 +129,7 @@ vertices(vertixes),
 	CALL_GL(glEnableVertexAttribArray(colorLoc));
 
 	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,normalVboId));
-	CALL_GL(glBufferData(GL_ARRAY_BUFFER,colors.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
+	CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
 	CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_FALSE,0,0));
 	CALL_GL(glEnableVertexAttribArray(normalLoc));
 

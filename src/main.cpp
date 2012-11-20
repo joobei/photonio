@@ -39,7 +39,8 @@ int main()
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
 	//glfwSetWindowPos(2360,0);  //for dual display
-	glfwSetWindowPos(-6,-27);
+	//glfwSetWindowPos(-6,-27); //full screen
+	glfwSetWindowPos(10,500);
 
     glfwSetWindowTitle("KeiMote");
 	glfwEnable( GLFW_MOUSE_CURSOR );
@@ -60,9 +61,17 @@ int main()
     mouseFunc2 = std::bind(&pho::Engine::mouseMoveCallback,engine,_1,_2);
     glfwSetMousePosCallback(&mouseFunkThunk2);
 
+	if (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_PRESENT)) {
+		std::cout << "joystick present \n";
+
+		
+		std::cout << "joystick axes" << glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) << "\n" ;
+	}
+	else { std::cout << "joystick not present"; }
+
     engine->go();
 
-	//glfwCloseWindow();
+	
     glfwTerminate();
     return 0;
 }

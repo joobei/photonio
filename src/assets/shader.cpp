@@ -10,6 +10,7 @@ pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec2& data){ CA
 pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec3& data){ CALL_GL(glUniform3f(location,data.x,data.y,data.z)); return (*this);}
 pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::vec4& data){ CALL_GL(glUniform4f(location,data.x,data.y,data.z,data.w)); return (*this);}
 pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mat4& data){ CALL_GL(glUniformMatrix4fv(location,1,GL_FALSE,glm::value_ptr(data))); return (*this);}
+pho::UniformAssigner& pho::UniformAssigner::operator=(const glm::mat3& data){ CALL_GL(glUniformMatrix3fv(location,1,GL_FALSE,glm::value_ptr(data))); return (*this);}
 
 pho::Shader::Shader() {
 	vertex = fragment = geometry = 0;

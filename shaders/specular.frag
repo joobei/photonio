@@ -26,7 +26,7 @@ void main()
         diffuseColor = vec4(0, 0, 0, 0);
     }
 	
-	//fragColor = vec4(ambientColor.xyz+diffuseColor.xyz,1.0);
+	//fragColor = vec4(diffuseColor.xyz,1.0);
 	fragColor = vec4(ambientColor.xyz,1.0);
 	
 }

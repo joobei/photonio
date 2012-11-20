@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 #include <iostream>
 #include <stdio.h>
+#include <iomanip>
 #include <vector>
 #include <string>
 #include <fstream>
@@ -58,6 +59,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "gli/gli/gli.hpp"
 #include "gli/gli/gtx/gl_texture2d.hpp"
 
+
 using namespace std;
 using namespace TUIO;
 using glm::vec2;
@@ -84,8 +86,8 @@ namespace pho {
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-		static const int WINDOW_SIZE_X = 1920;
-		static const int WINDOW_SIZE_Y = 1080;
+		static const int WINDOW_SIZE_X = 640;
+		static const int WINDOW_SIZE_Y = 480;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -105,7 +107,7 @@ namespace pho {
 		void checkPolhemus();
 		void checkWiiMote();
 		void checkKeyboard();
-		
+		void checkSpaceNavigator();
 		//space navigator
 		boost::scoped_array<BYTE> saRawInput;
 		
@@ -248,12 +250,17 @@ namespace pho {
 
 		//Shadowmap ****************************
 		// Hold id of the framebuffer for light POV rendering
-		GLuint fboId;
+		GLuint g_fbo;
 
 		// Z values will be rendered to this texture when using fboId framebuffer
-		GLuint depthTextureId;
+		GLuint g_shadowTexture;
 		void generateShadowFBO();
 		float SHADOW_MAP_RATIO;
+		void shadowMapRender();
+		pho::Shader useShadow;
+		pho::Shader renderShadow;
+		glm::mat4 shadowMatrix;
+		glm::mat4 biasMatrix;
 	};
 
 }

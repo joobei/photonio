@@ -26,6 +26,7 @@ namespace pho {
 		float attenuation;
 		glm::vec3 direction;
 		glm::vec3 position;
+		glm::mat4 viewMatrix;
 		float range;
 		GLuint uniformBlockIndex;
 	};

@@ -26,16 +26,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 using namespace std;
 
-#pragma comment(lib, "DevIL.lib")
-#pragma comment(lib, "ILU.lib")
-#pragma comment(lib, "ILUT.lib")
-
 Engine::Engine():
 calibrate(false),
 	eventQueue(),
 	appInputState(idle),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
+	_serialserver(serialioservice,115200,"COM3",&eventQueue,&ioMutex),
 	wii(false),
 	mouseMove(false)
 {
@@ -95,11 +91,6 @@ calibrate(false),
 }
 
 void Engine::initResources() {
-
-	initSimpleGeometry();
-
-	generateShadowFBO();
-
    
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -116,19 +107,34 @@ void Engine::initResources() {
 
 	restoreRay=false; //used to make ray long again if NOT intersecting
 
-	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
-	plane.modelMatrix = cursor.modelMatrix;
+
+
+	pointLight.position = glm::vec3(0,30,-7);
+	pointLight.direction = glm::vec3(0,-1,0);
+	pointLight.color = glm::vec4(1,1,1,1);
+
+	pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(floorMatrix[3]),glm::vec3(0,0,1));
 
 	 //load shaders from files
 	colorShader = pho::Shader("shaders/shader");  
-	
 	flatShader = pho::Shader("shaders/offscreen");
-	
 	textureShader = pho::Shader("shaders/texader");
-
 	directionalShader = pho::Shader("shaders/specular");
-
 	normalShader = pho::Shader("shaders/normals");
+	renderShadow = pho::Shader("shaders/rendershadow");
+
+	useShadow = pho::Shader("shaders/useshadow");
+	useShadow.use();
+	useShadow["u_projectionMatrix"] = projectionMatrix;
+	useShadow["u_viewMatrix"] = viewMatrix;
+	useShadow["u_lightDirection"] = pointLight.direction;
+
+	initSimpleGeometry();
+
+	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
+	plane.modelMatrix = cursor.modelMatrix;
+
+	generateShadowFBO();
 }
 
 //checks event queue for events
@@ -177,12 +183,18 @@ void Engine::checkEvents() {
 		checkPolhemus();
 		checkWiiMote();
 	}
+
+
+	//Joystick
+	checkSpaceNavigator();
 }
 
 void Engine::render() {
 	CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
+	shadowMapRender();
+
 	if (restoreRay) {
 
 		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
@@ -209,8 +221,9 @@ void Engine::render() {
 			restoreRay = true; //mark ray to be restored to full length
 
 		}
-		else {sphereHit = false; }
-
+		else {
+			sphereHit = false; 
+		}
 	}
 
 	if (technique == rayCasting ) {
@@ -318,11 +331,23 @@ void Engine::render() {
 		point.draw();
 	} 
 
-	textureShader.use();
-	textureShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
+	
+	/*useShadow.use();
+	useShadow["u_modelMatrix"] = floorMatrix;
+	useShadow["u_normalMatrix"] = glm::mat3(viewMatrix*floorMatrix);
+	useShadow["u_shadowMatrix"] = shadowMatrix;*/
+	
 	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));
+
+	/*textureShader.use();
+	textureShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
 	CALL_GL(glBindVertexArray(floorVAO));
-	CALL_GL(glDrawElements(GL_TRIANGLES,12,GL_UNSIGNED_SHORT,NULL));
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));*/
+
+	normalShader.use();
+	normalShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
+	CALL_GL(glBindVertexArray(floorVAO));
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
 	
 	glfwSwapBuffers();
 }
@@ -700,9 +725,9 @@ void Engine::initSimpleGeometry() {
 	 colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
 	indices.push_back(6); indices.push_back(8); indices.push_back(2);
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-	indices.push_back(7); indices.push_back(6); indices.push_back(4);
+	indices.push_back(7); indices.push_back(4); indices.push_back(6);
 	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-	indices.push_back(6); indices.push_back(5); indices.push_back(4);
+	indices.push_back(6); indices.push_back(4); indices.push_back(5);
 	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
 	indices.push_back(5); indices.push_back(8); indices.push_back(6);
 	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
@@ -714,10 +739,10 @@ void Engine::initSimpleGeometry() {
 	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
 
 	//bottom?
-	indices.push_back(4); indices.push_back(0); indices.push_back(3);
+	indices.push_back(4); indices.push_back(3); indices.push_back(0);
 	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
 	indices.push_back(4); indices.push_back(7); indices.push_back(3);
-	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
+	colors.push_back(vec3(0.0,0.5,1.0)); colors.push_back(vec3(0.0,0.5,1.0)); colors.push_back(vec3(0.0,0.5,1.0)); //cyan
 	
 
 	
@@ -798,59 +823,79 @@ void Engine::initSimpleGeometry() {
 	point = pho::Mesh(vertices,indices,colors,Point);
 
 	vertices.clear();
+	normals.clear();
+	std::vector<glm::vec2> texcoords;
 	
 	//FLOOOOOOOOOOOR **************************
-	
-	std::vector<glm::vec2> texcoords;
 
-	vertices.push_back(vec3(-1, 1,0));
-	texcoords.push_back(glm::vec2(0,1));
-
-	vertices.push_back(vec3(-1,-1,0));
-	texcoords.push_back(glm::vec2(0,0));
-
-	vertices.push_back(vec3( 1,-1,0));
+	vertices.push_back(vec3(-1, 1,0));  //0
 	texcoords.push_back(glm::vec2(1,0));
 
-	vertices.push_back(vec3( 1, 1,0));
+	vertices.push_back(vec3(-1,-1,0)); //1
+	texcoords.push_back(glm::vec2(0,1));
+
+	vertices.push_back(vec3( 1,-1,0)); //2
 	texcoords.push_back(glm::vec2(1,1));
 
-	indices.push_back(0);indices.push_back(1);indices.push_back(2);
-	indices.push_back(3);indices.push_back(0);indices.push_back(2);	
+	vertices.push_back(vec3( 1, 1,0)); //3
+	texcoords.push_back(glm::vec2(1,0));
 
-	
+	vertices.push_back(vec3(-1, 1,0)); //0
+	texcoords.push_back(glm::vec2(0,1));
+
+	vertices.push_back(vec3( 1,-1,0)); //2
+	texcoords.push_back(glm::vec2(1,0));
+
+	//calculate normals
+	for (std::vector<glm::vec3>::size_type i=0; i != 6; i+=3) {
+		glm::vec3 v0,v1,v2;
+		v0 = vertices[i];
+		v1 = vertices[i+1];
+		v2 = vertices[i+2];
+
+		glm::vec3 U,V;
+		
+		U = v1 - v0;
+		V = v2 - v0;
+
+		normals.push_back(glm::normalize(glm::cross(U,V)));
+		normals.push_back(glm::normalize(glm::cross(U,V)));
+		normals.push_back(glm::normalize(glm::cross(U,V)));
+	}
+
+	GLuint buffer;
 
 	CALL_GL(glGenVertexArrays(1,&floorVAO));
-	CALL_GL(glGenBuffers(1,&floorIBO));
-	CALL_GL(glGenBuffers(1,&floorVBO));
-	CALL_GL(glGenBuffers(1,&texCoordVBO));
+	CALL_GL(glGenBuffers(1,&buffer));
 	
 	CALL_GL(glBindVertexArray(floorVAO));
 
-	CALL_GL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,floorIBO));
-	CALL_GL(glBufferData(GL_ELEMENT_ARRAY_BUFFER,indices.size()*sizeof(GLushort),indices.data(),GL_STATIC_DRAW));
-
-	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,floorVBO));
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
 	CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
 	CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
 	CALL_GL(glEnableVertexAttribArray(vertexLoc));
 
-	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,texCoordVBO));
+	CALL_GL(glGenBuffers(1,&buffer));
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
 	CALL_GL(glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW));
 	CALL_GL(glVertexAttribPointer(texCoordLoc,3,GL_FLOAT,GL_FALSE,0,0));
 	CALL_GL(glEnableVertexAttribArray(texCoordLoc));
 
-	
-	floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(5,5,0));
-	floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(1,0,0))*floorMatrix;
-	floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
-	floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
+	CALL_GL(glGenBuffers(1,&buffer));
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+	CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
+	CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
+	CALL_GL(glEnableVertexAttribArray(normalLoc));
 
 	CALL_GL(glBindVertexArray(0));
 
+	floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(5,5,0));
+	floorMatrix = glm::rotate(glm::mat4(1.),-90.0f,glm::vec3(1,0,0))*floorMatrix;
+	floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
+	floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
+
 	//Texture Loading
 	floorTexture = gli::createTexture2D("textures/grid.dds");
-
 
 	vertices.clear();
 	colors.clear();
@@ -1162,40 +1207,113 @@ void Engine::generateShadowFBO()
 	  int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
 	  int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 	
-	  GLenum FBOstatus;
+	glGenTextures(1, &g_shadowTexture);
+    glBindTexture(GL_TEXTURE_2D, g_shadowTexture);
 
-	  // Try to use a texture depth component
-	  glGenTextures(1, &depthTextureId);
-	  glBindTexture(GL_TEXTURE_2D, depthTextureId);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
 
-	  // GL_LINEAR does not make sense for depth texture. However, next tutorial shows usage of GL_LINEAR and PCF
-	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	  // Remove artifact on the edges of the shadowmap
-	  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP );
-	  glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP );
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
 
-	  // No need to force GL_DEPTH_COMPONENT24, drivers usually give you the max precision if available
-	  glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
-	  glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
-	  // create a framebuffer object
-	  glGenFramebuffersEXT(1, &fboId);
-	  glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fboId);
+    //
 
-	  // Instruct openGL that we won't bind a color texture with the currently bound FBO
-	  glDrawBuffer(GL_NONE);
-	  glReadBuffer(GL_NONE);
- 
-	  // attach the texture to FBO depth attachment point
-	  glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,GL_TEXTURE_2D, depthTextureId, 0);
+    glGenFramebuffers(1, &g_fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
 
-	  // check FBO status
-	  FBOstatus = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
-	  if(FBOstatus != GL_FRAMEBUFFER_COMPLETE_EXT)
-		  printf("GL_FRAMEBUFFER_COMPLETE_EXT failed, CANNOT use FBO\n");
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
 
-	  // switch back to window-system-provided framebuffer
-	  glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, g_shadowTexture, 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		printf("GL_FRAMEBUFFER_COMPLETE error 0x%x", glCheckFramebufferStatus(GL_FRAMEBUFFER));
+	}
+
+	glClearDepth(1.0f);
+
+    glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_CULL_FACE);
+
+	// Needed when rendering the shadow map. This will avoid artifacts.
+    glPolygonOffset(1.0f, 0.0f);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	GLfloat biasMatrixf[] = { 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f };
+
+	glm::make_mat4(biasMatrixf);
 	}			
+
+void Engine::shadowMapRender() {
+
+	int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
+	  int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
+
+	// Rendering into the shadow texture.
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    // Setup for the framebuffer.
+    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
+    glViewport(0, 0, shadowMapWidth, shadowMapHeight);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	shadowMatrix = biasMatrix*pointLight.viewMatrix;
+
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+	renderShadow.use();
+	renderShadow["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+	//Render stuff
+	cursor.draw();
+	renderShadow["pvm"] = projectionMatrix*viewMatrix*target.modelMatrix;
+	target.draw(true);
+
+	// Revert for the scene.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glViewport(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y);
+
+    glBindTexture(GL_TEXTURE_2D, g_shadowTexture);
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+}
+
+void Engine::checkSpaceNavigator() { 
+
+#define SNSCALE 0.2f
+#define RTSCALE 5.0f
+
+	float position[6];
+	std::fill_n(position,6,0.0f);
+
+	if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
+	
+	cursor.modelMatrix = glm::translate(vec3(position[0]*SNSCALE,0,0))*cursor.modelMatrix;
+	cursor.modelMatrix = glm::translate(vec3(0,position[2]*SNSCALE,0))*cursor.modelMatrix;
+	cursor.modelMatrix = glm::translate(vec3(0,0,position[1]*SNSCALE))*cursor.modelMatrix;
+	cursor.rotate(glm::rotate(RTSCALE*position[3],glm::vec3(0,1,0)));
+	cursor.rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
+	cursor.rotate(glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0)));
+	}
+
+	/*if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
+	
+	viewMatrix = glm::translate(vec3(position[0]*SNSCALE,0,0))*viewMatrix;
+	viewMatrix = glm::translate(vec3(0,position[2]*SNSCALE,0))*viewMatrix;
+	viewMatrix = glm::translate(vec3(0,0,position[1]*SNSCALE))*viewMatrix;
+	viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(0,1,0))*viewMatrix;
+	viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*viewMatrix;
+	viewMatrix = glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1))*viewMatrix;
+	}*/
+}

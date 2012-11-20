@@ -22,10 +22,12 @@ namespace pho {
 		UniformAssigner& operator=(const glm::mediump_vec2& data);
 		UniformAssigner& operator=(const glm::mediump_vec3& data);
 		UniformAssigner& operator=(const glm::mediump_vec4& data);
+		UniformAssigner& operator=(const glm::mediump_mat3& data);
 		UniformAssigner& operator=(const glm::mediump_mat4& data);
 		UniformAssigner& operator=(const glm::highp_vec2& data);
 		UniformAssigner& operator=(const glm::highp_vec3& data);
 		UniformAssigner& operator=(const glm::highp_vec4& data);
+		UniformAssigner& operator=(const glm::highp_mat3& data);
 		UniformAssigner& operator=(const glm::highp_mat4& data);
 		~UniformAssigner(){ }
 	private:
