@@ -38,8 +38,8 @@ int main()
 	if (!glfwOpenWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,0,0,0,0,0,0,GLFW_WINDOW))
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
-	//glfwSetWindowPos(2360,0);  //for dual display
-	glfwSetWindowPos(-6,-27); //full screen
+	glfwSetWindowPos(1920,-27);  //for dual display
+	//glfwSetWindowPos(-6,-27); //full screen
 	//glfwSetWindowPos(10,500);
 
     glfwSetWindowTitle("KeiMote");

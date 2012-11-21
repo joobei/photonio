@@ -66,8 +66,8 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
-	technique = mouse;
-	rotTechnique = screenSpace;
+	technique = rayCasting;
+	rotTechnique = trackBall;
 
 	prevMouseWheel = 0;
 	gyroData = false;
@@ -181,6 +181,9 @@ void Engine::checkEvents() {
 
 	if (technique == rayCasting && wii) {
 		checkPolhemus();
+		//ALEX
+		//RecordCorner("br.txt");
+		//ALEX DONE
 		checkWiiMote();
 	}
 
@@ -281,13 +284,13 @@ void Engine::render() {
 		plane.draw(true);
 	}
    
-	colorShader.use(); //bind the standard shader for default colored objects
+	/*colorShader.use(); //bind the standard shader for default colored objects
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 	ray.draw(true);
 	flatShader.use();
 	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 	flatShader["baseColor"] = vec4(1.0f, 0.5f ,1.0f, 1.0f);
-	cylinder.draw();
+	cylinder.draw();*/
 	
 	
 	/// CURSOR ////////////////////////////////////////
@@ -296,11 +299,11 @@ void Engine::render() {
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.draw();	
 
-	directionalShader.use();
+	/*directionalShader.use();
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	directionalShader["modelMatrix"] = target.modelMatrix;
 	CALL_GL(glLineWidth(1.0f));
-	target.draw(true);
+	target.draw(true);*/
 
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
@@ -347,10 +350,17 @@ void Engine::render() {
 	CALL_GL(glBindVertexArray(floorVAO));
 	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
 
-	normalShader.use();
+	/*normalShader.use();
 	normalShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));*/
 	
+	ray.modelMatrix[3] = glm::vec4(intersectionPoint,1.0);
+	flatShader.use();
+	flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
+	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
+	//CALL_GL(glPointSize(13.0f));
+	cylinder.draw();
+
 	glfwSwapBuffers();
 }
 
@@ -437,7 +447,8 @@ void Engine::mouseMoveCallback(int x, int y) {
 	float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
 	float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
 
-	glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
+	//glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
+	glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
 
 	glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;	
 
@@ -921,7 +932,7 @@ void Engine::initSimpleGeometry() {
 	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
 	{
 		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),0));		
-		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),-1000));	
+		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),-10));	
 	}
 
 	cylinder = pho::Mesh(vertices);
@@ -1006,6 +1017,7 @@ void Engine::checkPolhemus() {
 	//SERIAL Queue
 	while(!eventQueue.isSerialEmpty()) {
 		boost::array<float,7> temp = eventQueue.serialPop();
+		
 		vec3 position;
 		glm::quat orientation;
 		mat4 transform;
@@ -1021,10 +1033,9 @@ void Engine::checkPolhemus() {
 
 		transform=glm::toMat4(orientation);
 		
-		//Further rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
-		transform = transform*glm::toMat4(glm::angleAxis(180.0f,vec3(0,1,0))); //order is important 
-		transform = transform*glm::toMat4(glm::angleAxis(90.0f,vec3(0,0,1)));
-		
+		//Rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
+		transform = transform*glm::toMat4(glm::angleAxis(-90.0f,vec3(0,0,1)));  //multiply from the right --- WRONG!!!!!! but works for the time being
+
 		transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
 		transform[3][1] = position.y;
 		transform[3][2] = position.z;
@@ -1033,21 +1044,30 @@ void Engine::checkPolhemus() {
 
 		rayOrigin = position;
 		rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
-		
-		/*if (wii) {  //just to debug polhemus positions
-			remote.RefreshState();
 
-			if (remote.Button.A()) {   
-				std::cout << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
-				errorLog << boost::posix_time::second_clock::local_time() << " - Polhemus x: " << position.x << '\t' << "y: " << position.y << '\t' << "z: " << position.z << '\n';
-			}
-		}*/
+		//FROM HERE
+		glm::vec3 rayVector = glm::normalize(rayDirection);
+		// POSITION = ANY POINT OPN THE SCREEN PLANE (e.g. 0,0,-2089
+		float distance = -glm::dot((position - glm::vec3(0,0,-208)),glm::vec3(0,0,1)) / glm::dot(rayVector, glm::vec3(0,0,1));
+		intersectionPoint = position + distance * rayVector;
 
-
-		//std::cout << "x : " << transform[3][0] << "\ty : " << transform[3][1] << "\tz : " << transform[3][2] << '\n';
+		glm::vec3 tr = glm::vec3(128, 129, -208);
+		glm::vec3 tl = glm::vec3(-125, 129, -208);
+		glm::vec3 br = glm::vec3(128, -19, -208);
+		glm::vec3 bl = glm::vec3(-125, -19, -208);
+		glm::vec3 screenCenter = (tr+tl+br+bl);
+		screenCenter /= 4;
+		intersectionPoint -= screenCenter;
+		//normalize Point and put into the near clipping pane
+		intersectionPoint.x /= abs(tr.x-screenCenter.x);
+		intersectionPoint.y /= abs(tr.y-screenCenter.y);
+		intersectionPoint.z = -1;
+		//std::cout << "IP1 "<<intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << std::endl;
+		glm::vec4 IP2  = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * glm::vec4(intersectionPoint,1);
+		intersectionPoint = glm::vec3(IP2)/IP2.w;
 	}
+	
 	lock.unlock();
-
 }
 
 void Engine::checkKeyboard() {
@@ -1333,4 +1353,61 @@ void Engine::checkSpaceNavigator() {
 	viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*viewMatrix;
 	viewMatrix = glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1))*viewMatrix;
 	}*/
+}
+
+
+
+
+void Engine::RecordCorner(const char* fileName) {
+	glm::vec3 screenPlane = glm::vec3(0, 0, -208); // change this value, we assume the screen is in the negative z direction at a distance of 3 meters and 
+	glm::vec3 screenNormal = glm::vec3(0, 0, 1);
+
+	glm::vec3 intersectionPoint = glm::vec3(0, 0, 0);
+
+	boost::mutex::scoped_lock lock(ioMutex);
+	int measurements = 0;
+	//SERIAL Queue
+	while(!eventQueue.isSerialEmpty()) {
+			boost::array<float,7> temp = eventQueue.serialPop();
+		glm::vec3 position;
+		glm::quat orientation;
+
+		position = glm::vec3(temp[0],temp[1],temp[2]);
+
+		//std::cout << "Polhemus x: " << temp[0] << "\t\ty: " << temp[1] << "\t\tz: " << temp[2] << '\n';
+		//std::cout << "Polhemus w: " << temp[3] << '\t'<< "rx: " << temp[4] << '\t' << "ry: " << temp[5] << '\t' << "rz: " << temp[6] << '\n';
+		orientation.w = temp[3];
+		orientation.x = temp[4];
+		orientation.y = temp[5];
+		orientation.z = temp[6];
+
+		glm::mat4 rot = glm::toMat4(orientation);
+		glm::mat4 transform = glm::toMat4(glm::angleAxis(180.0f,glm::vec3(0,1,0)));
+		transform = glm::toMat4(glm::angleAxis(-90.0f,glm::vec3(0,0,1))) * transform;
+		transform = rot * transform;
+		glm::vec4 raydirection = transform * glm::vec4(0,0,-1,1);
+		raydirection /= raydirection[3];
+		glm::vec3 ray = glm::vec3(raydirection[0], raydirection[1], raydirection[2]);
+		ray = glm::normalize(ray);
+		float distance = -glm::dot((position-screenPlane),screenNormal) / glm::dot(ray, screenNormal);
+		intersectionPoint *= measurements;
+		intersectionPoint += position + distance * ray;
+		measurements++;
+		intersectionPoint /=measurements;
+		std::cout << "x:" << intersectionPoint[0] << " " << intersectionPoint[1] << " " << intersectionPoint[2]<<std::endl;
+		float writeIntersection[3]= {intersectionPoint[0], intersectionPoint[1], intersectionPoint[2]};
+		/*std::FILE *file;
+		file = fopen(fileName, "w");
+		if (file!=NULL)
+		{
+			fwrite(&writeIntersection, sizeof(float), 3, file);
+		}
+		fclose(file);*/
+		 ofstream myfile;
+		  myfile.open (fileName);
+		  myfile << intersectionPoint[0] << " " << intersectionPoint[1] << " " <<intersectionPoint[2];
+		  myfile.close();
+
+	}
+	lock.unlock();
 }

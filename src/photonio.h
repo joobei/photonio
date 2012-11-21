@@ -103,6 +103,10 @@ namespace pho {
 		TuioClient* tuioClient;
 		LRESULT APIENTRY SubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	private:
+		//testing ALEX
+		void pho::Engine::RecordCorner(const char* fileName);
+		//testing ALEX END
+
 		void checkUDP();
 		void checkPolhemus();
 		void checkWiiMote();
@@ -256,6 +260,9 @@ namespace pho {
 		pho::Shader renderShadow;
 		glm::mat4 shadowMatrix;
 		glm::mat4 biasMatrix;
+
+		//raycasting alex
+		glm::vec3 intersectionPoint;
 	};
 
 }
