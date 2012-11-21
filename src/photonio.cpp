@@ -923,7 +923,7 @@ void Engine::initSimpleGeometry() {
 
 	circle = pho::Mesh::Mesh(vertices);
 	
-	float radius = 0.01f;
+	float radius = 0.001f;
 
 	vertices.clear();
 
@@ -1045,7 +1045,7 @@ void Engine::checkPolhemus() {
 		rayOrigin = position;
 		rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
 
-		//FROM HERE
+		/*/FROM HERE
 		glm::vec3 rayVector = glm::normalize(rayDirection);
 		// POSITION = ANY POINT OPN THE SCREEN PLANE (e.g. 0,0,-2089
 		float distance = -glm::dot((position - glm::vec3(0,0,-208)),glm::vec3(0,0,1)) / glm::dot(rayVector, glm::vec3(0,0,1));
@@ -1065,6 +1065,8 @@ void Engine::checkPolhemus() {
 		//std::cout << "IP1 "<<intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << std::endl;
 		glm::vec4 IP2  = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * glm::vec4(intersectionPoint,1);
 		intersectionPoint = glm::vec3(IP2)/IP2.w;
+
+		rayOrigin = intersectionPoint;*/
 	}
 	
 	lock.unlock();
