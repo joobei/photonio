@@ -88,8 +88,8 @@ namespace pho {
 
 		//static const int WINDOW_SIZE_X = 1920;
 		//static const int WINDOW_SIZE_Y = 1080;
-		static const int WINDOW_SIZE_X = 640;
-		static const int WINDOW_SIZE_Y = 480;
+		static const int WINDOW_SIZE_X = 800;
+		static const int WINDOW_SIZE_Y = 600;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -202,10 +202,12 @@ namespace pho {
         pho::Mesh target;
         pho::Mesh cursor;
         pho::Mesh plane;
-        pho::Mesh ray;
 		pho::Mesh point;
 		pho::Mesh circle;
-		pho::Mesh cylinder;
+		pho::Mesh ray;
+		glm::mat4 rayMatrix;
+		GLuint rayVBO;
+		short rayVerticesCount;
 		
 		//perspective matrix control
 		float perspective;
@@ -264,9 +266,6 @@ namespace pho {
 		pho::Shader renderShadow;
 		glm::mat4 shadowMatrix;
 		glm::mat4 biasMatrix;
-
-		//raycasting alex
-		glm::vec3 intersectionPoint;
 	};
 
 }

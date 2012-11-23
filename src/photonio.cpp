@@ -33,7 +33,7 @@ calibrate(false),
 	udpwork(ioservice),
 	serialwork(serialioservice),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
+	_serialserver(serialioservice,115200,"COM24",&eventQueue,&ioMutex),
 	wii(false),
 	mouseMove(false)
 {
@@ -200,8 +200,12 @@ void Engine::render() {
 	if (restoreRay) {
 
 		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+		
 		float d = -1000.0f;
-		CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(d),&d));  //edit the 6th float, i.e. the Z
+
+		for (int i = 5; i < 3*rayVerticesCount; i+=6) {
+			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(d),&d));  //edit the 6th float, i.e. the Z
+		}
 
 		restoreRay = false;  //we already restored, no need to do it every frame
 	}
@@ -231,7 +235,9 @@ void Engine::render() {
 			rayLengthObject = rayLength;
 			//Shorten the beam to match the object
 			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+			for (int i = 5; i < 3*rayVerticesCount; i+=6) {
+				CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(rayLength),&rayLength));  //edit every 6th float, i.e. the Z
+			}
 
 			restoreRay = true; //mark ray to be restored to full length
 		} else {objectHit = false; }
@@ -244,12 +250,14 @@ void Engine::render() {
 			sphereHit = true;
 
 			//Ray length calculation
-			rayLength = -glm::distance(vec3(ray.getPosition()),sphereIntersectionPoint);
+			rayLength = -glm::distance(ray.getPosition(),sphereIntersectionPoint);
 
 			if(!objectHit) {
-			//Shorten the beam to match the object
-			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
+				//Shorten the beam to match the object
+				CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
+				for (int i = 5; i < 3*rayVerticesCount; i+=6) {
+					CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(rayLength),&rayLength));  //edit the 6th float, i.e. the Z
+				}
 			}
 			restoreRay = true; //mark ray to be restored to full length
 
@@ -274,7 +282,7 @@ void Engine::render() {
 	flatShader.use();
 	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 	flatShader["baseColor"] = vec4(1.0f, 0.5f ,1.0f, 1.0f);
-	cylinder.draw();*/
+	ray.draw();*/
 	
 	
 	/// CURSOR ////////////////////////////////////////
@@ -283,11 +291,14 @@ void Engine::render() {
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.draw();	
+	
 
 	directionalShader["alpha"] = 0.2f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	directionalShader["modelMatrix"] = target.modelMatrix;
 	target.draw();
+	directionalShader["alpha"] = 1.0f;
+	target.draw(true);
 
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
@@ -344,7 +355,7 @@ void Engine::render() {
 	flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
 	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 	//CALL_GL(glPointSize(13.0f));
-	cylinder.draw();
+	ray.draw();
 
 	glfwSwapBuffers();
 }
@@ -790,20 +801,6 @@ void Engine::initSimpleGeometry() {
 
     plane = pho::Mesh(vertices,indices,colors, Plane);
 
-	vertices.clear();
-	colors.clear();
-	indices.clear();
-
-	vertices.push_back(vec3(0,0,0));
-	colors.push_back(vec3(1,0,0));
-	vertices.push_back(vec3(0,0,-1000));
-	colors.push_back(vec3(1,1,1));
-
-	indices.push_back(0);
-	indices.push_back(1);
-
-    ray = pho::Mesh(vertices,indices,colors, Ray);
-
 	indices.clear();
 	vertices.clear();
 	colors.clear();
@@ -868,10 +865,11 @@ void Engine::initSimpleGeometry() {
 
 	CALL_GL(glGenVertexArrays(1,&floorVAO));
 	CALL_GL(glGenBuffers(1,&buffer));
-	
+	CALL_GL(glGenBuffers(1,&rayVBO));
+
 	CALL_GL(glBindVertexArray(floorVAO));
 
-	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,rayVBO));
 	CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
 	CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
 	CALL_GL(glEnableVertexAttribArray(vertexLoc));
@@ -913,15 +911,19 @@ void Engine::initSimpleGeometry() {
 	
 	//RAY Cylindrical
 	vertices.clear();
-	float radius = 0.001f;
+	rayVerticesCount =0;
+	float radius = 0.1f;
 
 	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
 	{
 		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),0));		
-		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),-10));	
+		rayVerticesCount++;
+		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),-1000));	
+		rayVerticesCount++;
 	}
+	std::cout << "Ray vertices " << rayVerticesCount << '\n';
 
-	cylinder = pho::Mesh(vertices);
+	ray = pho::Mesh(vertices);
 
 
 }

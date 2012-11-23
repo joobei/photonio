@@ -15,7 +15,7 @@ IF(PROTOBUF_FOUND)
 ENDIF()
 
 include_directories(C:/dev/winddk/inc)
-include_directories(C:/dev/glew-1.9.0/include)
+include_directories(C:/dev/glew-1.7.0/include)
 include_directories(C:/dev/glfw-2.7.7/include)
 include_directories(C:/dev/winddk/inc/api)
 include_directories(C:/dev/boost_1_49_0)
@@ -23,17 +23,15 @@ include_directories(C:/dev/assimp/include)
 include_directories(C:/dev/devil-x86-1.7.8/include)
 include_directories(${CMAKE_SOURCE_DIR}/src/assets)
 include_directories(${CMAKE_SOURCE_DIR}/src)
-include_directories("C:/Program Files (x86)/3Dconnexion/3DxWare SDK/Inc" )
 
 
 link_directories(C:/dev/TUIO_CPP/Release)
 link_directories(C:/dev/oscpacklib/Release)
-link_directories(C:/dev/glfw-2.7.7/support/msvc110/Debug/Win32)
-link_directories(C:/dev/glew-1.9.0/lib)
+link_directories(C:/dev/glfw-2.7.7/support/msvc100/Debug)
+link_directories(C:/dev/glew-1.7.0/lib)
 link_directories(C:/dev/winddk/lib/win7/i386)
 link_directories(C:/dev/boost_1_49_0/stage/lib)
 link_directories(C:/dev/protobuf-2.4.1/vsprojects/Debug)
-link_directories(C:/dev/protobuf-2.4.1/vsprojects/Release)
 link_directories(C:/dev/assimp/lib/assimp_debug-dll_win32)
 link_directories(C:/dev/Assimpsdk/bin/x86)
 link_directories(C:/dev/devil-x86-1.7.8/lib)
@@ -50,7 +48,7 @@ ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h asse
 )
 
 ##target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} libprotobuf oscnetlib ip osc tuio opengl32 winmm)
-target_link_libraries(${PROJECTNAME} glfw debug glew32d optimized glew32 ${Boost_LIBRARIES} libprotobuf oscnetlib ip osc tuio opengl32 winmm)
+target_link_libraries(${PROJECTNAME} glfw debug glew32d optimized glew32 ${Boost_LIBRARIES} debug libprotobufd oscnetlib ip osc tuio opengl32 winmm)
 
 ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
           PRE_BUILD
