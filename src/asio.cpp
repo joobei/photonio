@@ -63,16 +63,16 @@ Minicom_client::Minicom_client(boost::asio::io_service& io_service, unsigned int
     serialPort.set_option( boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one));
     serialPort.set_option( boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none));
 
-    std::string msg = "C";  //command to make polhemus send data constantly
-    boost::asio::write(serialPort,boost::asio::buffer(msg.c_str(),msg.size()));
+    //std::string msg = "C";  //command to make polhemus send data constantly
+    //boost::asio::write(serialPort,boost::asio::buffer(msg.c_str(),msg.size()));
 
     startRead();
 }
 
 void Minicom_client::startRead() {
 
-    //std::string msg = "P";  //command to make polhemus send binary data constantly
-    //boost::asio::write(serialPort,boost::asio::buffer(msg.c_str(),msg.size()));
+    std::string msg = "P";  //command to make polhemus send binary data constantly
+    boost::asio::write(serialPort,boost::asio::buffer(msg.c_str(),msg.size()));
 
     boost::asio::async_read(serialPort,boost::asio::buffer(serialBuffer,max_read_length),boost::asio::transfer_all(),
                             boost::bind(&Minicom_client::read_complete,
@@ -80,29 +80,27 @@ void Minicom_client::startRead() {
                                         boost::asio::placeholders::error,
                                         boost::asio::placeholders::bytes_transferred)
                             );
-
 }
 
 void Minicom_client::read_complete(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
+	if (!error) {
+
     boost::array<float, 7> topush;
 
     for (int i=0;i<7;i++) {
         topush[i] = getFloat(i);
     }
-
-    //try {
     boost::mutex::scoped_lock lock(*io_mutex);
     eventQueue->push(topush);
     lock.unlock();
-    /*}
-    catch (Ogre::Exception &e)
-    {
-        MessageBox(NULL,e.getFullDescription().c_str(),"Error",MB_OK);
-    }*/
 
     //send P and wait for more
     startRead();
+	}
+	else {
+		std::cout << "Error in Minicom::Client read complete \n"; 
+	}
 }
 
 

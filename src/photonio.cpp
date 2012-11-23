@@ -30,8 +30,10 @@ Engine::Engine():
 calibrate(false),
 	eventQueue(),
 	appInputState(idle),
+	udpwork(ioservice),
+	serialwork(serialioservice),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	_serialserver(serialioservice,115200,"COM4",&eventQueue,&ioMutex),
+	_serialserver(serialioservice,115200,"COM5",&eventQueue,&ioMutex),
 	wii(false),
 	mouseMove(false)
 {
@@ -56,9 +58,10 @@ calibrate(false),
 	verbose = false;
 
 	//Protobuf custom protocol listener
-	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
+	//netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 	//Polhemus
 	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
+	
 
 	wii=remote.Connect(wiimote::FIRST_AVAILABLE);
 
@@ -95,10 +98,9 @@ void Engine::initResources() {
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
-	//Camera at the origin
-	cameraPosition = vec3(0,0,0); 
-	viewMatrix = mat4(1);
-	viewMatrix = glm::translate(cameraPosition); 
+	//Camera position
+	cameraPosition = vec3(0,-0.11f,3.0f); 
+	viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,0),vec3(0,1,0));
 
 	glEnable (GL_DEPTH_TEST);
 	glEnable (GL_BLEND);
@@ -106,8 +108,6 @@ void Engine::initResources() {
 	glDepthMask(GL_TRUE);
 
 	restoreRay=false; //used to make ray long again if NOT intersecting
-
-
 
 	pointLight.position = glm::vec3(0,30,-7);
 	pointLight.direction = glm::vec3(0,-1,0);
@@ -174,7 +174,6 @@ void Engine::checkEvents() {
 			cursor.rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
 
 			consumed = true;
-
 		}
 
 	}
@@ -193,7 +192,7 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-	CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
+	CALL_GL(glClearColor(1.0f,1.0f,1.0f,1.0f));
 	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 	
 	shadowMapRender();
@@ -210,28 +209,13 @@ void Engine::render() {
 	if (technique == mouse) {
 		float intersectionDistance = -1;
 		if (cursor.findSphereIntersection(rayOrigin,rayDirection,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
-			sphereHit = true;
-
-			//Ray length calculation
-			rayLength = -glm::distance(vec3(ray.getPosition()),sphereIntersectionPoint);
-
-			if(!objectHit) {
-			//Shorten the beam to match the object
-			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,5*sizeof(float),sizeof(rayLength),&rayLength));
-			}
-
-			restoreRay = true; //mark ray to be restored to full length
-
-		}
-		else {
-			sphereHit = false; 
-		}
+			sphereHit = true; 	} else { sphereHit = false; }
 	}
 
 	if (technique == rayCasting ) {
 
-		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint)) {
+		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint) && (appInputState != translate)) {
+		//if (cursor.findIntersection(rayOrigin,rayDirection,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
 			CALL_GL(glDisable(GL_DEPTH_TEST));
@@ -295,15 +279,15 @@ void Engine::render() {
 	
 	/// CURSOR ////////////////////////////////////////
 	directionalShader.use();
+	directionalShader["alpha"] = 1.0f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.draw();	
 
-	/*directionalShader.use();
+	directionalShader["alpha"] = 0.2f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	directionalShader["modelMatrix"] = target.modelMatrix;
-	CALL_GL(glLineWidth(1.0f));
-	target.draw(true);*/
+	target.draw();
 
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
@@ -354,7 +338,8 @@ void Engine::render() {
 	normalShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
 	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));*/
 	
-	ray.modelMatrix[3] = glm::vec4(intersectionPoint,1.0);
+	//ray.modelMatrix[3] = glm::vec4(intersectionPoint,1.0);
+	//ray.modelMatrix[3] = glm::vec4(0,0,-0.1f,1.0);
 	flatShader.use();
 	flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
 	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
@@ -495,9 +480,12 @@ void Engine::go() {
 
 void Engine::shutdown() {
 
-	netThread->interrupt();
 	_serialserver.shutDown();
-	serialThread->interrupt();
+	serialioservice.stop();
+	serialThread->join();
+
+	ioservice.stop();
+
 	errorLog.close();
 }
 
@@ -923,12 +911,10 @@ void Engine::initSimpleGeometry() {
 
 	circle = pho::Mesh::Mesh(vertices);
 	
+	//RAY Cylindrical
+	vertices.clear();
 	float radius = 0.001f;
 
-	vertices.clear();
-
-
-	//RAY Cylindrical
 	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
 	{
 		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),0));		
@@ -1022,7 +1008,8 @@ void Engine::checkPolhemus() {
 		glm::quat orientation;
 		mat4 transform;
 
-		position = vec3(temp[0],temp[1],temp[2]);
+		position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
+		position += vec3(0,-0.575f,2.1f);
 
 		orientation.w = temp[3];
 		orientation.x = temp[4];
@@ -1044,29 +1031,6 @@ void Engine::checkPolhemus() {
 
 		rayOrigin = position;
 		rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
-
-		/*/FROM HERE
-		glm::vec3 rayVector = glm::normalize(rayDirection);
-		// POSITION = ANY POINT OPN THE SCREEN PLANE (e.g. 0,0,-2089
-		float distance = -glm::dot((position - glm::vec3(0,0,-208)),glm::vec3(0,0,1)) / glm::dot(rayVector, glm::vec3(0,0,1));
-		intersectionPoint = position + distance * rayVector;
-
-		glm::vec3 tr = glm::vec3(128, 129, -208);
-		glm::vec3 tl = glm::vec3(-125, 129, -208);
-		glm::vec3 br = glm::vec3(128, -19, -208);
-		glm::vec3 bl = glm::vec3(-125, -19, -208);
-		glm::vec3 screenCenter = (tr+tl+br+bl);
-		screenCenter /= 4;
-		intersectionPoint -= screenCenter;
-		//normalize Point and put into the near clipping pane
-		intersectionPoint.x /= abs(tr.x-screenCenter.x);
-		intersectionPoint.y /= abs(tr.y-screenCenter.y);
-		intersectionPoint.z = -1;
-		//std::cout << "IP1 "<<intersectionPoint.x << " " << intersectionPoint.y << " " << intersectionPoint.z << std::endl;
-		glm::vec4 IP2  = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * glm::vec4(intersectionPoint,1);
-		intersectionPoint = glm::vec3(IP2)/IP2.w;
-
-		rayOrigin = intersectionPoint;*/
 	}
 	
 	lock.unlock();
@@ -1148,6 +1112,11 @@ void Engine::checkKeyboard() {
 	}
 
 	if (glfwGetKey('4') == GLFW_PRESS) {
+		technique = planeCasting;
+		std::cout << "PlaneCasting" << '\n';
+	}
+
+	if (glfwGetKey('0') == GLFW_PRESS) {
 		technique = planeCasting;
 		std::cout << "PlaneCasting" << '\n';
 	}
@@ -1355,61 +1324,4 @@ void Engine::checkSpaceNavigator() {
 	viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*viewMatrix;
 	viewMatrix = glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1))*viewMatrix;
 	}*/
-}
-
-
-
-
-void Engine::RecordCorner(const char* fileName) {
-	glm::vec3 screenPlane = glm::vec3(0, 0, -208); // change this value, we assume the screen is in the negative z direction at a distance of 3 meters and 
-	glm::vec3 screenNormal = glm::vec3(0, 0, 1);
-
-	glm::vec3 intersectionPoint = glm::vec3(0, 0, 0);
-
-	boost::mutex::scoped_lock lock(ioMutex);
-	int measurements = 0;
-	//SERIAL Queue
-	while(!eventQueue.isSerialEmpty()) {
-			boost::array<float,7> temp = eventQueue.serialPop();
-		glm::vec3 position;
-		glm::quat orientation;
-
-		position = glm::vec3(temp[0],temp[1],temp[2]);
-
-		//std::cout << "Polhemus x: " << temp[0] << "\t\ty: " << temp[1] << "\t\tz: " << temp[2] << '\n';
-		//std::cout << "Polhemus w: " << temp[3] << '\t'<< "rx: " << temp[4] << '\t' << "ry: " << temp[5] << '\t' << "rz: " << temp[6] << '\n';
-		orientation.w = temp[3];
-		orientation.x = temp[4];
-		orientation.y = temp[5];
-		orientation.z = temp[6];
-
-		glm::mat4 rot = glm::toMat4(orientation);
-		glm::mat4 transform = glm::toMat4(glm::angleAxis(180.0f,glm::vec3(0,1,0)));
-		transform = glm::toMat4(glm::angleAxis(-90.0f,glm::vec3(0,0,1))) * transform;
-		transform = rot * transform;
-		glm::vec4 raydirection = transform * glm::vec4(0,0,-1,1);
-		raydirection /= raydirection[3];
-		glm::vec3 ray = glm::vec3(raydirection[0], raydirection[1], raydirection[2]);
-		ray = glm::normalize(ray);
-		float distance = -glm::dot((position-screenPlane),screenNormal) / glm::dot(ray, screenNormal);
-		intersectionPoint *= measurements;
-		intersectionPoint += position + distance * ray;
-		measurements++;
-		intersectionPoint /=measurements;
-		std::cout << "x:" << intersectionPoint[0] << " " << intersectionPoint[1] << " " << intersectionPoint[2]<<std::endl;
-		float writeIntersection[3]= {intersectionPoint[0], intersectionPoint[1], intersectionPoint[2]};
-		/*std::FILE *file;
-		file = fopen(fileName, "w");
-		if (file!=NULL)
-		{
-			fwrite(&writeIntersection, sizeof(float), 3, file);
-		}
-		fclose(file);*/
-		 ofstream myfile;
-		  myfile.open (fileName);
-		  myfile << intersectionPoint[0] << " " << intersectionPoint[1] << " " <<intersectionPoint[2];
-		  myfile.close();
-
-	}
-	lock.unlock();
 }

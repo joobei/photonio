@@ -86,8 +86,10 @@ namespace pho {
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-		static const int WINDOW_SIZE_X = 1920;
-		static const int WINDOW_SIZE_Y = 1080;
+		//static const int WINDOW_SIZE_X = 1920;
+		//static const int WINDOW_SIZE_Y = 1080;
+		static const int WINDOW_SIZE_X = 640;
+		static const int WINDOW_SIZE_Y = 480;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -184,11 +186,13 @@ namespace pho {
 
 		//SmartPhone IO
 		boost::asio::io_service ioservice;
+		boost::asio::io_service::work udpwork;
 		boost::thread* netThread;
 		udp_server _udpserver;
 
 		//Polhemus IO
 		boost::asio::io_service serialioservice;
+		boost::asio::io_service::work serialwork;
 		boost::thread* serialThread;
 		Minicom_client _serialserver;
 

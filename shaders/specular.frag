@@ -6,6 +6,8 @@ in vec3 normal;
 
 out vec4 fragColor;
 
+uniform float alpha;
+
 void main()
 {
 	vec3 lightDirection = normalize(vec3(1,-1 ,0));
@@ -27,6 +29,6 @@ void main()
     }
 	
 	//fragColor = vec4(diffuseColor.xyz,1.0);
-	fragColor = vec4(ambientColor.xyz,1.0);
+	fragColor = vec4(ambientColor.xyz,alpha);
 	
 }

@@ -28,7 +28,7 @@ include_directories("C:/Program Files (x86)/3Dconnexion/3DxWare SDK/Inc" )
 
 link_directories(C:/dev/TUIO_CPP/Release)
 link_directories(C:/dev/oscpacklib/Release)
-link_directories(C:/dev/glfw-2.7.7/support/msvc100/Debug)
+link_directories(C:/dev/glfw-2.7.7/support/msvc110/Debug/Win32)
 link_directories(C:/dev/glew-1.9.0/lib)
 link_directories(C:/dev/winddk/lib/win7/i386)
 link_directories(C:/dev/boost_1_49_0/stage/lib)
@@ -49,7 +49,8 @@ ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h asse
 "${CMAKE_SOURCE_DIR}/shaders/normals.geom" "${CMAKE_SOURCE_DIR}/shaders/normals.frag" "${CMAKE_SOURCE_DIR}/shaders/normals.vert" 
 )
 
-target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} libprotobuf oscnetlib ip osc tuio opengl32 winmm)
+##target_link_libraries(${PROJECTNAME} debug devil ilu ilut glfw debug glew32d optimized glew32 assimp ${Boost_LIBRARIES} libprotobuf oscnetlib ip osc tuio opengl32 winmm)
+target_link_libraries(${PROJECTNAME} glfw debug glew32d optimized glew32 ${Boost_LIBRARIES} libprotobuf oscnetlib ip osc tuio opengl32 winmm)
 
 ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
           PRE_BUILD
