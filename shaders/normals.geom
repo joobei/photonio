@@ -1,7 +1,6 @@
 /* [GEOMETRY] */
 #version 330 
 
-uniform bool normals;
 uniform mat4 modelMatrix;
 uniform mat4 mvp;
 

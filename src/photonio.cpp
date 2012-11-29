@@ -293,20 +293,25 @@ void Engine::render() {
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.draw();	
-	
+	normalShader.use();
+	normalShader["mvp"]= projectionMatrix*viewMatrix*cursor.modelMatrix;
+	normalShader["modelMatrix"] = cursor.modelMatrix;
+	cursor.draw();
 
+	directionalShader.use();
 	directionalShader["alpha"] = 0.2f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	directionalShader["modelMatrix"] = target.modelMatrix;
 	target.draw();
 	directionalShader["alpha"] = 1.0f;
+	CALL_GL(glLineWidth(2.0f));
 	target.draw(true);
 
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	normalShader["modelMatrix"] = cursor.modelMatrix;
 	CALL_GL(glLineWidth(1.0f));
-	cursor.draw();		*/
+	cursor.draw();*/
 
 
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
