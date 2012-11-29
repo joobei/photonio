@@ -180,9 +180,6 @@ void Engine::checkEvents() {
 
 	if (technique == rayCasting && wii) {
 		checkPolhemus();
-		//ALEX
-		//RecordCorner("br.txt");
-		//ALEX DONE
 		checkWiiMote();
 	}
 
@@ -912,7 +909,7 @@ void Engine::initSimpleGeometry() {
 	//RAY Cylindrical
 	vertices.clear();
 	rayVerticesCount =0;
-	float radius = 0.1f;
+	float radius = 0.01f;
 
 	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
 	{
@@ -921,7 +918,6 @@ void Engine::initSimpleGeometry() {
 		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),-1000));	
 		rayVerticesCount++;
 	}
-	std::cout << "Ray vertices " << rayVerticesCount << '\n';
 
 	ray = pho::Mesh(vertices);
 
@@ -1061,11 +1057,11 @@ void Engine::checkKeyboard() {
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_7)) {
-		ray.modelMatrix[3][0] -=1;
+		ray.modelMatrix[3][2] -=0.1;
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_9)) {
-		ray.modelMatrix[3][0] +=1;
+		ray.modelMatrix[3][2] +=0.1;
 	}
 
 	if (glfwGetKey(GLFW_KEY_UP)) {
