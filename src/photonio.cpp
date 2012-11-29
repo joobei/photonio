@@ -69,7 +69,7 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
-	technique = rayCasting;
+	technique = mouse;
 	rotTechnique = trackBall;
 
 	prevMouseWheel = 0;
@@ -236,6 +236,11 @@ void Engine::render() {
 				CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(rayLength),&rayLength));  //edit every 6th float, i.e. the Z
 			}
 
+			flatShader.use();
+			flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
+			flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
+			ray.draw();
+
 			restoreRay = true; //mark ray to be restored to full length
 		} else {objectHit = false; }
 
@@ -345,14 +350,7 @@ void Engine::render() {
 	/*normalShader.use();
 	normalShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
 	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));*/
-	
-	//ray.modelMatrix[3] = glm::vec4(intersectionPoint,1.0);
-	//ray.modelMatrix[3] = glm::vec4(0,0,-0.1f,1.0);
-	flatShader.use();
-	flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
-	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-	//CALL_GL(glPointSize(13.0f));
-	ray.draw();
+
 
 	glfwSwapBuffers();
 }
