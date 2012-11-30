@@ -4,11 +4,17 @@
 in vec3 in_Position;
 in vec3 in_Normal;
 
-out vec4 color;
-out vec3 normal;
+uniform mat4 mvp;
+
+out VertexData {
+	vec3 pos;
+	vec3 normal;
+} outData;
 
 void main()
 {
-    gl_Position = vec4(in_Position,1);
-	normal = in_Normal;
+    gl_Position = mvp*vec4(in_Position,1);
+
+	outData.pos = in_Position;
+	outData.normal = in_Normal;
 }

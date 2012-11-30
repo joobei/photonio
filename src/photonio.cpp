@@ -69,7 +69,7 @@ calibrate(false),
 	else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
-	technique = mouse;
+	technique = spaceNavigator;
 	rotTechnique = trackBall;
 
 	prevMouseWheel = 0;
@@ -99,8 +99,10 @@ void Engine::initResources() {
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
 	//Camera position
-	cameraPosition = vec3(0,-0.11f,3.0f); 
-	viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,0),vec3(0,1,0));
+	//cameraPosition = vec3(0,-0.11f,3.0f); 
+	cameraPosition = vec3(0,0,0); 
+	//viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,0),vec3(0,1,0));
+	viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
 
 	glEnable (GL_DEPTH_TEST);
 	glEnable (GL_BLEND);
@@ -225,7 +227,8 @@ void Engine::render() {
 			flatShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.5f);
 			flatShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
 			// draw the object's outline
-			cursor.draw();
+			cursor.bind();
+			CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 
 			//Ray length calculation
 			rayLength = -glm::distance(ray.getPosition(),objectIntersectionPoint);
@@ -239,7 +242,8 @@ void Engine::render() {
 			flatShader.use();
 			flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
 			flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-			ray.draw();
+			ray.bind();
+			CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,ray.vertices.size()));
 
 			restoreRay = true; //mark ray to be restored to full length
 		} else {objectHit = false; }
@@ -275,7 +279,8 @@ void Engine::render() {
 		flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
 		flatShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
 		CALL_GL(glLineWidth(7.0f));
-		plane.draw(true);
+		plane.bind();
+		CALL_GL(glDrawArrays(GL_LINES,0,plane.vertices.size()));
 	}
    
 	/*colorShader.use(); //bind the standard shader for default colored objects
@@ -292,20 +297,27 @@ void Engine::render() {
 	directionalShader["alpha"] = 1.0f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
-	cursor.draw();	
+	cursor.bind();	
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 	normalShader.use();
 	normalShader["mvp"]= projectionMatrix*viewMatrix*cursor.modelMatrix;
 	normalShader["modelMatrix"] = cursor.modelMatrix;
-	cursor.draw();
+	normalShader["viewMatrix"] = viewMatrix;
+	normalShader["projectionMatrix"] = projectionMatrix;
+	CALL_GL(glPointSize(13.0));
+	cursor.bind();
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 
 	directionalShader.use();
 	directionalShader["alpha"] = 0.2f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	directionalShader["modelMatrix"] = target.modelMatrix;
-	target.draw();
+	target.bind();
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,target.vertices.size()));
 	directionalShader["alpha"] = 1.0f;
 	CALL_GL(glLineWidth(2.0f));
-	target.draw(true);
+	target.bind();
+	CALL_GL(glDrawArrays(GL_LINES,0,target.vertices.size()));
 
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
@@ -320,7 +332,8 @@ void Engine::render() {
 		flatShader["baseColor"] = vec4(0.0f, 1.0f ,0.0f, 1.0f); //back to drawing with colors
 		flatShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
 		//CALL_GL(glPointSize(13.0f));
-		point.draw();
+		point.bind();
+		CALL_GL(glDrawArrays(GL_TRIANGLES,0,point.vertices.size()));
 	}
 	if ((sphereHit || (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)) && (appInputState != translate)) {
 		circle.modelMatrix[3] = cursor.modelMatrix[3];
@@ -329,14 +342,16 @@ void Engine::render() {
 		flatShader["mvp"] = projectionMatrix*viewMatrix*circle.modelMatrix;
 		flatShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
 		CALL_GL(glLineWidth(4.0f));
-		circle.drawCircle();
+		circle.bind();
+		CALL_GL(glDrawArrays(GL_LINE_STRIP,0,circle.vertices.size()));
 
 		point.modelMatrix = glm::translate(sphereIntersectionPoint);
 		flatShader.use();
 		flatShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 1.0f); //back to drawing with colors
 		flatShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
 		//CALL_GL(glPointSize(13.0f));
-		point.draw();
+		point.bind();
+		CALL_GL(glDrawArrays(GL_TRIANGLES,0,point.vertices.size()));
 	} 
 
 	
@@ -714,8 +729,7 @@ void Engine::refresh(TuioTime frameTime) {
 
 void Engine::initSimpleGeometry() {
 
-	std::vector<GLushort> indices;
-	std::vector<GLushort> indixes;  //v2 ask nicholas
+	
 	std::vector<vec3> vertices;
 	std::vector<vec3> vertixes;
 	std::vector<vec3> normals;
@@ -723,61 +737,91 @@ void Engine::initSimpleGeometry() {
 	std::vector<vec3> colorx;
 
 	//COUNTER CLOCKWISE TRIANGLE ORDER IMPORTANT FOR glm::intersectRayTriangle!!!!!!!!!!!!!!!
-	indices.push_back(1); indices.push_back(0); indices.push_back(3);
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-	indices.push_back(3); indices.push_back(2); indices.push_back(1);
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
 
-	indices.push_back(2); indices.push_back(8); indices.push_back(1);
 	colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-	indices.push_back(2); indices.push_back(3); indices.push_back(7);
+	
 	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
 
-	indices.push_back(7); indices.push_back(6); indices.push_back(2);
+	
 	 colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
-	indices.push_back(6); indices.push_back(8); indices.push_back(2);
+	
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-	indices.push_back(7); indices.push_back(4); indices.push_back(6);
+	
 	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-	indices.push_back(6); indices.push_back(4); indices.push_back(5);
+	
 	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-	indices.push_back(5); indices.push_back(8); indices.push_back(6);
+	
 	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
-	indices.push_back(4); indices.push_back(0); indices.push_back(5);
+	
 	colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); //yellow
-	indices.push_back(5); indices.push_back(0); indices.push_back(1);
+	
 	colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); //yellow
-	indices.push_back(5); indices.push_back(1); indices.push_back(8);
+	
 	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
 
 	//bottom?
-	indices.push_back(4); indices.push_back(3); indices.push_back(0);
+	
 	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
-	indices.push_back(4); indices.push_back(7); indices.push_back(3);
 	colors.push_back(vec3(0.0,0.5,1.0)); colors.push_back(vec3(0.0,0.5,1.0)); colors.push_back(vec3(0.0,0.5,1.0)); //cyan
 	
-
-	
+	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
 	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
+	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
+	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
+	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
+	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
+	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
+	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
 	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
 	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
 	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
+	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
+	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
+	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
+	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
+	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
+	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
+	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
+
+	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
+	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
+	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
+
+	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
 	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
 	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
+
+	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
 	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
+	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
+	
+	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
+	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
+	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
+
+	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
+	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
+	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
+
+	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
+	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
+	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
+
+	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
+	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
+	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
+
+	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
+	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
+	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
 	
 
-    for (std::vector<GLushort>::size_type i=0; i != indices.size(); ++i) {
-		vertixes.push_back(vertices[indices[i]]);
-		colorx.push_back(colors[indices[i]]);
-		indixes.push_back(i);
-	}
 	
-	cursor = pho::Mesh(vertixes,indixes,colors);
+	cursor = pho::Mesh(vertices,colors);
 	
-	target = pho::Mesh(vertixes,indixes,colors);
+	target = pho::Mesh(vertices,colors);
 	target.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-2,2,-5));
 
 	
@@ -785,8 +829,12 @@ void Engine::initSimpleGeometry() {
 
 	vertices.push_back(vec3(-0.7,0,1));
 	vertices.push_back(vec3(-0.7,0,-1));
+	vertices.push_back(vec3(-0.7,0,-1));
+	vertices.push_back(vec3(0.7,0,-1));
 	vertices.push_back(vec3(0.7,0,-1));
 	vertices.push_back(vec3(0.7,0,1));
+	vertices.push_back(vec3(0.7,0,1));
+	vertices.push_back(vec3(-0.7,0,1));
 
 	colors.clear();
 	colors.push_back(vec3(0,0,1));
@@ -794,31 +842,21 @@ void Engine::initSimpleGeometry() {
 	colors.push_back(vec3(0,0,1));
 	colors.push_back(vec3(0,0,1));
 
-	indices.clear(); 
+    plane = pho::Mesh(vertices,colors);
+
 	
-	indices.push_back(0); indices.push_back(1);indices.push_back(1);indices.push_back(2);
-	indices.push_back(2);indices.push_back(3);indices.push_back(3);indices.push_back(0);
-
-    plane = pho::Mesh(vertices,indices,colors, Plane);
-
-	indices.clear();
 	vertices.clear();
 	colors.clear();
 
 	vertices.push_back(vec3(-0.1,-0.1,0.01));
 	vertices.push_back(vec3(0,0.1,0.01));
 	vertices.push_back(vec3(0.1,-0.1,0.01));
-
-	//vertices.push_back(vec3(-0.1,-0.1,-0.1));
-	//vertices.push_back(vec3(0,0.1,-0.1));
-	//vertices.push_back(vec3(0.1,-0.1,-0.1));
-
-	indices.push_back(0);indices.push_back(2);indices.push_back(1);
-	//indices.push_back(3);indices.push_back(5);indices.push_back(4);
+	
+	
 	colors.push_back(vec3(0,1,0));
 	colors.push_back(vec3(0,1,0));
 	colors.push_back(vec3(0,1,0));
-	point = pho::Mesh(vertices,indices,colors,Point);
+	point = pho::Mesh(vertices,colors);
 
 	vertices.clear();
 	normals.clear();
@@ -900,7 +938,6 @@ void Engine::initSimpleGeometry() {
 	colors.clear();
 	normals.clear();
 	texcoords.clear();
-	indices.clear();
 
 	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
 	{
@@ -1098,6 +1135,15 @@ void Engine::checkKeyboard() {
 		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 		std::cout << "Perspective : " << perspective << '\n';
 	}
+
+	if (glfwGetKey('f') == GLFW_PRESS) {
+		cursor.rotate(glm::rotate(0.1f,glm::vec3(0,0,1)));
+	}
+
+	if (glfwGetKey('g') == GLFW_PRESS) {
+		cursor.rotate(glm::rotate(-0.1f,glm::vec3(0,0,1)));
+		
+	}
 	
 	if (glfwGetKey('1') == GLFW_PRESS) {
 		technique = mouse;
@@ -1283,9 +1329,11 @@ void Engine::shadowMapRender() {
 	renderShadow.use();
 	renderShadow["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	//Render stuff
-	cursor.draw();
+	cursor.bind();
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 	renderShadow["pvm"] = projectionMatrix*viewMatrix*target.modelMatrix;
-	target.draw(true);
+	target.bind();
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,target.vertices.size()));
 
 	// Revert for the scene.
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

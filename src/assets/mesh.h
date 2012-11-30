@@ -17,7 +17,7 @@ using glm::mat4;
 namespace pho {
 
 	struct Face {
-		GLshort a,b,c;
+		glm::vec3 a,b,c;
 		glm::vec3 normal;
 	};
 
@@ -31,17 +31,12 @@ namespace pho {
 	public:
 		Mesh();
 		Mesh(std::vector<glm::vec3> vertixes);
-		Mesh(std::vector<glm::vec3> vertices, std::vector<GLushort> indices, std::vector<glm::vec3> colors);
-		Mesh(std::vector<glm::vec3> vertixes, std::vector<GLushort> indixes, std::vector<glm::vec3> colorz, pho::PrimitiveType type);
+		Mesh(std::vector<glm::vec3> vertices, std::vector<glm::vec3> colors);
 		GLuint getVaoId();
         void setShader(pho::Shader* tehShader);
-		void draw();
-		void drawPoint();
-		void drawCircle();
-		void draw(bool wireframe);
+		void bind();
 		void rotate(mat4 rotationMatrix);
 
-		bool loadToGPU();
 		glm::vec3 getPosition();
 		void setPosition(const glm::vec3 &position);
 
