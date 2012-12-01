@@ -11,7 +11,7 @@ uniform float alpha;
 void main()
 {
 	vec3 lightDirection = normalize(vec3(1,0,0));
-	float ambientIntensity = 1.0;
+	float ambientIntensity = 0.5;
 	vec4 diffuseLightColor = vec4(1.0);
 
 	vec4 diffuseColor;
@@ -28,7 +28,5 @@ void main()
         diffuseColor = vec4(0, 0, 0, 0);
     }
 	
-	//fragColor = vec4(diffuseColor.xyz,1.0);
-	fragColor = vec4(ambientColor.xyz,alpha);
-	
+	fragColor = vec4(ambientColor.xyz,alpha)+vec4(diffuseColor.xyz,alpha);
 }

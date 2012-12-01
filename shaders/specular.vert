@@ -15,5 +15,5 @@ void main()
 {
     gl_Position = mvp*vec4(in_Position,1.0);
     color = vec4(in_Color,1.0);
-	normal = in_Normal;
+	normal = mat3(mvp)*in_Normal;
 }

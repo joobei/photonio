@@ -318,7 +318,7 @@ void Engine::render() {
 	directionalShader["alpha"] = 1.0f;
 	CALL_GL(glLineWidth(2.0f));
 	target.bind();
-	CALL_GL(glDrawArrays(GL_LINES,0,target.vertices.size()));
+	CALL_GL(glDrawArrays(GL_LINE_STRIP,0,target.vertices.size()));
 
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;

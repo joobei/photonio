@@ -55,6 +55,7 @@ vertices(vertixes),
 
 	modelMatrix = glm::mat4();
 	CALL_GL(glGenVertexArrays(1,&vaoId));
+	
 	CALL_GL(glGenBuffers(1,&normalVboId));
 	CALL_GL(glGenBuffers(1,&vertexVboId));
 	CALL_GL(glGenBuffers(1,&colorVboId));
