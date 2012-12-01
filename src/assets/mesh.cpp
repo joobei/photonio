@@ -10,10 +10,9 @@ pho::Mesh::Mesh(std::vector<glm::vec3> vertixes) : vertices(vertixes)
 {
 	
 	modelMatrix = glm::mat4();
-	CALL_GL(glGenVertexArrays(1,&vaoId));
-	CALL_GL(glGenBuffers(1,&ibId));
+	CALL_GL(glGenVertexArrays(1,&vaoId));	
 	CALL_GL(glGenBuffers(1,&vertexVboId));
-	CALL_GL(glGenBuffers(1,&colorVboId));
+
 
 	CALL_GL(glBindVertexArray(vaoId));
 
@@ -56,7 +55,7 @@ vertices(vertixes),
 
 	modelMatrix = glm::mat4();
 	CALL_GL(glGenVertexArrays(1,&vaoId));
-	CALL_GL(glGenBuffers(1,&ibId));
+	CALL_GL(glGenBuffers(1,&normalVboId));
 	CALL_GL(glGenBuffers(1,&vertexVboId));
 	CALL_GL(glGenBuffers(1,&colorVboId));
 
@@ -74,7 +73,7 @@ vertices(vertixes),
 
 	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,normalVboId));
 	CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
-	CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
+	CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_FALSE,0,0));
 	CALL_GL(glEnableVertexAttribArray(normalLoc));
 
 	CALL_GL(glBindVertexArray(0));

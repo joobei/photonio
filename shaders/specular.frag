@@ -10,7 +10,7 @@ uniform float alpha;
 
 void main()
 {
-	vec3 lightDirection = normalize(vec3(1,-1 ,0));
+	vec3 lightDirection = normalize(vec3(1,0,0));
 	float ambientIntensity = 1.0;
 	vec4 diffuseLightColor = vec4(1.0);
 

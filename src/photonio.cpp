@@ -299,14 +299,15 @@ void Engine::render() {
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.bind();	
 	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
-	normalShader.use();
+	
+	/*normalShader.use();
 	normalShader["mvp"]= projectionMatrix*viewMatrix*cursor.modelMatrix;
 	normalShader["modelMatrix"] = cursor.modelMatrix;
 	normalShader["viewMatrix"] = viewMatrix;
 	normalShader["projectionMatrix"] = projectionMatrix;
-	CALL_GL(glPointSize(13.0));
 	cursor.bind();
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
+	CALL_GL(glPointSize(13.0));
+	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));*/
 
 	directionalShader.use();
 	directionalShader["alpha"] = 0.2f;
@@ -769,15 +770,19 @@ void Engine::initSimpleGeometry() {
 	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
 	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
 	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
+
 	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
 	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
 	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
+
 	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
 	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
 	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
+
 	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
 	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
 	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
+
 	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
 	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
 	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
