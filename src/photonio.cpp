@@ -58,7 +58,7 @@ calibrate(false),
 	verbose = false;
 
 	//Protobuf custom protocol listener
-	//netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
+	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 	//Polhemus
 	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 	
@@ -217,7 +217,7 @@ void Engine::render() {
 
 	if (technique == rayCasting ) {
 
-		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint) && (appInputState != translate)) {
+		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint) && (appInputState != translate) && appInputState !=rotate) {
 		//if (cursor.findIntersection(rayOrigin,rayDirection,objectIntersectionPoint)) {
 			objectHit = true; //picked up by checkEvents in wii-mote mode switch
 
@@ -238,12 +238,6 @@ void Engine::render() {
 			for (int i = 5; i < 3*rayVerticesCount; i+=6) {
 				CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(rayLength),&rayLength));  //edit every 6th float, i.e. the Z
 			}
-
-			flatShader.use();
-			flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
-			flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-			ray.bind();
-			CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,ray.vertices.size()));
 
 			restoreRay = true; //mark ray to be restored to full length
 		} else {objectHit = false; }
@@ -268,6 +262,8 @@ void Engine::render() {
 			restoreRay = true; //mark ray to be restored to full length
 
 		} else {sphereHit = false; }
+
+		
 	}
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
@@ -320,6 +316,12 @@ void Engine::render() {
 	target.bind();
 	CALL_GL(glDrawArrays(GL_LINE_STRIP,0,target.vertices.size()));
 
+	if (technique == rayCasting ) { flatShader.use();
+		flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
+		flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
+		ray.bind();
+		CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,ray.vertices.size()));
+	}
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	normalShader["modelMatrix"] = cursor.modelMatrix;
@@ -356,22 +358,20 @@ void Engine::render() {
 	} 
 
 	
-	/*useShadow.use();
+	/*?useShadow.use();
 	useShadow["u_modelMatrix"] = floorMatrix;
 	useShadow["u_normalMatrix"] = glm::mat3(viewMatrix*floorMatrix);
-	useShadow["u_shadowMatrix"] = shadowMatrix;*/
-	
-	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));
+	useShadow["u_shadowMatrix"] = shadowMatrix;
+	CALL_GL(glActiveTexture(GL_TEXTURE0));
+	CALL_GL(glBindTexture(GL_TEXTURE_2D,g_shadowTexture));
+	CALL_GL(glActiveTexture(GL_TEXTURE1));
+	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));*/
 
+	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));
 	textureShader.use();
 	textureShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
 	CALL_GL(glBindVertexArray(floorVAO));
 	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
-
-	/*normalShader.use();
-	normalShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));*/
-
 
 	glfwSwapBuffers();
 }
@@ -597,7 +597,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	case translate:
 		//********************* TRANSLATE ****************************
 		tempMat = mat3(orientation);
-#define TFACTOR 2
+#define TFACTOR 5
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
 		newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
@@ -1052,7 +1052,8 @@ void Engine::checkPolhemus() {
 		mat4 transform;
 
 		position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
-		position += vec3(0,-0.575f,2.1f);
+		//position += vec3(0,-0.575f,2.1f);
+		position += vec3(0,-0.25f,0.51f);
 
 		orientation.w = temp[3];
 		orientation.x = temp[4];

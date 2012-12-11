@@ -3,10 +3,12 @@
 uniform vec4 u_shapeColor;
 uniform vec3 u_lightDirection;
 uniform sampler2DShadow u_shadowTexture;
+uniform sampler2D floorTexture;
 
 in vec3 v_normal;
 in vec3 v_eye;
 in vec4 v_projCoord;
+in vec2 texCoord;
 
 out vec4 fragColor;
 

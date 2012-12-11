@@ -26,7 +26,7 @@ pho::WiiButtonState::WiiButtonState() {
 	up = false;
 	left = false;
 	right = false;
-}
+} 
 
 void pho::WiiButtonState::reset() {
 	a = false;
