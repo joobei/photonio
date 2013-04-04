@@ -52,7 +52,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "TUIO/TuioPoint.h"
 #include <cstdio>
 #include <functional>
-#include "wiimote.h"
 #include "shader.h"
 #include "mesh.h"
 #include <GL/glfw.h>
@@ -103,19 +102,13 @@ namespace pho {
 		void removeTuioCursor(TuioCursor *tcur);
 
 		TuioClient* tuioClient;
-		LRESULT APIENTRY SubclassProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	private:
-		//testing ALEX
-		void pho::Engine::RecordCorner(const char* fileName);
-		//testing ALEX END
 
 		void checkUDP();
 		void checkPolhemus();
-		void checkWiiMote();
+        //void checkWiiMote();
 		void checkKeyboard();
 		void checkSpaceNavigator();
-		//space navigator
-		boost::scoped_array<BYTE> saRawInput;
 		
 
 		void initSimpleGeometry();
@@ -233,7 +226,7 @@ namespace pho {
 
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;
-		wiimote remote;
+        //wiimote remote;
 		bool wii;
 
 

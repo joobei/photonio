@@ -3,8 +3,12 @@
 
 cmake_minimum_required (VERSION 2.8)
 
+add_definitions("-std=c++11 -fpermissive")
+
 include_directories(include)
 include_directories(lib)
+include_directories(src)
+include_directories(src/assets)
 
 set(PROJECTNAME "photonio")
 

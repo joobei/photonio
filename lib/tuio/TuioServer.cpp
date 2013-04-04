@@ -20,24 +20,19 @@
 */
 
 #include "TuioServer.h"
+#include <unistd.h>
 
 using namespace TUIO;
 using namespace osc;
 
-#ifndef WIN32
+
 static void* ThreadFunc( void* obj )
-#else
-static DWORD WINAPI ThreadFunc( LPVOID obj )
-#endif
 {
 	TuioServer *tuioServer = static_cast<TuioServer*>(obj);
 	while ((tuioServer->isConnected()) && (tuioServer->periodicMessagesEnabled())) {
 		tuioServer->sendFullMessages();
-#ifndef WIN32
 		usleep(USEC_SECOND*tuioServer->getUpdateInterval());
-#else
-		Sleep(MSEC_SECOND*tuioServer->getUpdateInterval());
-#endif
+
 	}	
 	return 0;
 };

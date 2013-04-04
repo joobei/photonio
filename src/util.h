@@ -7,7 +7,7 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
-#include "glm\glm.hpp"
+#include "glm/glm.hpp"
 
 //errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
 

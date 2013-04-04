@@ -63,10 +63,10 @@ calibrate(false),
 	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 	
 
-	wii=remote.Connect(wiimote::FIRST_AVAILABLE);
+    //wii=remote.Connect(wiimote::FIRST_AVAILABLE);
 
-	if (wii) { 	remote.SetLEDs(0x01); }
-	else { errorLog << "WiiRemote Could not Connect \n"; }
+    //if (wii) { 	remote.SetLEDs(0x01); }
+    //else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
 	technique = spaceNavigator;
@@ -182,7 +182,7 @@ void Engine::checkEvents() {
 
 	if (technique == rayCasting && wii) {
 		checkPolhemus();
-		checkWiiMote();
+        //checkWiiMote();
 	}
 
 
@@ -1175,7 +1175,7 @@ void Engine::checkKeyboard() {
 	}
 }
 
-void Engine::checkWiiMote() {
+/*void Engine::checkWiiMote() {
 	//if the connection to the wii-mote was successful
 	
 		remote.RefreshState();
@@ -1231,12 +1231,14 @@ void Engine::checkWiiMote() {
 			std::cout << "idle" << '\n';	
 		}	
 	
-}
+}*/
 
 bool Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
 	vec3 tempPoint;
+    vec3 tempNormal;
+
 	float tempFloat;
-	if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,glm::vec3())) {
+    if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,tempNormal)) {
 		previousVector = glm::normalize(glm::vec3(cursor.modelMatrix[3])-tempPoint);
 		return true;
 	}
@@ -1247,9 +1249,10 @@ bool Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
 void Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 viewMatrix) {
 	glm::vec3 currentVector;
 	glm::vec3 tempPoint;
+     vec3 tempNormal;
 	float tempFloat;
 
-	if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,glm::vec3())) {
+    if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,tempNormal)) {
 		
 		currentVector = glm::normalize(glm::vec3(cursor.modelMatrix[3])-tempPoint);
 
