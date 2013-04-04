@@ -358,20 +358,23 @@ void Engine::render() {
 	} 
 
 	
-	/*?useShadow.use();
-	useShadow["u_modelMatrix"] = floorMatrix;
-	useShadow["u_normalMatrix"] = glm::mat3(viewMatrix*floorMatrix);
-	useShadow["u_shadowMatrix"] = shadowMatrix;
-	CALL_GL(glActiveTexture(GL_TEXTURE0));
-	CALL_GL(glBindTexture(GL_TEXTURE_2D,g_shadowTexture));
-	CALL_GL(glActiveTexture(GL_TEXTURE1));
-	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));*/
+    textureShader.use();
 
-	CALL_GL(glBindTexture(GL_TEXTURE_2D,floorTexture));
-	textureShader.use();
-	textureShader["pvm"] = projectionMatrix*viewMatrix*floorMatrix;
-	CALL_GL(glBindVertexArray(floorVAO));
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
+       glUniform1i(baseImageLoc, 0); //Texture unit 0 is for base images.
+       glUniform1i(shadowMapLoc, 1); //Texture unit 1 is for shadow maps.
+
+       //When rendering an objectwith this program.
+       glActiveTexture(GL_TEXTURE0);
+       glBindTexture(GL_TEXTURE_2D, floorTexture);
+
+       glActiveTexture(GL_TEXTURE1);
+       glBindTexture(GL_TEXTURE_2D, shadowTexture);
+       textureShader["shadowMatrix"] = biasMatrix*projectionMatrix*pointLight.viewMatrix*floorMatrix;
+       textureShader["mvp"] = projectionMatrix*viewMatrix*floorMatrix;
+       //textureShader["mvp"] = projectionMatrix*pointLight.viewMatrix*floorMatrix;
+           CALL_GL(glBindVertexArray(floorVAO));
+       CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
+
 
 	glfwSwapBuffers();
 }
@@ -1366,28 +1369,28 @@ void Engine::shadowMapRender() {
 
 void Engine::checkSpaceNavigator() { 
 
-#define SNSCALE 0.2f
-#define RTSCALE 5.0f
+#define TRSCALE 2.0f
+#define RTSCALE 2.0f
 
 	float position[6];
 	std::fill_n(position,6,0.0f);
 
 	if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
 	
-        viewMatrix = glm::translate(vec3(-1*position[0]*SNSCALE,0,0))*viewMatrix;
-        viewMatrix = glm::translate(vec3(0,position[2]*SNSCALE,0))*viewMatrix;
-        viewMatrix = glm::translate(vec3(0,0,position[1]*SNSCALE))*viewMatrix;
-        //viewMatrix = viewMatrix*glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0));
-        viewMatrix = viewMatrix*glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1));
-        //viewMatrix = viewMatrix*glm::rotate(RTSCALE*position[2],glm::vec3(1,0,0));
+        viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*viewMatrix;
+        viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*viewMatrix;
+        viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*viewMatrix;
+        viewMatrix = glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0))*viewMatrix;
+        viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*viewMatrix;
+        viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*viewMatrix;
 
 	}
 
 	/*if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
 	
-	viewMatrix = glm::translate(vec3(position[0]*SNSCALE,0,0))*viewMatrix;
-	viewMatrix = glm::translate(vec3(0,position[2]*SNSCALE,0))*viewMatrix;
-	viewMatrix = glm::translate(vec3(0,0,position[1]*SNSCALE))*viewMatrix;
+    viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*viewMatrix;
+    viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*viewMatrix;
+    viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*viewMatrix;
 	viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(0,1,0))*viewMatrix;
 	viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*viewMatrix;
 	viewMatrix = glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1))*viewMatrix;
