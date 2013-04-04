@@ -3,7 +3,7 @@
 
 cmake_minimum_required (VERSION 2.8)
 
-add_definitions("-std=c++11 -fpermissive")
+list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
 
 include_directories(include)
 include_directories(lib)

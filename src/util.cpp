@@ -20,7 +20,7 @@ pho::WiiButtonState::WiiButtonState() {
 	plus = false;
 	minus = false;
 	home= false;
-	one = false;
+    one = false;
 	two = false;
 	down = false;
 	up = false;

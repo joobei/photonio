@@ -31,10 +31,10 @@ calibrate(false),
 	eventQueue(),
 	appInputState(idle),
 	udpwork(ioservice),
-	serialwork(serialioservice),
+    //serialwork(serialioservice),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-	_serialserver(serialioservice,115200,"COM24",&eventQueue,&ioMutex),
-	wii(false),
+    //_serialserver(serialioservice,115200,"/dev/ttyS0",&eventQueue,&ioMutex),
+    wii(false),
 	mouseMove(false)
 {
 #define SIZE 30                     //Size of the moving average filter
@@ -60,7 +60,7 @@ calibrate(false),
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 	//Polhemus
-	serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
+    //serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 	
 
     //wii=remote.Connect(wiimote::FIRST_AVAILABLE);
@@ -507,9 +507,9 @@ void Engine::go() {
 
 void Engine::shutdown() {
 
-	_serialserver.shutDown();
-	serialioservice.stop();
-	serialThread->join();
+    //_serialserver.shutDown();
+    //serialioservice.stop();
+    //serialThread->join();
 
 	ioservice.stop();
 
@@ -904,40 +904,49 @@ void Engine::initSimpleGeometry() {
 		normals.push_back(glm::normalize(glm::cross(U,V)));
 	}
 
-	GLuint buffer;
+    GLuint buffer;
 
-	CALL_GL(glGenVertexArrays(1,&floorVAO));
-	CALL_GL(glGenBuffers(1,&buffer));
-	CALL_GL(glGenBuffers(1,&rayVBO));
+          CALL_GL(glGenVertexArrays(1,&floorVAO));
+          CALL_GL(glGenBuffers(1,&buffer));
+          CALL_GL(glGenBuffers(1,&rayVBO));
 
-	CALL_GL(glBindVertexArray(floorVAO));
+          CALL_GL(glBindVertexArray(floorVAO));
 
-	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,rayVBO));
-	CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
-	CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
-	CALL_GL(glEnableVertexAttribArray(vertexLoc));
+          CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,rayVBO));
+          CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
+          CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
+          CALL_GL(glEnableVertexAttribArray(vertexLoc));
 
-	CALL_GL(glGenBuffers(1,&buffer));
-	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-	CALL_GL(glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW));
-	CALL_GL(glVertexAttribPointer(texCoordLoc,3,GL_FLOAT,GL_FALSE,0,0));
-	CALL_GL(glEnableVertexAttribArray(texCoordLoc));
+          CALL_GL(glGenBuffers(1,&buffer));
+          CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+          CALL_GL(glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW));
+      CALL_GL(glVertexAttribPointer(texCoordLoc,2,GL_FLOAT,GL_FALSE,0,0));
+          CALL_GL(glEnableVertexAttribArray(texCoordLoc));
 
-	CALL_GL(glGenBuffers(1,&buffer));
-	CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-	CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
-	CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
-	CALL_GL(glEnableVertexAttribArray(normalLoc));
+          CALL_GL(glGenBuffers(1,&buffer));
+          CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+          CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
+          CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
+          CALL_GL(glEnableVertexAttribArray(normalLoc));
 
-	CALL_GL(glBindVertexArray(0));
+      CALL_GL(glGenBuffers(1,&buffer));
+      CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+      CALL_GL(glBufferData(GL_ARRAY_BUFFER,colors.size()*3*sizeof(GLfloat),colors.data(),GL_STATIC_DRAW));
+      CALL_GL(glVertexAttribPointer(colorLoc,3,GL_FLOAT,GL_TRUE,0,0));
+      CALL_GL(glEnableVertexAttribArray(colorLoc));
 
-	floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(5,5,0));
-	floorMatrix = glm::rotate(glm::mat4(1.),-90.0f,glm::vec3(1,0,0))*floorMatrix;
-	floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
-	floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
+          CALL_GL(glBindVertexArray(0));
 
-	//Texture Loading
-	floorTexture = gli::createTexture2D("textures/grid.dds");
+      floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(55,55,0));
+          floorMatrix = glm::rotate(glm::mat4(1.),-90.0f,glm::vec3(1,0,0))*floorMatrix;
+          floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
+          floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
+
+          //Texture Loading
+
+      CALL_GL(glGenTextures(1,&floorTexture));
+      floorTexture = gli::createTexture2D("assets/grid.dds");
+
 
 	vertices.clear();
 	colors.clear();
@@ -949,7 +958,7 @@ void Engine::initSimpleGeometry() {
 		vertices.push_back(glm::vec3(ARCBALL_RADIUS*cos(i),ARCBALL_RADIUS*sin(i),0));
     }
 
-	circle = pho::Mesh::Mesh(vertices);
+    circle = pho::Mesh(vertices);
 	
 	//RAY Cylindrical
 	vertices.clear();
@@ -1365,12 +1374,13 @@ void Engine::checkSpaceNavigator() {
 
 	if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
 	
-	cursor.modelMatrix = glm::translate(vec3(position[0]*SNSCALE,0,0))*cursor.modelMatrix;
-	cursor.modelMatrix = glm::translate(vec3(0,position[2]*SNSCALE,0))*cursor.modelMatrix;
-	cursor.modelMatrix = glm::translate(vec3(0,0,position[1]*SNSCALE))*cursor.modelMatrix;
-	cursor.rotate(glm::rotate(RTSCALE*position[3],glm::vec3(0,1,0)));
-	cursor.rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
-	cursor.rotate(glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0)));
+        viewMatrix = glm::translate(vec3(-1*position[0]*SNSCALE,0,0))*viewMatrix;
+        viewMatrix = glm::translate(vec3(0,position[2]*SNSCALE,0))*viewMatrix;
+        viewMatrix = glm::translate(vec3(0,0,position[1]*SNSCALE))*viewMatrix;
+        //viewMatrix = viewMatrix*glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0));
+        viewMatrix = viewMatrix*glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1));
+        //viewMatrix = viewMatrix*glm::rotate(RTSCALE*position[2],glm::vec3(1,0,0));
+
 	}
 
 	/*if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {

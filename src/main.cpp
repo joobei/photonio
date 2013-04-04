@@ -39,8 +39,8 @@ int main()
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
 	//glfwSetWindowPos(1920,-27);  //for dual display
-	glfwSetWindowPos(-6,-27); //full screen
-	//glfwSetWindowPos(810,30);
+    //glfwSetWindowPos(-6,-27); //full screen
+    ////glfwSetWindowPos(810,30);
 
     glfwSetWindowTitle("KeiMote");
 	glfwEnable( GLFW_MOUSE_CURSOR );
