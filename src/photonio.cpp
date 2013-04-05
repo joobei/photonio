@@ -121,15 +121,13 @@ void Engine::initResources() {
 	colorShader = pho::Shader("shaders/shader");  
 	flatShader = pho::Shader("shaders/offscreen");
 	textureShader = pho::Shader("shaders/texader");
+
+    textureShader = pho::Shader("shaders/texader");
+    shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
+    baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
+
 	directionalShader = pho::Shader("shaders/specular");
 	normalShader = pho::Shader("shaders/normals");
-	renderShadow = pho::Shader("shaders/rendershadow");
-
-	useShadow = pho::Shader("shaders/useshadow");
-	useShadow.use();
-	useShadow["u_projectionMatrix"] = projectionMatrix;
-	useShadow["u_viewMatrix"] = viewMatrix;
-	useShadow["u_lightDirection"] = pointLight.direction;
 
 	initSimpleGeometry();
 
@@ -907,46 +905,46 @@ void Engine::initSimpleGeometry() {
 
     GLuint buffer;
 
-          CALL_GL(glGenVertexArrays(1,&floorVAO));
-          CALL_GL(glGenBuffers(1,&buffer));
-          CALL_GL(glGenBuffers(1,&rayVBO));
+    CALL_GL(glGenVertexArrays(1,&floorVAO));
+    CALL_GL(glGenBuffers(1,&buffer));
+    CALL_GL(glGenBuffers(1,&rayVBO));
 
-          CALL_GL(glBindVertexArray(floorVAO));
+    CALL_GL(glBindVertexArray(floorVAO));
 
-          CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,rayVBO));
-          CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
-          CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
-          CALL_GL(glEnableVertexAttribArray(vertexLoc));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,rayVBO));
+    CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
+    CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
+    CALL_GL(glEnableVertexAttribArray(vertexLoc));
 
-          CALL_GL(glGenBuffers(1,&buffer));
-          CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-          CALL_GL(glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW));
-      CALL_GL(glVertexAttribPointer(texCoordLoc,2,GL_FLOAT,GL_FALSE,0,0));
-          CALL_GL(glEnableVertexAttribArray(texCoordLoc));
+    CALL_GL(glGenBuffers(1,&buffer));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+    CALL_GL(glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW));
+    CALL_GL(glVertexAttribPointer(texCoordLoc,2,GL_FLOAT,GL_FALSE,0,0));
+    CALL_GL(glEnableVertexAttribArray(texCoordLoc));
 
-          CALL_GL(glGenBuffers(1,&buffer));
-          CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-          CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
-          CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
-          CALL_GL(glEnableVertexAttribArray(normalLoc));
+    CALL_GL(glGenBuffers(1,&buffer));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+    CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
+    CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
+    CALL_GL(glEnableVertexAttribArray(normalLoc));
 
-      CALL_GL(glGenBuffers(1,&buffer));
-      CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-      CALL_GL(glBufferData(GL_ARRAY_BUFFER,colors.size()*3*sizeof(GLfloat),colors.data(),GL_STATIC_DRAW));
-      CALL_GL(glVertexAttribPointer(colorLoc,3,GL_FLOAT,GL_TRUE,0,0));
-      CALL_GL(glEnableVertexAttribArray(colorLoc));
+    CALL_GL(glGenBuffers(1,&buffer));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
+    CALL_GL(glBufferData(GL_ARRAY_BUFFER,colors.size()*3*sizeof(GLfloat),colors.data(),GL_STATIC_DRAW));
+    CALL_GL(glVertexAttribPointer(colorLoc,3,GL_FLOAT,GL_TRUE,0,0));
+    CALL_GL(glEnableVertexAttribArray(colorLoc));
 
-          CALL_GL(glBindVertexArray(0));
+    CALL_GL(glBindVertexArray(0));
 
-      floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(55,55,0));
-          floorMatrix = glm::rotate(glm::mat4(1.),-90.0f,glm::vec3(1,0,0))*floorMatrix;
-          floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
-          floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
+    floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(55,55,0));
+    floorMatrix = glm::rotate(glm::mat4(1.),-90.0f,glm::vec3(1,0,0))*floorMatrix;
+    floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
+    floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
 
-          //Texture Loading
+    //Texture Loading
 
-      CALL_GL(glGenTextures(1,&floorTexture));
-      floorTexture = gli::createTexture2D("assets/grid.dds");
+    CALL_GL(glGenTextures(1,&floorTexture));
+    floorTexture = gli::createTexture2D("assets/grid.dds");
 
 
 	vertices.clear();
