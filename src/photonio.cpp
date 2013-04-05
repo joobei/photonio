@@ -732,10 +732,9 @@ void Engine::initSimpleGeometry() {
 
 	
 	std::vector<vec3> vertices;
-	std::vector<vec3> vertixes;
 	std::vector<vec3> normals;
 	std::vector<vec3> colors;
-	std::vector<vec3> colorx;
+
 
 	//COUNTER CLOCKWISE TRIANGLE ORDER IMPORTANT FOR glm::intersectRayTriangle!!!!!!!!!!!!!!!
 	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
@@ -867,41 +866,46 @@ void Engine::initSimpleGeometry() {
 	std::vector<glm::vec2> texcoords;
 	
 	//FLOOOOOOOOOOOR **************************
+    vertices.push_back(vec3(-1, 1,0));  //0
+    texcoords.push_back(glm::vec2(0,1));
+    colors.push_back(vec3(1,1,0));
 
-	vertices.push_back(vec3(-1, 1,0));  //0
-	texcoords.push_back(glm::vec2(1,0));
+    vertices.push_back(vec3(-1,-1,0)); //1
+    texcoords.push_back(glm::vec2(0,0));
+    colors.push_back(vec3(1,1,0));
 
-	vertices.push_back(vec3(-1,-1,0)); //1
-	texcoords.push_back(glm::vec2(0,1));
+    vertices.push_back(vec3( 1,-1,0)); //2
+    texcoords.push_back(glm::vec2(1,0));
+    colors.push_back(vec3(1,1,0));
 
-	vertices.push_back(vec3( 1,-1,0)); //2
-	texcoords.push_back(glm::vec2(1,1));
+    vertices.push_back(vec3( 1, 1,0)); //3
+    texcoords.push_back(glm::vec2(1,1));
+    colors.push_back(vec3(1,1,0));
 
-	vertices.push_back(vec3( 1, 1,0)); //3
-	texcoords.push_back(glm::vec2(1,0));
+    vertices.push_back(vec3(-1, 1,0)); //0
+    texcoords.push_back(glm::vec2(0,1));
+    colors.push_back(vec3(1,1,0));
 
-	vertices.push_back(vec3(-1, 1,0)); //0
-	texcoords.push_back(glm::vec2(0,1));
+    vertices.push_back(vec3( 1,-1,0)); //2
+    texcoords.push_back(glm::vec2(1,0));
+    colors.push_back(vec3(1,1,0));
 
-	vertices.push_back(vec3( 1,-1,0)); //2
-	texcoords.push_back(glm::vec2(1,0));
+    //calculate normals
+    for (std::vector<glm::vec3>::size_type i=0; i != 6; i+=3) {
+        glm::vec3 v0,v1,v2;
+        v0 = vertices[i];
+        v1 = vertices[i+1];
+        v2 = vertices[i+2];
 
-	//calculate normals
-	for (std::vector<glm::vec3>::size_type i=0; i != 6; i+=3) {
-		glm::vec3 v0,v1,v2;
-		v0 = vertices[i];
-		v1 = vertices[i+1];
-		v2 = vertices[i+2];
+        glm::vec3 U,V;
 
-		glm::vec3 U,V;
-		
-		U = v1 - v0;
-		V = v2 - v0;
+        U = v1 - v0;
+        V = v2 - v0;
 
-		normals.push_back(glm::normalize(glm::cross(U,V)));
-		normals.push_back(glm::normalize(glm::cross(U,V)));
-		normals.push_back(glm::normalize(glm::cross(U,V)));
-	}
+        normals.push_back(glm::normalize(glm::cross(U,V)));
+        normals.push_back(glm::normalize(glm::cross(U,V)));
+        normals.push_back(glm::normalize(glm::cross(U,V)));
+    }
 
     GLuint buffer;
 
@@ -945,6 +949,7 @@ void Engine::initSimpleGeometry() {
 
     CALL_GL(glGenTextures(1,&floorTexture));
     floorTexture = gli::createTexture2D("assets/grid.dds");
+
 
 
 	vertices.clear();
