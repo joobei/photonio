@@ -189,10 +189,10 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-	CALL_GL(glClearColor(1.0f,1.0f,1.0f,1.0f));
-	CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
-	
-	shadowMapRender();
+    CALL_GL(glClearColor(1.0f,1.0f,1.0f,1.0f));
+    CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+
+    shadowMapRender();
 
 	if (restoreRay) {
 
@@ -950,7 +950,10 @@ void Engine::initSimpleGeometry() {
     CALL_GL(glGenTextures(1,&floorTexture));
     floorTexture = gli::createTexture2D("assets/grid.dds");
 
-
+    glBindTexture(GL_TEXTURE_2D, floorTexture);
+    glTexParameteri(floorTexture,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    glTexParameteri(floorTexture,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
 	vertices.clear();
 	colors.clear();
