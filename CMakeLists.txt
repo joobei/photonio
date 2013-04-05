@@ -15,7 +15,7 @@ set(PROJECTNAME "photonio")
 project(${PROJECTNAME})
 
 set(${PROJECTNAME}_VERSION_MAJOR 0)
-set(${PROJECTNAME}_VERSION_MINOR 3)
+set(${PROJECTNAME}_VERSION_MINOR 5)
 
 add_subdirectory(lib)
 add_subdirectory(src)

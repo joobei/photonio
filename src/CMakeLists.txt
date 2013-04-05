@@ -14,7 +14,19 @@ IF(PROTOBUF_FOUND)
     PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS data.proto)
 ENDIF()
 
-add_executable(${PROJECTNAME} main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp "${CMAKE_SOURCE_DIR}/shaders/shader.vert" "${CMAKE_SOURCE_DIR}/shaders/shader.frag" "${CMAKE_SOURCE_DIR}/shaders/specular.vert" "${CMAKE_SOURCE_DIR}/shaders/specular.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.frag" "${CMAKE_SOURCE_DIR}/shaders/offscreen.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.vert" "${CMAKE_SOURCE_DIR}/shaders/circle.frag" "${CMAKE_SOURCE_DIR}/shaders/circle.geom")
+add_executable(${PROJECTNAME} main.cpp eventQueue.cpp asio.cpp asio.h eventQueue.h util.h util.cpp photonio.h photonio.cpp ${PROTO_SRCS} ${PROTO_HDRS} assets/assets.h assets/assets.cpp assets/mesh.h assets/mesh.cpp assets/shader.h assets/shader.cpp
+"${CMAKE_SOURCE_DIR}/shaders/shader.vert"
+"${CMAKE_SOURCE_DIR}/shaders/shader.frag"
+"${CMAKE_SOURCE_DIR}/shaders/specular.vert"
+"${CMAKE_SOURCE_DIR}/shaders/specular.frag"
+"${CMAKE_SOURCE_DIR}/shaders/offscreen.frag"
+"${CMAKE_SOURCE_DIR}/shaders/offscreen.vert"
+"${CMAKE_SOURCE_DIR}/shaders/circle.vert"
+"${CMAKE_SOURCE_DIR}/shaders/circle.frag"
+"${CMAKE_SOURCE_DIR}/shaders/circle.geom"
+"${CMAKE_SOURCE_DIR}/shaders/texader.frag"
+"${CMAKE_SOURCE_DIR}/shaders/texader.vert"
+)
 
 ##For some reason ${Boost_LIBRARIES} doesn't work on Ubuntu 12.10
 target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} IL ILU glfw GLEW assimp protobuf tuio oscpack GL boost_system boost_thread pthread boost_filesystem)

@@ -90,7 +90,7 @@ calibrate(false),
 
 	consumed = false;
 
-	SHADOW_MAP_RATIO = 1.0f;
+#define	SHADOW_MAP_RATIO 2;
 }
 
 void Engine::initResources() {
@@ -111,11 +111,11 @@ void Engine::initResources() {
 
 	restoreRay=false; //used to make ray long again if NOT intersecting
 
-	pointLight.position = glm::vec3(0,30,-7);
-	pointLight.direction = glm::vec3(0,-1,0);
-	pointLight.color = glm::vec4(1,1,1,1);
+    pointLight.position = glm::vec3(0,55,-5);
+    pointLight.direction = glm::vec3(0,-1,0);
+    pointLight.color = glm::vec4(1,1,1,1);
 
-	pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(floorMatrix[3]),glm::vec3(0,0,1));
+    pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
 
 	 //load shaders from files
 	colorShader = pho::Shader("shaders/shader");  
@@ -360,20 +360,19 @@ void Engine::render() {
 	
     textureShader.use();
 
-       glUniform1i(baseImageLoc, 0); //Texture unit 0 is for base images.
-       glUniform1i(shadowMapLoc, 1); //Texture unit 1 is for shadow maps.
+    glUniform1i(baseImageLoc, 0); //Texture unit 0 is for base images.
+    glUniform1i(shadowMapLoc, 1); //Texture unit 1 is for shadow maps.
 
-       //When rendering an objectwith this program.
-       glActiveTexture(GL_TEXTURE0);
-       glBindTexture(GL_TEXTURE_2D, floorTexture);
+    //When rendering an objectwith this program.
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, floorTexture);
 
-       glActiveTexture(GL_TEXTURE1);
-       glBindTexture(GL_TEXTURE_2D, shadowTexture);
-       textureShader["shadowMatrix"] = biasMatrix*projectionMatrix*pointLight.viewMatrix*floorMatrix;
-       textureShader["mvp"] = projectionMatrix*viewMatrix*floorMatrix;
-       //textureShader["mvp"] = projectionMatrix*pointLight.viewMatrix*floorMatrix;
-           CALL_GL(glBindVertexArray(floorVAO));
-       CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, shadowTexture);
+    textureShader["shadowMatrix"] = biasMatrix*projectionMatrix*pointLight.viewMatrix*floorMatrix;
+    textureShader["mvp"] = projectionMatrix*viewMatrix*floorMatrix;
+    CALL_GL(glBindVertexArray(floorVAO));
+    CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
 
 
 	glfwSwapBuffers();
@@ -825,7 +824,6 @@ void Engine::initSimpleGeometry() {
 	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
 	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
 	
-
 	
 	cursor = pho::Mesh(vertices,colors);
 	
@@ -1279,120 +1277,100 @@ void Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 vie
 }
 
 void Engine::generateShadowFBO()
-	{
-	  int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
-	  int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
-	
-	glGenTextures(1, &g_shadowTexture);
-    glBindTexture(GL_TEXTURE_2D, g_shadowTexture);
+    {
+    int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
+    int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
+    glGenTextures(1, &shadowTexture);
+    glBindTexture(GL_TEXTURE_2D, shadowTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+    glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT,shadowMapWidth,shadowMapHeight,0,GL_DEPTH_COMPONENT,GL_FLOAT,NULL);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_COMPARE_MODE,GL_COMPARE_R_TO_TEXTURE);
+    glBindTexture(GL_TEXTURE_2D, 0); //unbind the texture
 
-    glBindTexture(GL_TEXTURE_2D, 0);
+    glGenFramebuffers(1, &shadowFBO);
+    glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTexture, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
 
-    //
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    { printf("GL_FRAMEBUFFER_COMPLETE error 0x%x", glCheckFramebufferStatus(GL_FRAMEBUFFER)); }
 
-    glGenFramebuffers(1, &g_fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
+    glClearDepth(1.0f); glEnable(GL_DEPTH_TEST);
+    // Needed when rendering the shadow map. This will avoid artifacts.
+    glPolygonOffset(1.0f, 0.0f); glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //to convert the texture coordinates to -1 ~ 1
+    GLfloat biasMatrixf[] = {
+        0.5f, 0.0f, 0.0f, 0.0f,
+        0.0f, 0.5f, 0.0f, 0.0f,
+        0.0f, 0.0f, 0.5f, 0.0f,
+        0.5f, 0.5f, 0.5f, 1.0f };
 
-	glDrawBuffer(GL_NONE);
-	glReadBuffer(GL_NONE);
-
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, g_shadowTexture, 0);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-	{
-		printf("GL_FRAMEBUFFER_COMPLETE error 0x%x", glCheckFramebufferStatus(GL_FRAMEBUFFER));
-	}
-
-	glClearDepth(1.0f);
-
-    glEnable(GL_DEPTH_TEST);
-
-    //glEnable(GL_CULL_FACE);
-
-	// Needed when rendering the shadow map. This will avoid artifacts.
-    glPolygonOffset(1.0f, 0.0f);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	GLfloat biasMatrixf[] = { 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.0f, 0.5f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f };
-
-	glm::make_mat4(biasMatrixf);
-	}			
+    biasMatrix = glm::make_mat4(biasMatrixf);
+    }
 
 void Engine::shadowMapRender() {
+    int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
+    int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
-	int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
-	  int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
+    // Rendering into the shadow texture.
+    glActiveTexture(GL_TEXTURE0);
+    CALL_GL(glBindTexture(GL_TEXTURE_2D, shadowTexture));
+    // Bind the framebuffer.
+    CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO));
+    //Clear it
+    CALL_GL(glClear(GL_DEPTH_BUFFER_BIT));
+    CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
+    CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
+    //Render stuff
+    flatShader.use();
+    flatShader["baseColor"] = glm::vec4(1.0f,1.0f,1.0f,1.0f);
+    flatShader["pvm"] = projectionMatrix*pointLight.viewMatrix*cursor.modelMatrix;
+    cursor.bind();
+    CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 
-	// Rendering into the shadow texture.
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    // Setup for the framebuffer.
-    glBindFramebuffer(GL_FRAMEBUFFER, g_fbo);
-    glViewport(0, 0, shadowMapWidth, shadowMapHeight);
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-	shadowMatrix = biasMatrix*pointLight.viewMatrix;
-
-    glClear(GL_DEPTH_BUFFER_BIT);
-
-	renderShadow.use();
-	renderShadow["pvm"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-	//Render stuff
-	cursor.bind();
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
-	renderShadow["pvm"] = projectionMatrix*viewMatrix*target.modelMatrix;
-	target.bind();
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,target.vertices.size()));
-
-	// Revert for the scene.
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    glViewport(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y);
-
-    glBindTexture(GL_TEXTURE_2D, g_shadowTexture);
-
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // Revert for the scene.
+    CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
+    CALL_GL(glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
+    CALL_GL(glViewport(0, 0, WINDOW_SIZE_X, WINDOW_SIZE_Y));
 
 }
+
 
 void Engine::checkSpaceNavigator() { 
 
 #define TRSCALE 2.0f
-#define RTSCALE 2.0f
+#define RTSCALE 5.0f
 
 	float position[6];
+    unsigned char buttons[2];
 	std::fill_n(position,6,0.0f);
 
 	if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
-	
-        viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*viewMatrix;
-        viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*viewMatrix;
-        viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*viewMatrix;
-        viewMatrix = glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0))*viewMatrix;
-        viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*viewMatrix;
-        viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*viewMatrix;
+        glfwGetJoystickButtons(GLFW_JOYSTICK_1,buttons,2);
+        if (buttons[0] == GLFW_PRESS) {
 
+            viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*viewMatrix;
+            viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*viewMatrix;
+            viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*viewMatrix;
+            viewMatrix = glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0))*viewMatrix;
+            viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*viewMatrix;
+            viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*viewMatrix;
+        }
+        else {
+            cursor.modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*cursor.modelMatrix;
+            cursor.modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*cursor.modelMatrix;
+            cursor.modelMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*cursor.modelMatrix;
+            cursor.rotate(glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0)));
+            cursor.rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
+            cursor.rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));
+        }
 	}
 
-	/*if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
-	
-    viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*viewMatrix;
-    viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*viewMatrix;
-    viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*viewMatrix;
-	viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(0,1,0))*viewMatrix;
-	viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*viewMatrix;
-	viewMatrix = glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1))*viewMatrix;
-	}*/
 }

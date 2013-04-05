@@ -246,19 +246,18 @@ namespace pho {
 		GLuint floorTexture;
 		glm::mat4 floorMatrix;
 
-		//Shadowmap ****************************
-		// Hold id of the framebuffer for light POV rendering
-		GLuint g_fbo;
-
-		// Z values will be rendered to this texture when using fboId framebuffer
-		GLuint g_shadowTexture;
-		void generateShadowFBO();
-		float SHADOW_MAP_RATIO;
-		void shadowMapRender();
-		pho::Shader useShadow;
-		pho::Shader renderShadow;
-		glm::mat4 shadowMatrix;
-		glm::mat4 biasMatrix;
+        //Shadowmap ****************************
+        pho::Shader renderShadow, useShadow, shadow;
+        GLuint shadowTexture;
+        GLuint shadowFBO;
+        mat4 biasMatrix;
+        mat4 shadowMatrix;
+        void generateShadowFBO();
+        void shadowMapRender();
+        GLuint shadowMapLoc;
+        GLuint baseImageLoc;
+        GLuint lightVAO; //debug light
+        glm::mat4 lightMatrix;
 	};
 
 }
