@@ -29,7 +29,7 @@ add_executable(${PROJECTNAME} main.cpp eventQueue.cpp asio.cpp asio.h eventQueue
 )
 
 ##For some reason ${Boost_LIBRARIES} doesn't work on Ubuntu 12.10
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} IL ILU glfw GLEW assimp protobuf tuio oscpack GL boost_system boost_thread pthread boost_filesystem)
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} IL ILU glfw GLEW assimp protobuf tuio posix ip osc GL boost_system boost_thread pthread boost_filesystem)
 
 #ADD_CUSTOM_COMMAND(TARGET ${PROJECTNAME}
 #          POST_BUILD
