@@ -69,7 +69,7 @@ calibrate(false),
     //else { errorLog << "WiiRemote Could not Connect \n"; }
 
 	appInputState = idle; 
-	technique = spaceNavigator;
+    technique = planeCasting;
 	rotTechnique = trackBall;
 
 	prevMouseWheel = 0;
@@ -90,7 +90,7 @@ calibrate(false),
 
 	consumed = false;
 
-#define	SHADOW_MAP_RATIO 2;
+#define	SHADOW_MAP_RATIO 8;
 }
 
 void Engine::initResources() {
@@ -127,7 +127,7 @@ void Engine::initResources() {
     baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
 
 	directionalShader = pho::Shader("shaders/specular");
-	normalShader = pho::Shader("shaders/normals");
+    //normalShader = pho::Shader("shaders/normals");
 
 	initSimpleGeometry();
 
@@ -189,12 +189,13 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
+    shadowMapRender();
+
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,1.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-    shadowMapRender();
-
-	if (restoreRay) {
+    /*
+    if (restoreRay) {
 
 		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
 		
@@ -203,12 +204,11 @@ void Engine::render() {
 		for (int i = 5; i < 3*rayVerticesCount; i+=6) {
 			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(d),&d));  //edit the 6th float, i.e. the Z
 		}
-
+        CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,0));
 		restoreRay = false;  //we already restored, no need to do it every frame
 	}
 	
 	if (technique == mouse) {
-		float intersectionDistance = -1;
 		if (cursor.findSphereIntersection(rayOrigin,rayDirection,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
 			sphereHit = true; 	} else { sphereHit = false; }
 	}
@@ -265,17 +265,19 @@ void Engine::render() {
 	}
 
 	CALL_GL(glEnable(GL_DEPTH_TEST));
-	
+    */
 	
 
-	if (technique == planeCasting && appInputState != rotate) {
-		flatShader.use(); //bind the standard shader for default colored objects
-		flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
-		flatShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
-		CALL_GL(glLineWidth(7.0f));
-		plane.bind();
-		CALL_GL(glDrawArrays(GL_LINES,0,plane.vertices.size()));
-	}
+   // if (technique == planeCasting && appInputState != rotate) {
+
+    flatShader.use(); //bind the standard shader for default colored objects
+    flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+    flatShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
+    CALL_GL(glLineWidth(7.0f));
+    plane.bind();
+    CALL_GL(glDrawArrays(GL_LINES,0,plane.vertices.size()));
+
+    //}
    
 	/*colorShader.use(); //bind the standard shader for default colored objects
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
@@ -286,13 +288,13 @@ void Engine::render() {
 	ray.draw();*/
 	
 	
-	/// CURSOR ////////////////////////////////////////
+    /// CURSOR ////////////////////////////////////////
 	directionalShader.use();
 	directionalShader["alpha"] = 1.0f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	directionalShader["modelMatrix"] = cursor.modelMatrix;
 	cursor.bind();	
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
+    CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 	
 	/*normalShader.use();
 	normalShader["mvp"]= projectionMatrix*viewMatrix*cursor.modelMatrix;
@@ -303,7 +305,7 @@ void Engine::render() {
 	CALL_GL(glPointSize(13.0));
 	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));*/
 
-	directionalShader.use();
+    /*directionalShader.use();
 	directionalShader["alpha"] = 0.2f;
 	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
 	directionalShader["modelMatrix"] = target.modelMatrix;
@@ -312,21 +314,21 @@ void Engine::render() {
 	directionalShader["alpha"] = 1.0f;
 	CALL_GL(glLineWidth(2.0f));
 	target.bind();
-	CALL_GL(glDrawArrays(GL_LINE_STRIP,0,target.vertices.size()));
+    CALL_GL(glDrawArrays(GL_LINE_STRIP,0,target.vertices.size()));*/
 
-	if (technique == rayCasting ) { flatShader.use();
+    /*if (technique == rayCasting ) { flatShader.use();
 		flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
 		flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
 		ray.bind();
 		CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,ray.vertices.size()));
-	}
+    }*/
 	/*normalShader.use();
 	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
 	normalShader["modelMatrix"] = cursor.modelMatrix;
 	CALL_GL(glLineWidth(1.0f));
 	cursor.draw();*/
 
-
+    /*
 	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
 		point.modelMatrix = glm::translate(objectIntersectionPoint);
 		flatShader.use();
@@ -355,7 +357,7 @@ void Engine::render() {
 		CALL_GL(glDrawArrays(GL_TRIANGLES,0,point.vertices.size()));
 	} 
 
-	
+    */
     textureShader.use();
 
     glUniform1i(baseImageLoc, 0); //Texture unit 0 is for base images.
@@ -1282,6 +1284,7 @@ void Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 vie
 	}
 }
 
+
 void Engine::generateShadowFBO()
     {
     int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
@@ -1335,9 +1338,12 @@ void Engine::shadowMapRender() {
     CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
     //Render stuff
+
+
+
     flatShader.use();
     flatShader["baseColor"] = glm::vec4(1.0f,1.0f,1.0f,1.0f);
-    flatShader["pvm"] = projectionMatrix*pointLight.viewMatrix*cursor.modelMatrix;
+    flatShader["mvp"] = projectionMatrix*pointLight.viewMatrix*cursor.modelMatrix;
     cursor.bind();
     CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 
