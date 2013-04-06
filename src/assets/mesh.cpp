@@ -1,4 +1,3 @@
-#pragma warning(disable: 4819)
 #include "mesh.h"
 
 pho::Mesh::Mesh() {

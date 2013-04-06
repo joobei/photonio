@@ -1,4 +1,3 @@
-#pragma warning(disable: 4819)
 #include "util.h"
 #include "vector3.h"
 
@@ -26,7 +25,7 @@ pho::WiiButtonState::WiiButtonState() {
 	up = false;
 	left = false;
 	right = false;
-} 
+}
 
 void pho::WiiButtonState::reset() {
 	a = false;

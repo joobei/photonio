@@ -98,10 +98,7 @@ void Engine::initResources() {
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
-	//Camera position
-	//cameraPosition = vec3(0,-0.11f,3.0f); 
 	cameraPosition = vec3(0,0,0); 
-	//viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,0),vec3(0,1,0));
 	viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
 
 	glEnable (GL_DEPTH_TEST);
