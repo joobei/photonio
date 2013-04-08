@@ -188,7 +188,7 @@ void Engine::checkEvents() {
 void Engine::render() {
     shadowMapRender();
 
-    CALL_GL(glClearColor(1.0f,1.0f,1.0f,1.0f));
+    CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     /*
@@ -865,8 +865,9 @@ void Engine::initSimpleGeometry() {
 	std::vector<glm::vec2> texcoords;
 	
 	//FLOOOOOOOOOOOR **************************
+#define TEXREPEAT 50.0
     vertices.push_back(vec3(-1, 1,0));  //0
-    texcoords.push_back(glm::vec2(0,1));
+    texcoords.push_back(glm::vec2(0,TEXREPEAT));
     colors.push_back(vec3(1,1,0));
 
     vertices.push_back(vec3(-1,-1,0)); //1
@@ -874,19 +875,19 @@ void Engine::initSimpleGeometry() {
     colors.push_back(vec3(1,1,0));
 
     vertices.push_back(vec3( 1,-1,0)); //2
-    texcoords.push_back(glm::vec2(1,0));
+    texcoords.push_back(glm::vec2(TEXREPEAT,0));
     colors.push_back(vec3(1,1,0));
 
     vertices.push_back(vec3( 1, 1,0)); //3
-    texcoords.push_back(glm::vec2(1,1));
+    texcoords.push_back(glm::vec2(TEXREPEAT,TEXREPEAT));
     colors.push_back(vec3(1,1,0));
 
     vertices.push_back(vec3(-1, 1,0)); //0
-    texcoords.push_back(glm::vec2(0,1));
+    texcoords.push_back(glm::vec2(0,TEXREPEAT));
     colors.push_back(vec3(1,1,0));
 
     vertices.push_back(vec3( 1,-1,0)); //2
-    texcoords.push_back(glm::vec2(1,0));
+    texcoords.push_back(glm::vec2(TEXREPEAT,0));
     colors.push_back(vec3(1,1,0));
 
     //calculate normals
@@ -949,10 +950,10 @@ void Engine::initSimpleGeometry() {
     CALL_GL(glGenTextures(1,&floorTexture));
     floorTexture = gli::createTexture2D("assets/grid.dds");
 
-    glBindTexture(GL_TEXTURE_2D, floorTexture);
-    glTexParameteri(floorTexture,GL_TEXTURE_WRAP_S,GL_REPEAT);
-    glTexParameteri(floorTexture,GL_TEXTURE_WRAP_T,GL_REPEAT);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    //glBindTexture(GL_TEXTURE_2D, floorTexture);
+    //glTexParameteri(floorTexture,GL_TEXTURE_WRAP_S,GL_REPEAT);
+    //glTexParameteri(floorTexture,GL_TEXTURE_WRAP_T,GL_REPEAT);
+    //glBindTexture(GL_TEXTURE_2D, 0);
 
 	vertices.clear();
 	colors.clear();

@@ -40,9 +40,9 @@ int main()
 
 	//glfwSetWindowPos(1920,-27);  //for dual display
     //glfwSetWindowPos(-6,-27); //full screen
-    ////glfwSetWindowPos(810,30);
+    glfwSetWindowPos(810,130);
 
-    glfwSetWindowTitle("KeiMote");
+    glfwSetWindowTitle("Plane-Casting");
 	glfwEnable( GLFW_MOUSE_CURSOR );
 
     GLenum err = glewInit();

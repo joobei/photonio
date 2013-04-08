@@ -17,7 +17,7 @@ void main()
     shadow = textureProj(shadowMap,shadowProj);
 
     if (shadow != 1.0) {
-        fragColor.rgb -=0.7;
+        fragColor.rgb -=0.4;
     }
     else {
     fragColor *= shadow;
