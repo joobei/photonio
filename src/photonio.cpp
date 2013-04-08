@@ -59,7 +59,7 @@ calibrate(false),
 
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
-	//Polhemus
+    //Polhemus (disabled because it requires usb converter attached)
     //serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 	
 
