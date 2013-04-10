@@ -222,6 +222,9 @@ namespace pho {
 		glm::vec2 p1t,p2t;
 		bool both;
 		bool consumed;
+        //Flicking
+        pho::flickManager flicker;
+        glm::mat4 lastMatrix;
 
 
 		//Wii-Mote Stuff

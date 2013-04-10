@@ -7,6 +7,7 @@
 #include <fstream>
 #include <streambuf>
 #include <sstream>
+#include <deque>
 #include "glm/glm.hpp"
 
 //errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
@@ -86,6 +87,21 @@ inline float sssTriangleC(glm::vec2 pa, glm::vec2 pb, glm::vec2 pc) {
 }
 
 std::string readTextFile(std::string filename);
+
+class flickManager {
+public:
+    flickManager();
+    void addTouch(glm::vec2 point); //adds one point to the flickManager
+    bool startflick();  //the flick manager returns true if it's a flick or false if not (also resets history?)
+    glm::mat4 dampenAndGiveMatrix();
+    void stop();
+    constexpr static float alpha = 0.5;
+    glm::mat4 transform;
+    glm::mat3 rotation;
+    bool inFlick;
+private:
+    std::deque<glm::vec2> touchHistory; //store a number of values
+};
 
 }
 

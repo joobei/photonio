@@ -55,7 +55,7 @@ calibrate(false),
 		std::cout << "Tuio client connection failed" << std::endl;
 	}
 
-	verbose = false;
+    verbose = true;
 
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
@@ -180,7 +180,9 @@ void Engine::checkEvents() {
         //checkWiiMote();
 	}
 
-
+    if (inFlick) {
+        cursor.modelMatrix = flicker.dampenAndGiveMatrix();
+    }
 	//Joystick
 	checkSpaceNavigator();
 }
@@ -542,6 +544,11 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 	cursorList = tuioClient->getTuioCursors();
 	//std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
+    flicker.addTouch(glm::vec2(tcur->getX(),tcur->getY()));
+    if (inFlick) {
+        inFlick!=inFlick;
+    }
+
 	switch (appInputState) {
 	case idle:
 		appInputState = translate;
@@ -586,6 +593,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	y = tcur->getY();
 	mat3 tempMat;
 	mat4 newLocationMatrix;
+    std::cout << x << "  " << y << '\n';
+    std::cout.flush();
+    //add cursor to queue for flicking
+    flicker.addTouch(glm::vec2(x,y));
 	
 	short numberOfCursors = tuioClient->getTuioCursors().size();
 	//std::list<TUIO::TuioCursor*> cursorList;
@@ -600,12 +611,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
 		newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-		//newLocationMatrix = glm::translate(cursor.modelMatrix,newLocationVector);  //Calculate new location by translating object by motion vector
-		newLocationMatrix = glm::translate(mat4(),newLocationVector);
+        newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
 		plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
 		cursor.modelMatrix = newLocationMatrix*cursor.modelMatrix;
-
+        lastMatrix = cursor.modelMatrix;
 		break;
 		  
 	   //*********************   ROTATE  ****************************
@@ -620,7 +630,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				if (tcur->getCursorID() == f1id) {
 
 				p1p = p1c;
-
 				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
 				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
 
@@ -631,7 +640,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 			if (tcur->getCursorID() == f2id) {
 				
 				p2p = p2c;	
-
 				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
 				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
 
@@ -669,9 +677,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 
 			break;
-		case trackBall:
-			//********************* TRACKBALL  *************************
-			break;
 		}
 	}
 	if (verbose)
@@ -682,14 +687,19 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 void Engine::removeTuioCursor(TuioCursor *tcur) {
 
-	short numberOfCursors = tuioClient->getTuioCursors().size()-1;
-
-	//std::cout << "Removed cursor, Current NoOfCursors " << numberOfCursors << std::endl;
+    //std::cout << "Removed cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
 	switch (appInputState) {
 	case translate:
 		appInputState = idle;
 		std::cout << "translate-->idle" << std::endl;
+        std::cout.flush();
+
+        if (flicker.startflick()) {
+            flicker.rotation= glm::mat3(orientation);
+            flicker.inFlick = true;
+        }
+
 		break;
 	case trackBall:
 		/*if (numberOfCursors == 2) {
@@ -1150,6 +1160,7 @@ void Engine::checkKeyboard() {
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		cursor.modelMatrix = glm::translate(0,0,-5);
 		plane.modelMatrix = glm::translate(0,0,-5);
+        inFlick = false;
 		viewMatrix = mat4();
 	}
 	if (glfwGetKey(GLFW_KEY_END)) {
