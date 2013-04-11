@@ -9,6 +9,7 @@
 #include <sstream>
 #include <deque>
 #include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 //errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
 
@@ -91,16 +92,19 @@ std::string readTextFile(std::string filename);
 class flickManager {
 public:
     flickManager();
-    void addTouch(glm::vec2 point); //adds one point to the flickManager
-    bool startflick();  //the flick manager returns true if it's a flick or false if not (also resets history?)
+    void addTouch(glm::vec2 speeds); //adds one point to the flickManager
+    void endFlick(glm::mat3 orientationSnapshot);  //the flick manager returns true if it's a flick or false if not (also resets history?)
+    void stopFlick(); //stops the flying
     glm::mat4 dampenAndGiveMatrix();
-    void stop();
+    void newFlick();
     constexpr static float alpha = 0.5;
     glm::mat4 transform;
     glm::mat3 rotation;
-    bool inFlick;
+    bool inFlick();
 private:
+    bool currentlyInFlick;
     std::deque<glm::vec2> touchHistory; //store a number of values
+    short times;
 };
 
 }

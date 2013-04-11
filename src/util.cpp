@@ -44,47 +44,56 @@ void pho::WiiButtonState::reset() {
 
 pho::flickManager::flickManager() {
     transform = glm::mat4();
-    inFlick = false;
+    currentlyInFlick = false;
+    times = 0;
 }
 
 //adds one point to the flickManager
 void pho::flickManager::addTouch(glm::vec2 point){
     touchHistory.push_front(point);
-
-    if (touchHistory.size() > 10) {
-        std::deque<glm::vec2>::iterator it = touchHistory.end();
-        touchHistory.erase(it);
-    }
+    if (touchHistory.size() > 10) touchHistory.pop_back();
 }
 
-//the flick manager returns true if it's a flick or false if not (also resets history?)
-bool pho::flickManager::startflick(){
+//a flick or false if not
+void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
 
-    if (touchHistory.size() > 1) {
-
-        glm::vec2 p2 = touchHistory.at(0);
-        glm::vec2 p1 = touchHistory.at(1);
-
-        if (glm::distance(p2,p1) > 0.01 ) {
-            touchHistory.clear();
-            return true;
-        }
-        else return false;
-    }
-    return false;
+    rotation = orientationSnapshot;
+    if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
+        times = 3;
+        currentlyInFlick = true; }
 }
 
 //resets everything
-void pho::flickManager::stop(){
+void pho::flickManager::newFlick(){
+    currentlyInFlick = false;
+    touchHistory.clear();
+    times = 0;
+}
+
+bool pho::flickManager::inFlick() {
+    return currentlyInFlick;
+}
+
+void pho::flickManager::stopFlick() {
+    currentlyInFlick = false;
+    times = 0;
     touchHistory.clear();
 }
 
 //dampen the saved matrix and feed us the dampened value
 glm::mat4 pho::flickManager::dampenAndGiveMatrix(){
+    times--;
+    if (times < 0) { currentlyInFlick = false;
+    }
+    else {
+    glm::vec2 temp = glm::vec2(touchHistory[0].x,touchHistory[0].y);
+
     glm::mat4 newLocationMatrix;
     glm::vec3 newLocationVector;
-    newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-    newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
-    transform *= 0.1;
-    return transform;
+
+    newLocationVector = rotation*glm::vec3(temp.x,0,temp.y);  //rotate the motion vector from TUIO in the direction of the plane
+    newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+
+    return newLocationMatrix;
+    }
 }
