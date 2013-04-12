@@ -59,7 +59,7 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
 
     rotation = orientationSnapshot;
     if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
-        times = 3;
+        times = 20;
         currentlyInFlick = true; }
 }
 
@@ -83,17 +83,17 @@ void pho::flickManager::stopFlick() {
 //dampen the saved matrix and feed us the dampened value
 glm::mat4 pho::flickManager::dampenAndGiveMatrix(){
     times--;
-    if (times < 0) { currentlyInFlick = false;
+    if (times < 0) { stopFlick(); return glm::mat4();
     }
     else {
-    glm::vec2 temp = glm::vec2(touchHistory[0].x,touchHistory[0].y);
+        glm::vec2 temp = glm::vec2(touchHistory[0].x,touchHistory[0].y);
 
-    glm::mat4 newLocationMatrix;
-    glm::vec3 newLocationVector;
+        glm::mat4 newLocationMatrix;
+        glm::vec3 newLocationVector;
 
-    newLocationVector = rotation*glm::vec3(temp.x,0,temp.y);  //rotate the motion vector from TUIO in the direction of the plane
-    newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+        newLocationVector = rotation*glm::vec3(temp.x,0,temp.y);  //rotate the motion vector from TUIO in the direction of the plane
+        newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
-    return newLocationMatrix;
+        return newLocationMatrix/((20-times)*alpha);
     }
 }

@@ -224,8 +224,6 @@ namespace pho {
 		bool consumed;
         //Flicking
         pho::flickManager flicker;
-        glm::mat4 lastMatrix;
-
 
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;

@@ -181,7 +181,9 @@ void Engine::checkEvents() {
 	}
 
     if (flicker.inFlick()) {
-        cursor.modelMatrix = flicker.dampenAndGiveMatrix()*cursor.modelMatrix;
+        glm::mat4 flickTransform = flicker.dampenAndGiveMatrix();
+        cursor.modelMatrix = flickTransform*cursor.modelMatrix;
+        plane.modelMatrix = cursor.modelMatrix;
     }
 	//Joystick
 	checkSpaceNavigator();
@@ -576,9 +578,6 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 			consumed = true;
 		}
-
-
-
 	}
 	if (verbose)
 		std::cout << "add cur " << tcur->getCursorID() << " (" <<  tcur->getSessionID() << ") " << tcur->getX() << " " << tcur->getY() << std::endl;
@@ -605,9 +604,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 #define TFACTOR 5
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
-        std::cout << "x: " << x;
-        std::cout << "\t\t y: " << y << '\n';
-        std::cout.flush();
+        //std::cout << "x: " << x;
+        //std::cout << "\t\t y: " << y << '\n';
+        //std::cout.flush();
         //add cursor to queue for flicking
         flicker.addTouch(glm::vec2(x,y));
 
@@ -616,7 +615,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 		plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
 		cursor.modelMatrix = newLocationMatrix*cursor.modelMatrix;
-        lastMatrix = cursor.modelMatrix;
 		break;
 		  
 	   //*********************   ROTATE  ****************************
@@ -1155,7 +1153,8 @@ void Engine::checkKeyboard() {
 	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
 		cursor.modelMatrix = glm::translate(0,0,-5);
-		plane.modelMatrix = glm::translate(0,0,-5);
+        //plane.modelMatrix = glm::translate(0,0,-5);
+        plane.modelMatrix = cursor.modelMatrix;
         flicker.stopFlick();
 		viewMatrix = mat4();
 	}

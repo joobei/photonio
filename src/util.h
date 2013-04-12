@@ -97,7 +97,6 @@ public:
     void stopFlick(); //stops the flying
     glm::mat4 dampenAndGiveMatrix();
     void newFlick();
-    constexpr static float alpha = 0.5;
     glm::mat4 transform;
     glm::mat3 rotation;
     bool inFlick();
@@ -105,6 +104,9 @@ private:
     bool currentlyInFlick;
     std::deque<glm::vec2> touchHistory; //store a number of values
     short times;
+    constexpr static float alpha = 0.8;
+    float dampFactor;
+
 };
 
 }
