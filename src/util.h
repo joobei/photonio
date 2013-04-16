@@ -104,7 +104,7 @@ private:
     bool currentlyInFlick;
     std::deque<glm::vec2> touchHistory; //store a number of values
     short times;
-    constexpr static float alpha = 0.8;
+    constexpr static float alpha = 0.01;
     float dampFactor;
 
 };
