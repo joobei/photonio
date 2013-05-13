@@ -224,6 +224,7 @@ namespace pho {
 		bool consumed;
         //Flicking
         pho::flickManager flicker;
+        boost::timer flickTimer;
 
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;

@@ -10,6 +10,7 @@
 #include <deque>
 #include "glm/glm.hpp"
 #include "glm/gtc/matrix_transform.hpp"
+#include "boost/timer.hpp"
 
 //errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
 
@@ -95,19 +96,18 @@ public:
     void addTouch(glm::vec2 speeds); //adds one point to the flickManager
     void endFlick(glm::mat3 orientationSnapshot);  //the flick manager returns true if it's a flick or false if not (also resets history?)
     void stopFlick(); //stops the flying
-    glm::mat4 dampenAndGiveMatrix();
+    glm::mat4 dampenAndGiveMatrix(glm::mat3 rotationMat);
     void newFlick();
     glm::mat4 transform;
     glm::mat3 rotation;
     bool inFlick();
 private:
     bool currentlyInFlick;
+    boost::timer flickTimer;
     std::deque<glm::vec2> touchHistory; //store a number of values
-    glm::vec2 launchPair;
+    glm::vec2 launchPair;  //to save the speed of the cursor on the last movement before the flick was initiated
     short times;
-    constexpr static float alpha = 0.01;
-    float dampFactor;
-
+    float decay;
 };
 
 }

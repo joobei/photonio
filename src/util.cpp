@@ -53,23 +53,25 @@ pho::flickManager::flickManager() {
     transform = glm::mat4();
     currentlyInFlick = false;
     times = 0;
+    decay = 0.95;
 }
 
 //adds one point to the flickManager
 void pho::flickManager::addTouch(glm::vec2 point){
     touchHistory.push_front(point);
     if (touchHistory.size() > 10) touchHistory.pop_back();
+    flickTimer.restart();
 }
 
 //a flick or false if not
 void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
 
     rotation = orientationSnapshot;
-    if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
-        times = 50;
+    if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
+        times = 500;
         currentlyInFlick = true;
-        launchPair.x = touchHistory[0].x - touchHistory[1].x;
-        launchPair.y = touchHistory[0].y - touchHistory[1].y;
+        launchPair.x = touchHistory[0].x/50;
+        launchPair.y = touchHistory[0].y/50;
     }
 }
 
@@ -91,20 +93,20 @@ void pho::flickManager::stopFlick() {
 }
 
 //dampen the saved matrix and feed us the dampened value
-glm::mat4 pho::flickManager::dampenAndGiveMatrix(){
+glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 rotationMat){
     times--;
-    if (times < 0) { stopFlick(); return glm::mat4();
+    if (times == 0) { stopFlick(); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
     }
     else {
-        glm::vec2 temp = glm::vec2(touchHistory[0].x,touchHistory[0].y);
-
         glm::mat4 newLocationMatrix;
         glm::vec3 newLocationVector;
 
-        newLocationVector = rotation*glm::vec3(temp.x,0,temp.y);  //rotate the motion vector from TUIO in the direction of the plane
+        launchPair *= decay; //dampen vector
+
+        newLocationVector = rotationMat*glm::vec3(launchPair.x,0,launchPair.y);  //rotate the motion vector from TUIO in the direction of the plane
         newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
-        return newLocationMatrix/((20-times)*alpha);
+        return newLocationMatrix;
     }
 }
 

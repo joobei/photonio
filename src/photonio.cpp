@@ -158,9 +158,11 @@ void Engine::checkEvents() {
 	}
 
     if (flicker.inFlick()) {
-        glm::mat4 flickTransform = flicker.dampenAndGiveMatrix();
-        cursor.modelMatrix = flickTransform*cursor.modelMatrix;
-        plane.modelMatrix = cursor.modelMatrix;
+        glm::mat4 flickTransform = flicker.dampenAndGiveMatrix(glm::mat3(plane.modelMatrix));
+        plane.modelMatrix = flickTransform*plane.modelMatrix;  //translate plane
+        pho::locationMatch(cursor.modelMatrix,plane.modelMatrix);  //put cursor in plane's location
+        //cursor.modelMatrix = flickTransform*cursor.modelMatrix;
+        //plane.modelMatrix = cursor.modelMatrix;
     }
 	//Joystick
 	checkSpaceNavigator();
@@ -588,7 +590,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         //std::cout << "\t\t y: " << y << '\n';
         //std::cout.flush();
         //add cursor to queue for flicking
-        flicker.addTouch(glm::vec2(x,y));
+        flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
 		newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
         newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
