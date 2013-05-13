@@ -55,7 +55,7 @@ calibrate(false),
 		std::cout << "Tuio client connection failed" << std::endl;
 	}
 
-    verbose = false;
+    verbose = true;
 
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
@@ -137,9 +137,6 @@ void Engine::initResources() {
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
-	vec2 ft;
-	float newAngle;
-
 	checkKeyboard();
 
 	if (technique == mouse) {
@@ -153,26 +150,6 @@ void Engine::checkEvents() {
 	  
 	if (technique == planeCasting) {
 		checkUDP();
-
-		if (appInputState == rotate && rotTechnique == pinch && (consumed == false)) {
-			
-			p1t = p1c-p1p;
-			p2t = p2c-p2p;
-
-			ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
-			ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
-
-			referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x)); 
-			newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
-			
-			cursor.rotate(glm::rotate((newAngle-referenceAngle)*(-50),vec3(0,0,1)));
-
-			cursor.rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
-			cursor.rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
-
-			consumed = true;
-		}
-
 	}
 
 	if (technique == rayCasting && wii) {
@@ -592,6 +569,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	mat4 newLocationMatrix;
 
 	
+    vec2 ft;
+    float newAngle;
+
 	short numberOfCursors = tuioClient->getTuioCursors().size();
 	//std::list<TUIO::TuioCursor*> cursorList;
 	//cursorList = tuioClient->getTuioCursors();
@@ -600,7 +580,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	switch (appInputState) {
 	case translate:
 		//********************* TRANSLATE ****************************
-		tempMat = mat3(orientation);
+        tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
 #define TFACTOR 5
 		x=(tcur->getXSpeed())/TFACTOR;
 		y=(tcur->getYSpeed())/TFACTOR;
@@ -613,10 +593,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
         newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
-		plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
-		cursor.modelMatrix = newLocationMatrix*cursor.modelMatrix;
-		break;
-		  
+        plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
+        pho::locationMatch(cursor.modelMatrix,plane.modelMatrix);  //put cursor in plane's location
+
+		break;		  
 	   //*********************   ROTATE  ****************************
     case rotate:
         switch (rotTechnique) {
@@ -645,8 +625,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
             break;
         case pinch:
-            // ***  PINCH  *************************
-
+            // ***  PINCH  **********
 
             if (tcur->getCursorID() == f1id) {
 
@@ -666,9 +645,26 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				p2c.y = tcur->getY();
 
 				consumed = false;
-
 			}	
 
+            if (consumed == false) {
+
+                p1t = p1c-p1p;
+                p2t = p2c-p2p;
+
+                ft.x=std::max(0.0f,std::min(p1t.x,p2t.x)) + std::min(0.0f,std::max(p1t.x,p2t.x));
+                ft.y=std::max(0.0f,std::min(p1t.y,p2t.y)) + std::min(0.0f,std::max(p1t.y,p1t.y));
+
+                referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x));
+                newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
+
+                cursor.rotate(glm::rotate((newAngle-referenceAngle)*(-50),vec3(0,0,1)));
+
+                cursor.rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
+                cursor.rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
+
+                consumed = true;
+            }
 
 			break;
 		}

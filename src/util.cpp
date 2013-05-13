@@ -12,6 +12,13 @@ std::string pho::readTextFile(std::string filename) {
 	return buffer.str();
 }
 
+void pho::locationMatch(glm::mat4 &target, const glm::mat4 &source) {
+    target[3][0] = source[3][0];
+    target[3][1] = source[3][1];
+    target[3][2] = source[3][2];
+    //target[3][0] = source[3][0];
+}
+
 pho::WiiButtonState::WiiButtonState() {
 	a = false;
 	b = false;
@@ -59,8 +66,11 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
 
     rotation = orientationSnapshot;
     if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
-        times = 20;
-        currentlyInFlick = true; }
+        times = 50;
+        currentlyInFlick = true;
+        launchPair.x = touchHistory[0].x - touchHistory[1].x;
+        launchPair.y = touchHistory[0].y - touchHistory[1].y;
+    }
 }
 
 //resets everything
@@ -97,3 +107,5 @@ glm::mat4 pho::flickManager::dampenAndGiveMatrix(){
         return newLocationMatrix/((20-times)*alpha);
     }
 }
+
+

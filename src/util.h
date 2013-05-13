@@ -75,7 +75,6 @@ enum Technique {  //appmode
 //always be texture unit 0
 const GLuint texUnit = 0;
 
-
 //return the angle C of a triangle formed by 3 points
 inline float sssTriangleC(glm::vec2 pa, glm::vec2 pb, glm::vec2 pc) {
     float a = glm::distance(pc,pb);
@@ -88,6 +87,7 @@ inline float sssTriangleC(glm::vec2 pa, glm::vec2 pb, glm::vec2 pc) {
 }
 
 std::string readTextFile(std::string filename);
+void locationMatch(glm::mat4 &target,const glm::mat4 &source);
 
 class flickManager {
 public:
@@ -103,6 +103,7 @@ public:
 private:
     bool currentlyInFlick;
     std::deque<glm::vec2> touchHistory; //store a number of values
+    glm::vec2 launchPair;
     short times;
     constexpr static float alpha = 0.01;
     float dampFactor;
