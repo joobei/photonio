@@ -269,7 +269,7 @@ void Engine::render() {
     */
 	
 
-   // if (technique == planeCasting && appInputState != rotate) {
+    if (technique == planeCasting && appInputState != rotate) {
 
     flatShader.use(); //bind the standard shader for default colored objects
     flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
@@ -278,7 +278,7 @@ void Engine::render() {
     plane.bind();
     CALL_GL(glDrawArrays(GL_LINES,0,plane.vertices.size()));
 
-    //}
+    }
    
 	/*colorShader.use(); //bind the standard shader for default colored objects
 	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
@@ -618,44 +618,39 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 		break;
 		  
 	   //*********************   ROTATE  ****************************
-	case rotate:
-		switch (rotTechnique) {
-		case singleAxis:
-			//todo: add code for aligned axis
-			break;
-		case screenSpace:
-			if (numberOfCursors == 1) {
+    case rotate:
+        switch (rotTechnique) {
+        case screenSpace:
+            if (tcur->getCursorID() == f1id) {
 
-				if (tcur->getCursorID() == f1id) {
+                p1p = p1c;
+                cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
+                cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
 
-				p1p = p1c;
-				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
-				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+                p1c.x = tcur->getX();
+                p1c.y = tcur->getY();
+            }
 
-				p1c.x = tcur->getX();
-				p1c.y = tcur->getY();
-			}
+            if (tcur->getCursorID() == f2id) {
 
-			if (tcur->getCursorID() == f2id) {
-				
-				p2p = p2c;	
-				cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
-				cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+                p2p = p2c;
+                cursor.rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
+                cursor.rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
 
-				p2c.x = tcur->getX();
-				p2c.y = tcur->getY();
+                p2c.x = tcur->getX();
+                p2c.y = tcur->getY();
 
-			}	
-
-			}
-			break;
-		case pinch:
-			// ***  PINCH  *************************
+            }
 
 
-			if (tcur->getCursorID() == f1id) {
+            break;
+        case pinch:
+            // ***  PINCH  *************************
 
-				p1p = p1c;
+
+            if (tcur->getCursorID() == f1id) {
+
+                p1p = p1c;
 
 				p1c.x = tcur->getX();
 				p1c.y = tcur->getY();
@@ -1033,7 +1028,9 @@ void Engine::checkUDP() {
 			case 2:
 				if (appInputState != rotate) {
 					printf("rotate");
-					appInputState = rotate; }
+                    appInputState = rotate;
+                    rotTechnique = screenSpace;
+                }
 				else
 					{ appInputState = idle; 
 					printf("idle");}
@@ -1041,7 +1038,9 @@ void Engine::checkUDP() {
 			case 3:
 				if (appInputState != rotate) {
 					printf("rotate");
-					appInputState = rotate; }
+                    appInputState = rotate;
+                    rotTechnique = screenSpace;
+                }
 				else
 					{ appInputState = idle; 
 					printf("idle");}
