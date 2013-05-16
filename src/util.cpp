@@ -82,8 +82,18 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
     }
 }
 
-void pho::flickManager::endPinchFlick(){
+void pho::flickManager::endRotationFlick(){
+
     if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
+        times = 1000;
+        currentlyInRotationFlick = true;
+        launchPair.x = touchHistory[0].x;
+        launchPair.y = touchHistory[0].y;
+    }
+}
+
+void pho::flickManager::endPinchFlick(){
+    if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
     //if ((glm::abs(angleHistory[0]) > 5.0f) || (glm::abs(angleHistory[0]) > 5.0f)) {
         pinchTimes = 1000;
         currentlyInPinchFlick = true;
@@ -103,14 +113,21 @@ bool pho::flickManager::inFlick() {
     return currentlyInFlick;
 }
 
-bool pho::flickManager::inRotationFlick() {
+bool pho::flickManager::inPinchFlick() {
     return currentlyInPinchFlick;
+}
+
+
+bool pho::flickManager::inRotationFlick() {
+    return currentlyInRotationFlick;
 }
 
 void pho::flickManager::stopFlick() {
     currentlyInFlick = false;
+    currentlyInRotationFlick = false;
     times = 0;
 }
+
 
 void pho::flickManager::stopPinchFlick() {
     currentlyInPinchFlick = false;
@@ -134,6 +151,19 @@ glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 rotationMat){
         return newLocationMatrix;
     }
 }
+
+glm::vec2 pho::flickManager::dampenAndGiveRotationMatrix(){
+    times--;
+    if (times == 0 || times < 0) { stopFlick(); return glm::vec2(0,0);  //if the flick counter has come to zero just return an identity matrix
+    }
+    else {
+        launchPair *= decay; //dampen vector
+        return launchPair;
+    }
+}
+
+
+
 
 glm::mat4 pho::flickManager::dampenAndGivePinchMatrix(){
     pinchTimes--;

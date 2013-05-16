@@ -165,9 +165,15 @@ void Engine::checkEvents() {
         //plane.modelMatrix = cursor.modelMatrix;
     }
 
-    if (flicker.inRotationFlick()) {
+    if (flicker.inPinchFlick()) {
         glm::mat4 flickTransform = flicker.dampenAndGivePinchMatrix();
         cursor.rotate(flickTransform);
+    }
+
+    if (flicker.inRotationFlick()){
+        glm::vec2 rotation = flicker.dampenAndGiveRotationMatrix();
+        cursor.rotate(glm::rotate(rotation.x*3.0f,vec3(0,1,0)));
+        cursor.rotate(glm::rotate(rotation.y*3.0f,vec3(1,0,0)));
     }
 
 	//Joystick
@@ -532,7 +538,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 	//std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
-    if (numberOfCursors == 1) {  flicker.newFlick(); }
+    if (numberOfCursors == 1) {  flicker.newFlick(); flicker.stopPinchFlick();}
 
 	switch (appInputState) {
 	case idle:
@@ -542,6 +548,9 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 	case translate:
 		break;
 	case rotate:
+        if (numberOfCursors == 0) {
+            flicker.stopFlick();
+        }
 		if (numberOfCursors == 1) {
 			p1c.x = tcur->getX();
 			p1c.y = tcur->getY();
@@ -552,6 +561,8 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 		}
 		if (numberOfCursors == 2) {
+
+            flicker.stopPinchFlick();
 			rotTechnique = pinch;
 			std::cout << "pinch rotate" << '\n';
 			p2c.x = tcur->getX();
@@ -577,6 +588,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	mat4 newLocationMatrix;
 
 	
+    flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
+
     vec2 ft;
     float newAngle;
 
@@ -595,8 +608,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         //std::cout << "\t\t y: " << y << '\n';
         //std::cout.flush();
         //add cursor to queue for flicking
-
-        flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
 		newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
         newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
@@ -633,8 +644,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
                 p2c.x = tcur->getX();
                 p2c.y = tcur->getY();
-
-
 
             }
 
@@ -708,6 +717,9 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 		break;
 	case rotate:
 		switch (rotTechnique) {
+        case screenSpace:
+            flicker.endRotationFlick();
+            break;
 		case pinch:
 			rotTechnique = screenSpace;
 			std::cout << "screenSpace" << '\n';

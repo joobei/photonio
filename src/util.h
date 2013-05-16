@@ -100,17 +100,21 @@ public:
     void addRotate(float angle); //adds one point to the flickManager
     void endFlick(glm::mat3 orientationSnapshot);  //the flick manager returns true if it's a flick or false if not (also resets history?)
     void endPinchFlick();
+    void endRotationFlick();
     void stopFlick(); //stops the flying
     void stopPinchFlick(); //stops the flying
     glm::mat4 dampenAndGiveMatrix(glm::mat3 rotationMat);
     glm::mat4 dampenAndGivePinchMatrix();
+    glm::vec2 dampenAndGiveRotationMatrix();
     void newFlick();
     glm::mat4 transform;
     glm::mat3 rotation;
     bool inFlick();
+    bool inPinchFlick();
     bool inRotationFlick();
 private:
     bool currentlyInFlick;
+    bool currentlyInRotationFlick;
     bool currentlyInPinchFlick;
     boost::timer flickTimer;
     std::deque<glm::vec2> touchHistory; //store a number of values
