@@ -28,7 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/matrix_transform.hpp"
 #include "glm/gtx/rotate_vector.hpp"
 #include "glm/gtx/quaternion.hpp"
 #include "glm/gtx/compatibility.hpp"

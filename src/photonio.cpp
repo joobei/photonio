@@ -55,7 +55,7 @@ calibrate(false),
 		std::cout << "Tuio client connection failed" << std::endl;
 	}
 
-    verbose = true;
+    verbose = false;
 
 	//Protobuf custom protocol listener
 	netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
@@ -164,6 +164,12 @@ void Engine::checkEvents() {
         //cursor.modelMatrix = flickTransform*cursor.modelMatrix;
         //plane.modelMatrix = cursor.modelMatrix;
     }
+
+    if (flicker.inRotationFlick()) {
+        glm::mat4 flickTransform = flicker.dampenAndGivePinchMatrix();
+        cursor.rotate(flickTransform);
+    }
+
 	//Joystick
 	checkSpaceNavigator();
 }
@@ -578,7 +584,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	//std::list<TUIO::TuioCursor*> cursorList;
 	//cursorList = tuioClient->getTuioCursors();
 
-
 	switch (appInputState) {
 	case translate:
 		//********************* TRANSLATE ****************************
@@ -590,6 +595,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         //std::cout << "\t\t y: " << y << '\n';
         //std::cout.flush();
         //add cursor to queue for flicking
+
         flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
 		newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
@@ -603,6 +609,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     case rotate:
         switch (rotTechnique) {
         case screenSpace:
+
+
+            if (flicker.inFlick()) { flicker.stopFlick(); } //probably have come back from a pinch flick so need to stop the flick?? test without.
+
             if (tcur->getCursorID() == f1id) {
 
                 p1p = p1c;
@@ -611,6 +621,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
                 p1c.x = tcur->getX();
                 p1c.y = tcur->getY();
+
+                flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
             }
 
             if (tcur->getCursorID() == f2id) {
@@ -621,6 +633,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
                 p2c.x = tcur->getX();
                 p2c.y = tcur->getY();
+
+
 
             }
 
@@ -637,6 +651,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 				p1c.y = tcur->getY();
 
 				consumed = true;
+
+                flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 			}
 
 			if (tcur->getCursorID() == f2id) {
@@ -665,6 +681,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
                 cursor.rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
                 cursor.rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
 
+                flicker.addRotate(newAngle-referenceAngle);
+
                 consumed = true;
             }
 
@@ -688,30 +706,12 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
         flicker.endFlick(glm::mat3(orientation));
 
 		break;
-	case trackBall:
-		/*if (numberOfCursors == 2) {
-			trackedCursor = tuioClient->getTuioCursors().back();
-			arcBallPreviousPoint[0] = tcur->getX();
-			arcBallPreviousPoint[1] = tcur->getY();
-			std::cout << "trackball --> trackball" << std::endl;
-		}
-		if (numberOfCursors == 1) {
-			trackedCursor = tuioClient->getTuioCursors().back();
-			arcBallPreviousPoint[0] = tcur->getX();
-			arcBallPreviousPoint[1] = tcur->getY();
-			std::cout << "trackball with 1 finger" << std::endl;
-		}
-		if (numberOfCursors == 0) {
-			appInputState = idle;
-			std::cout << "trackball --> idle " << std::endl;
-		}*/
-
-		break;
 	case rotate:
 		switch (rotTechnique) {
 		case pinch:
 			rotTechnique = screenSpace;
 			std::cout << "screenSpace" << '\n';
+            flicker.endPinchFlick();
 			break;
 		}
 	}

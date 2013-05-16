@@ -60,10 +60,17 @@ pho::flickManager::flickManager() {
 void pho::flickManager::addTouch(glm::vec2 point){
     touchHistory.push_front(point);
     if (touchHistory.size() > 10) touchHistory.pop_back();
-    flickTimer.restart();
+    flickTimer.restart(); //not being used currently
 }
 
-//a flick or false if not
+
+//adds one point to the flickManager
+void pho::flickManager::addRotate(float angle){
+    angleHistory.push_front(angle);
+    if (touchHistory.size() > 10) touchHistory.pop_back();
+    flickTimer.restart(); //not being used currently
+}
+
 void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
 
     rotation = orientationSnapshot;
@@ -75,8 +82,18 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
     }
 }
 
+void pho::flickManager::endPinchFlick(){
+    if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
+    //if ((glm::abs(angleHistory[0]) > 5.0f) || (glm::abs(angleHistory[0]) > 5.0f)) {
+        pinchTimes = 1000;
+        currentlyInPinchFlick = true;
+        launchPinchAngle = angleHistory[0];
+    }
+}
+
 //resets everything
 void pho::flickManager::newFlick(){
+    //also tested mode without stopping the flick
     currentlyInFlick = false;
     touchHistory.clear();
     times = 0;
@@ -86,10 +103,18 @@ bool pho::flickManager::inFlick() {
     return currentlyInFlick;
 }
 
+bool pho::flickManager::inRotationFlick() {
+    return currentlyInPinchFlick;
+}
+
 void pho::flickManager::stopFlick() {
     currentlyInFlick = false;
     times = 0;
-    touchHistory.clear();
+}
+
+void pho::flickManager::stopPinchFlick() {
+    currentlyInPinchFlick = false;
+    pinchTimes = 0;
 }
 
 //dampen the saved matrix and feed us the dampened value
@@ -109,5 +134,17 @@ glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 rotationMat){
         return newLocationMatrix;
     }
 }
+
+glm::mat4 pho::flickManager::dampenAndGivePinchMatrix(){
+    pinchTimes--;
+    if (pinchTimes == 0) { stopPinchFlick(); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
+    }
+    else {
+        launchPinchAngle *= decay; //dampen vector
+
+        return glm::rotate((launchPinchAngle)*(-50),glm::vec3(0,0,1));
+    }
+}
+
 
 
