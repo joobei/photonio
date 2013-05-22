@@ -243,6 +243,7 @@ namespace pho {
 		float deltat;
 
 		//Textures
+        std::string assetpath;
 		GLuint floorVAO,floorVBO, floorIBO, texCoordVBO;
 		GLuint floorTexture;
 		glm::mat4 floorMatrix;

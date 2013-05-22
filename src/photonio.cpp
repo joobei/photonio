@@ -19,10 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <boost/math/special_functions/round.hpp>
-#include "data.pb.h"
+#include "src/data.pb.h"
 #include "glm/gtc/matrix_transform.hpp"
 #include <cmath>
 #include <algorithm>
+
 
 using namespace std;
 
@@ -94,6 +95,21 @@ calibrate(false),
 }
 
 void Engine::initResources() {
+    std::string shaderpath; //this is only needed at runtime whereas asssetpath might be needed later
+
+    //find the path where the shaders are stored ("shaderpath" file created by cmake with configure_file)
+    if (boost::filesystem::exists("shaderpath")) {
+        shaderpath = readTextFile("shaderpath");
+        shaderpath = shaderpath.substr(0,shaderpath.size()-1); //cmake puts a newline char
+        shaderpath.append("/"); //at the end of the string
+    }
+
+    if (boost::filesystem::exists("assetpath")) { //if you're not using cmake put the shaders in the same dir as the binary
+        assetpath = readTextFile("assetpath");
+        assetpath = assetpath.substr(0,assetpath.size()-1); //cmake puts a newline char
+        assetpath.append("/"); //at the end of the string
+    }
+
    
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -115,16 +131,17 @@ void Engine::initResources() {
     pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
 
 	 //load shaders from files
-	colorShader = pho::Shader("shaders/shader");  
-	flatShader = pho::Shader("shaders/offscreen");
-	textureShader = pho::Shader("shaders/texader");
+    colorShader = pho::Shader(shaderpath+"shader");
+    flatShader = pho::Shader(shaderpath+"offscreen");
+    textureShader = pho::Shader(shaderpath+"texader");
 
-    textureShader = pho::Shader("shaders/texader");
+    textureShader = pho::Shader(shaderpath+"texader");
+
     shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
     baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
 
-	directionalShader = pho::Shader("shaders/specular");
-    //normalShader = pho::Shader("shaders/normals");
+    directionalShader = pho::Shader(shaderpath+"specular");
+    //normalShader = pho::Shader(shaderpath+"normals");
 
 	initSimpleGeometry();
 
@@ -957,7 +974,7 @@ void Engine::initSimpleGeometry() {
     //Texture Loading
 
     CALL_GL(glGenTextures(1,&floorTexture));
-    floorTexture = gli::createTexture2D("assets/grid.dds");
+    floorTexture = gli::createTexture2D(assetpath+"grid.dds");
 
     //glBindTexture(GL_TEXTURE_2D, floorTexture);
     //glTexParameteri(floorTexture,GL_TEXTURE_WRAP_S,GL_REPEAT);
@@ -1055,7 +1072,18 @@ void Engine::checkUDP() {
 					{ appInputState = idle; 
 					printf("idle");}
 				break;
-			default:
+            case 4:
+                if (tempEvent.state() == true) {
+                    appInputState = translate;
+                    printf("translate");
+                }
+                if (tempEvent.state() == false) {
+                    appInputState = rotate;
+                    rotTechnique = screenSpace;
+                    printf("rotate");
+                }
+                break;
+            default:
 				calibrate = true;
 				break;
 			}
