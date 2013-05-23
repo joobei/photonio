@@ -16,6 +16,16 @@ using glm::mat4;
 
 namespace pho {
 
+    struct myMesh {
+        int numFaces;
+        GLuint vao;
+        std::vector<GLuint> textures;
+        GLuint faceBuffer;
+        GLuint vertexBuffer;
+        GLuint texCoordBuffer;
+        GLuint normalBuffer;
+    };
+
 	struct Face {
 		glm::vec3 a,b,c;
 		glm::vec3 normal;
