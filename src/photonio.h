@@ -43,7 +43,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "asio.h"
 #include "spuc/generic/running_average.h"
 //#include "arcball.h"
-#include "assets.h"
+#include "asset.h"
 #include "TUIO/TuioClient.h"
 #include "TUIO/TuioListener.h"
 #include "TUIO/TuioObject.h"
@@ -52,7 +52,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <cstdio>
 #include <functional>
 #include "shader.h"
-#include "mesh.h"
 #include <GL/glfw.h>
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
@@ -143,10 +142,6 @@ namespace pho {
 		pho::Shader directionalShader;
 		pho::Shader normalShader;
 
-		//Lights
-		GLuint lightSource;
-		pho::LightSource pointLight;
-
 		//Picking
 		GLuint hitObject;
 		bool objectHit,sphereHit;
@@ -191,13 +186,11 @@ namespace pho {
 		boost::mutex ioMutex; //locks the message queue for thread access
 
 		//assets
-        pho::Mesh target;
-        pho::Mesh cursor;
-        pho::Mesh plane;
-		pho::Mesh point;
-		pho::Mesh circle;
-		pho::Mesh ray;
-		glm::mat4 rayMatrix;
+        pho::Asset target;
+        pho::Asset cursor;
+        pho::Asset plane;
+        pho::Asset ray;
+
 		GLuint rayVBO;
 		short rayVerticesCount;
 		
@@ -229,6 +222,9 @@ namespace pho {
 		pho::WiiButtonState wiiButton;
         //wiimote remote;
 		bool wii;
+
+        //lighting
+        pho::LightSource pointLight;
 
 
 		//mouse 

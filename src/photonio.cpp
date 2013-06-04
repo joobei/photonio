@@ -36,7 +36,7 @@ calibrate(false),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
     //_serialserver(serialioservice,115200,"/dev/ttyS0",&eventQueue,&ioMutex),
     wii(false),
-	mouseMove(false)
+    mouseMove(false)
 {
 #define SIZE 30                     //Size of the moving average filter
 	accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -91,6 +91,7 @@ calibrate(false),
 
 	consumed = false;
 
+
 #define	SHADOW_MAP_RATIO 8;
 }
 
@@ -109,6 +110,10 @@ void Engine::initResources() {
         assetpath = assetpath.substr(0,assetpath.size()-1); //cmake puts a newline char
         assetpath.append("/"); //at the end of the string
     }
+
+    cursor = pho::Asset("house.blend");
+    target = pho::Asset("house.blend");
+    plane = pho::Asset("houses.blend");
 
    
 	//Create the perspective matrix
@@ -142,8 +147,6 @@ void Engine::initResources() {
 
     directionalShader = pho::Shader(shaderpath+"specular");
     //normalShader = pho::Shader(shaderpath+"normals");
-
-	initSimpleGeometry();
 
 	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
@@ -203,186 +206,16 @@ void Engine::render() {
     CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-    /*
-    if (restoreRay) {
-
-		CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-		
-		float d = -1000.0f;
-
-		for (int i = 5; i < 3*rayVerticesCount; i+=6) {
-			CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(d),&d));  //edit the 6th float, i.e. the Z
-		}
-        CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,0));
-		restoreRay = false;  //we already restored, no need to do it every frame
-	}
-	
-	if (technique == mouse) {
-		if (cursor.findSphereIntersection(rayOrigin,rayDirection,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
-			sphereHit = true; 	} else { sphereHit = false; }
-	}
-
-	if (technique == rayCasting ) {
-
-		if (cursor.findIntersection(ray.modelMatrix,objectIntersectionPoint) && (appInputState != translate) && appInputState !=rotate) {
-		//if (cursor.findIntersection(rayOrigin,rayDirection,objectIntersectionPoint)) {
-			objectHit = true; //picked up by checkEvents in wii-mote mode switch
-
-			CALL_GL(glDisable(GL_DEPTH_TEST));
-			//render selection red border first with the flat color shader
-			flatShader.use();
-			flatShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 0.5f);
-			flatShader["mvp"] = projectionMatrix*viewMatrix*glm::scale(cursor.modelMatrix,vec3(1.1f,1.1f,1.1f));
-			// draw the object's outline
-			cursor.bind();
-			CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
-
-			//Ray length calculation
-			rayLength = -glm::distance(ray.getPosition(),objectIntersectionPoint);
-			rayLengthObject = rayLength;
-			//Shorten the beam to match the object
-			CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-			for (int i = 5; i < 3*rayVerticesCount; i+=6) {
-				CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(rayLength),&rayLength));  //edit every 6th float, i.e. the Z
-			}
-
-			restoreRay = true; //mark ray to be restored to full length
-		} else {objectHit = false; }
-
-		
-
-
-		float intersectionDistance = -1;
-		if (cursor.findSphereIntersection(ray.modelMatrix,sphereIntersectionPoint,sphereIntersectionDistance,sphereIntersectionNormal)) {
-			sphereHit = true;
-
-			//Ray length calculation
-			rayLength = -glm::distance(ray.getPosition(),sphereIntersectionPoint);
-
-			if(!objectHit) {
-				//Shorten the beam to match the object
-				CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vertexVboId));
-				for (int i = 5; i < 3*rayVerticesCount; i+=6) {
-					CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,i*sizeof(float),sizeof(rayLength),&rayLength));  //edit the 6th float, i.e. the Z
-				}
-			}
-			restoreRay = true; //mark ray to be restored to full length
-
-		} else {sphereHit = false; }
-
-		
-	}
-
-	CALL_GL(glEnable(GL_DEPTH_TEST));
-    */
-	
-
     if (technique == planeCasting && appInputState != rotate) {
 
-    flatShader.use(); //bind the standard shader for default colored objects
-    flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
-    flatShader["baseColor"] = vec4(0.0f, 0.5f ,1.0f, 0.6f);
-    CALL_GL(glLineWidth(7.0f));
-    plane.bind();
-    CALL_GL(glDrawArrays(GL_LINES,0,plane.vertices.size()));
+    //draw plane
 
-    }
-   
-	/*colorShader.use(); //bind the standard shader for default colored objects
-	colorShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-	ray.draw(true);
-	flatShader.use();
-	flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-	flatShader["baseColor"] = vec4(1.0f, 0.5f ,1.0f, 1.0f);
-	ray.draw();*/
-	
+    }	
 	
     /// CURSOR ////////////////////////////////////////
-	directionalShader.use();
-	directionalShader["alpha"] = 1.0f;
-	directionalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-	directionalShader["modelMatrix"] = cursor.modelMatrix;
-	cursor.bind();	
-    CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
-	
-	/*normalShader.use();
-	normalShader["mvp"]= projectionMatrix*viewMatrix*cursor.modelMatrix;
-	normalShader["modelMatrix"] = cursor.modelMatrix;
-	normalShader["viewMatrix"] = viewMatrix;
-	normalShader["projectionMatrix"] = projectionMatrix;
-	cursor.bind();
-	CALL_GL(glPointSize(13.0));
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));*/
+    //draw cursor
 
-    /*directionalShader.use();
-	directionalShader["alpha"] = 0.2f;
-	directionalShader["mvp"] = projectionMatrix*viewMatrix*target.modelMatrix;
-	directionalShader["modelMatrix"] = target.modelMatrix;
-	target.bind();
-	CALL_GL(glDrawArrays(GL_TRIANGLES,0,target.vertices.size()));
-	directionalShader["alpha"] = 1.0f;
-	CALL_GL(glLineWidth(2.0f));
-	target.bind();
-    CALL_GL(glDrawArrays(GL_LINE_STRIP,0,target.vertices.size()));*/
-
-    /*if (technique == rayCasting ) { flatShader.use();
-		flatShader["baseColor"] = vec4(0.2f, 0.4f ,1.0f, 1.0f); //back to drawing with colors
-		flatShader["mvp"] = projectionMatrix*viewMatrix*ray.modelMatrix;
-		ray.bind();
-		CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,ray.vertices.size()));
-    }*/
-	/*normalShader.use();
-	normalShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-	normalShader["modelMatrix"] = cursor.modelMatrix;
-	CALL_GL(glLineWidth(1.0f));
-	cursor.draw();*/
-
-    /*
-	if (objectHit) {  //sign that the ray has been shortened so we hit something so we must draw
-		point.modelMatrix = glm::translate(objectIntersectionPoint);
-		flatShader.use();
-		flatShader["baseColor"] = vec4(0.0f, 1.0f ,0.0f, 1.0f); //back to drawing with colors
-		flatShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
-		//CALL_GL(glPointSize(13.0f));
-		point.bind();
-		CALL_GL(glDrawArrays(GL_TRIANGLES,0,point.vertices.size()));
-	}
-	if ((sphereHit || (glfwGetMouseButton(GLFW_MOUSE_BUTTON_1) == GLFW_PRESS)) && (appInputState != translate)) {
-		circle.modelMatrix[3] = cursor.modelMatrix[3];
-
-		flatShader.use();
-		flatShader["mvp"] = projectionMatrix*viewMatrix*circle.modelMatrix;
-		flatShader["baseColor"] = glm::vec4(1.0f,0,0,0.5f);
-		CALL_GL(glLineWidth(4.0f));
-		circle.bind();
-		CALL_GL(glDrawArrays(GL_LINE_STRIP,0,circle.vertices.size()));
-
-		point.modelMatrix = glm::translate(sphereIntersectionPoint);
-		flatShader.use();
-		flatShader["baseColor"] = vec4(1.0f, 0.0f ,0.0f, 1.0f); //back to drawing with colors
-		flatShader["mvp"] = projectionMatrix*viewMatrix*point.modelMatrix;
-		//CALL_GL(glPointSize(13.0f));
-		point.bind();
-		CALL_GL(glDrawArrays(GL_TRIANGLES,0,point.vertices.size()));
-	} 
-
-    */
-    textureShader.use();
-
-    glUniform1i(baseImageLoc, 0); //Texture unit 0 is for base images.
-    glUniform1i(shadowMapLoc, 1); //Texture unit 1 is for shadow maps.
-
-    //When rendering an objectwith this program.
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, floorTexture);
-
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, shadowTexture);
-    textureShader["shadowMatrix"] = biasMatrix*projectionMatrix*pointLight.viewMatrix*floorMatrix;
-    textureShader["mvp"] = projectionMatrix*viewMatrix*floorMatrix;
-    CALL_GL(glBindVertexArray(floorVAO));
-    CALL_GL(glDrawArrays(GL_TRIANGLES,0,18));
-
+    //draw floor
 
 	glfwSwapBuffers();
 }
@@ -753,264 +586,6 @@ void Engine::refresh(TuioTime frameTime) {
 	//std::cout << "refresh " << frameTime.getTotalMilliseconds() << std::endl;
 }
 
-void Engine::initSimpleGeometry() {
-
-	
-	std::vector<vec3> vertices;
-	std::vector<vec3> normals;
-	std::vector<vec3> colors;
-
-
-	//COUNTER CLOCKWISE TRIANGLE ORDER IMPORTANT FOR glm::intersectRayTriangle!!!!!!!!!!!!!!!
-	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-
-	colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-	
-	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
-
-	
-	 colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
-	
-	colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); colors.push_back(vec3(1.0,0.0,0.0)); //red
-	
-	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-	
-	 colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); colors.push_back(vec3(0.0,1.0,0.0)); //green
-	
-	colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); colors.push_back(vec3(0.0,0.0,1.0)); //blue
-	
-	colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); //yellow
-	
-	colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); colors.push_back(vec3(1.0,1.0,0.0)); //yellow
-	
-	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
-
-	//bottom?
-	
-	colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); colors.push_back(vec3(1.0,1.0,1.0)); //white
-	colors.push_back(vec3(0.0,0.5,1.0)); colors.push_back(vec3(0.0,0.5,1.0)); colors.push_back(vec3(0.0,0.5,1.0)); //cyan
-	
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
-	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
-
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
-
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
-
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
-
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
-	vertices.push_back(vec3(0.5,0.5,0.5));  //2 front top right
-
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
-	vertices.push_back(vec3(0.5,0.5,-0.5));  //6
-	
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
-
-	vertices.push_back(vec3(-0.5,0.5,-0.5)); //5
-	vertices.push_back(vec3(-0.5,0.5,0.5)); //1 front top left
-	vertices.push_back(vec3(0.0,1.0,0.5));	//8 roof top
-
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
-	vertices.push_back(vec3(-0.5,-0.5,0.5)); //0 front bottom left
-
-	vertices.push_back(vec3(-0.5,-0.5,-0.5)); //4
-	vertices.push_back(vec3(0.5,-0.5,-0.5));  //7
-	vertices.push_back(vec3(0.5,-0.5,0.5)); //3 front bottom right
-	
-	
-	cursor = pho::Mesh(vertices,colors);
-	
-	target = pho::Mesh(vertices,colors);
-	target.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-2,2,-5));
-
-	
-	vertices.clear();
-
-	vertices.push_back(vec3(-0.7,0,1));
-	vertices.push_back(vec3(-0.7,0,-1));
-	vertices.push_back(vec3(-0.7,0,-1));
-	vertices.push_back(vec3(0.7,0,-1));
-	vertices.push_back(vec3(0.7,0,-1));
-	vertices.push_back(vec3(0.7,0,1));
-	vertices.push_back(vec3(0.7,0,1));
-	vertices.push_back(vec3(-0.7,0,1));
-
-	colors.clear();
-	colors.push_back(vec3(0,0,1));
-	colors.push_back(vec3(0,0,1));
-	colors.push_back(vec3(0,0,1));
-	colors.push_back(vec3(0,0,1));
-
-    plane = pho::Mesh(vertices,colors);
-
-	
-	vertices.clear();
-	colors.clear();
-
-	vertices.push_back(vec3(-0.1,-0.1,0.01));
-	vertices.push_back(vec3(0,0.1,0.01));
-	vertices.push_back(vec3(0.1,-0.1,0.01));
-	
-	
-	colors.push_back(vec3(0,1,0));
-	colors.push_back(vec3(0,1,0));
-	colors.push_back(vec3(0,1,0));
-	point = pho::Mesh(vertices,colors);
-
-	vertices.clear();
-	normals.clear();
-	std::vector<glm::vec2> texcoords;
-	
-	//FLOOOOOOOOOOOR **************************
-#define TEXREPEAT 50.0
-    vertices.push_back(vec3(-1, 1,0));  //0
-    texcoords.push_back(glm::vec2(0,TEXREPEAT));
-    colors.push_back(vec3(1,1,0));
-
-    vertices.push_back(vec3(-1,-1,0)); //1
-    texcoords.push_back(glm::vec2(0,0));
-    colors.push_back(vec3(1,1,0));
-
-    vertices.push_back(vec3( 1,-1,0)); //2
-    texcoords.push_back(glm::vec2(TEXREPEAT,0));
-    colors.push_back(vec3(1,1,0));
-
-    vertices.push_back(vec3( 1, 1,0)); //3
-    texcoords.push_back(glm::vec2(TEXREPEAT,TEXREPEAT));
-    colors.push_back(vec3(1,1,0));
-
-    vertices.push_back(vec3(-1, 1,0)); //0
-    texcoords.push_back(glm::vec2(0,TEXREPEAT));
-    colors.push_back(vec3(1,1,0));
-
-    vertices.push_back(vec3( 1,-1,0)); //2
-    texcoords.push_back(glm::vec2(TEXREPEAT,0));
-    colors.push_back(vec3(1,1,0));
-
-    //calculate normals
-    for (std::vector<glm::vec3>::size_type i=0; i != 6; i+=3) {
-        glm::vec3 v0,v1,v2;
-        v0 = vertices[i];
-        v1 = vertices[i+1];
-        v2 = vertices[i+2];
-
-        glm::vec3 U,V;
-
-        U = v1 - v0;
-        V = v2 - v0;
-
-        normals.push_back(glm::normalize(glm::cross(U,V)));
-        normals.push_back(glm::normalize(glm::cross(U,V)));
-        normals.push_back(glm::normalize(glm::cross(U,V)));
-    }
-
-    GLuint buffer;
-
-    CALL_GL(glGenVertexArrays(1,&floorVAO));
-    CALL_GL(glGenBuffers(1,&buffer));
-    CALL_GL(glGenBuffers(1,&rayVBO));
-
-    CALL_GL(glBindVertexArray(floorVAO));
-
-    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,rayVBO));
-    CALL_GL(glBufferData(GL_ARRAY_BUFFER,vertices.size()*3*sizeof(GLfloat),vertices.data(),GL_STATIC_DRAW));
-    CALL_GL(glVertexAttribPointer(vertexLoc,3,GL_FLOAT,GL_FALSE,0,0));
-    CALL_GL(glEnableVertexAttribArray(vertexLoc));
-
-    CALL_GL(glGenBuffers(1,&buffer));
-    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-    CALL_GL(glBufferData(GL_ARRAY_BUFFER,texcoords.size()*2*sizeof(GLfloat),texcoords.data(),GL_STATIC_DRAW));
-    CALL_GL(glVertexAttribPointer(texCoordLoc,2,GL_FLOAT,GL_FALSE,0,0));
-    CALL_GL(glEnableVertexAttribArray(texCoordLoc));
-
-    CALL_GL(glGenBuffers(1,&buffer));
-    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-    CALL_GL(glBufferData(GL_ARRAY_BUFFER,normals.size()*3*sizeof(GLfloat),normals.data(),GL_STATIC_DRAW));
-    CALL_GL(glVertexAttribPointer(normalLoc,3,GL_FLOAT,GL_TRUE,0,0));
-    CALL_GL(glEnableVertexAttribArray(normalLoc));
-
-    CALL_GL(glGenBuffers(1,&buffer));
-    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,buffer));
-    CALL_GL(glBufferData(GL_ARRAY_BUFFER,colors.size()*3*sizeof(GLfloat),colors.data(),GL_STATIC_DRAW));
-    CALL_GL(glVertexAttribPointer(colorLoc,3,GL_FLOAT,GL_TRUE,0,0));
-    CALL_GL(glEnableVertexAttribArray(colorLoc));
-
-    CALL_GL(glBindVertexArray(0));
-
-    floorMatrix = glm::scale(glm::mat4(1.),glm::vec3(55,55,0));
-    floorMatrix = glm::rotate(glm::mat4(1.),-90.0f,glm::vec3(1,0,0))*floorMatrix;
-    floorMatrix = glm::rotate(glm::mat4(1.),90.0f,glm::vec3(0,1,0))*floorMatrix;
-    floorMatrix = glm::translate(glm::mat4(1.),glm::vec3(0,-3,-7))*floorMatrix;
-
-    //Texture Loading
-
-    CALL_GL(glGenTextures(1,&floorTexture));
-    floorTexture = gli::createTexture2D(assetpath+"grid.dds");
-
-    //glBindTexture(GL_TEXTURE_2D, floorTexture);
-    //glTexParameteri(floorTexture,GL_TEXTURE_WRAP_S,GL_REPEAT);
-    //glTexParameteri(floorTexture,GL_TEXTURE_WRAP_T,GL_REPEAT);
-    //glBindTexture(GL_TEXTURE_2D, 0);
-
-	vertices.clear();
-	colors.clear();
-	normals.clear();
-	texcoords.clear();
-
-	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
-	{
-		vertices.push_back(glm::vec3(ARCBALL_RADIUS*cos(i),ARCBALL_RADIUS*sin(i),0));
-    }
-
-    circle = pho::Mesh(vertices);
-	
-	//RAY Cylindrical
-	vertices.clear();
-	rayVerticesCount =0;
-	float radius = 0.01f;
-
-	for(float i = 0; i < 6.38 ; i+=0.1)  //generate vertices at positions on the circumference from 0 to 2*pi 
-	{
-		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),0));		
-		rayVerticesCount++;
-		vertices.push_back(glm::vec3(radius*cos(i),radius*sin(i),-1000));	
-		rayVerticesCount++;
-	}
-
-	ray = pho::Mesh(vertices);
-
-
-}
-
 void Engine::checkUDP() {
 	//UDP queue
 	boost::mutex::scoped_lock lock(ioMutex);
@@ -1297,16 +872,17 @@ bool Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
     vec3 tempNormal;
 
 	float tempFloat;
-    if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,tempNormal)) {
+    /*if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,tempNormal)) {
 		previousVector = glm::normalize(glm::vec3(cursor.modelMatrix[3])-tempPoint);
 		return true;
 	}
-	else return false;
+    else return false;*/
+    return false;
 
 }
 
 void Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 viewMatrix) {
-	glm::vec3 currentVector;
+    /*glm::vec3 currentVector;
 	glm::vec3 tempPoint;
      vec3 tempNormal;
 	float tempFloat;
@@ -1323,6 +899,7 @@ void Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 vie
 
 		previousVector = currentVector;
 	}
+    */
 }
 
 
@@ -1385,8 +962,8 @@ void Engine::shadowMapRender() {
     flatShader.use();
     flatShader["baseColor"] = glm::vec4(1.0f,1.0f,1.0f,1.0f);
     flatShader["mvp"] = projectionMatrix*pointLight.viewMatrix*cursor.modelMatrix;
-    cursor.bind();
-    CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
+    //cursor.bind();
+    //CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
