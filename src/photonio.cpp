@@ -113,7 +113,7 @@ void Engine::initResources() {
 
     cursor = pho::Asset("house.blend");
     target = pho::Asset("house.blend");
-    plane = pho::Asset("houses.blend");
+    plane = pho::Asset("house.blend");
 
    
 	//Create the perspective matrix
