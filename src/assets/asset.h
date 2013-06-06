@@ -35,6 +35,7 @@ public:
 
 struct myMesh {
     GLuint vao;
+    int numFaces;
     uint materialIndex;
 };
 
@@ -43,13 +44,12 @@ class Asset {
 public:
     Asset();
     Asset(const std::string &filename);
-    void draw(pho::DrawingMode);
+    void draw();
     glm::mat4 modelMatrix;
     void rotate(glm::mat4 rotationMatrix);
 private:
     void upload();
     std::vector<myMesh> mMeshes;
-    GLuint vao;
     const aiScene* scene;
 };
 }

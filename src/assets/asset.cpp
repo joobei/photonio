@@ -79,14 +79,18 @@ void pho::Asset::upload()
                 glEnableVertexAttribArray(texCoordLoc);
                 glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
             }
-
+            tempMesh.numFaces = mesh->mNumFaces;
             tempMesh.materialIndex = mesh->mMaterialIndex;
             mMeshes.push_back(tempMesh);
     }
 }
 
-void pho::Asset::draw(pho::DrawingMode) {
-
+void pho::Asset::draw() {
+    for (std::vector<pho::myMesh>::size_type i = 0; i != mMeshes.size(); i++)
+    {
+        CALL_GL(glBindVertexArray(mMeshes[i].vao));
+        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+    }
 }
 
 void pho::Asset::rotate(glm::mat4 rotationMatrix) {

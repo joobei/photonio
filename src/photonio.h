@@ -141,6 +141,7 @@ namespace pho {
 		pho::Shader textureShader;
 		pho::Shader directionalShader;
 		pho::Shader normalShader;
+        pho::Shader assimpShader;
 
 		//Picking
 		GLuint hitObject;

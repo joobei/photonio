@@ -145,6 +145,8 @@ void Engine::initResources() {
     shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
     baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
 
+    assimpShader = pho::Shader(shaderpath+"assimp");
+
     directionalShader = pho::Shader(shaderpath+"specular");
     //normalShader = pho::Shader(shaderpath+"normals");
 
@@ -214,6 +216,7 @@ void Engine::render() {
 	
     /// CURSOR ////////////////////////////////////////
     //draw cursor
+    cursor.draw();
 
     //draw floor
 
