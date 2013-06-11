@@ -111,7 +111,7 @@ void Engine::initResources() {
         assetpath.append("/"); //at the end of the string
     }
 
-    cursor = pho::Asset("house.blend");
+    cursor = pho::Asset("teapot.obj");
     target = pho::Asset("house.blend");
     plane = pho::Asset("house.blend");
 
