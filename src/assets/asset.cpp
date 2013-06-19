@@ -64,6 +64,17 @@ void pho::Asset::upload()
                 CALL_GL(glVertexAttribPointer(normalLoc, 3, GL_FLOAT,0, 0, 0));
             }
 
+            tempMesh.numFaces = mesh->mNumFaces;
+
+            for (int i=0; i < tempMesh.numFaces; ++i)
+            {
+                for (int in=0; in < mesh->mFaces[i].mNumIndices; ++in)
+                {
+                    tempMesh.indices.push_back(mesh->mFaces[i].mIndices[in]);
+                }
+            }
+
+
             // buffer for vertex texture coordinates
             if (mesh->HasTextureCoords(0)) {
                 float *texCoords = (float *)malloc(sizeof(float)*2*mesh->mNumVertices);
@@ -79,7 +90,6 @@ void pho::Asset::upload()
                 glEnableVertexAttribArray(texCoordLoc);
                 glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
             }
-            tempMesh.numFaces = mesh->mNumFaces;
             tempMesh.materialIndex = mesh->mMaterialIndex;
             mMeshes.push_back(tempMesh);
     }
@@ -89,7 +99,8 @@ void pho::Asset::draw() {
     for (std::vector<pho::myMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
-        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+        //CALL_GL(glDrawArrays(GL_TRIANGLES,0,mMeshes[i].numFaces*3));
+        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,mMeshes[i].indices.data()));
     }
 }
 

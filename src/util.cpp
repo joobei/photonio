@@ -177,4 +177,9 @@ glm::mat4 pho::flickManager::dampenAndGivePinchMatrix(){
 }
 
 
+void pho::log(const char message)
+{
+     std::cout << message << std::endl;
+}
+
 

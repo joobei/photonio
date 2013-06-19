@@ -35,6 +35,7 @@ public:
 
 struct myMesh {
     GLuint vao;
+    std::vector<int> indices;
     int numFaces;
     uint materialIndex;
 };

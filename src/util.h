@@ -37,6 +37,7 @@
 #endif
 
 namespace pho {
+    void log(const char message);
 
 	class WiiButtonState {
 public:
@@ -125,8 +126,9 @@ private:
     short times;
     int pinchTimes;
     float decay;
-
 };
+
+
 
 }
 
