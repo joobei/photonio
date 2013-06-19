@@ -37,7 +37,7 @@
 #endif
 
 namespace pho {
-    void log(const char message);
+    void log(const char *message);
 
 	class WiiButtonState {
 public:
