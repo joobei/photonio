@@ -34,10 +34,13 @@ pho::Asset::Asset(const std::string& filename)
     }
 
     upload();
+    collectMaterials();
 }
 
 void pho::Asset::upload()
 {
+    log("Number of Meshes :" + scene->mNumMeshes);
+
     for (unsigned int n = 0; n < scene->mNumMeshes; ++n)
         {
             const struct aiMesh* mesh = scene->mMeshes[n];
@@ -96,6 +99,27 @@ void pho::Asset::upload()
             tempMesh.materialIndex = mesh->mMaterialIndex;
             mMeshes.push_back(tempMesh);
     }
+}
+
+void pho::Asset::collectMaterials(pho::materialManager &materialManager) {
+
+    /* scan scene's materials for textures */
+        for (unsigned int m=0; m<scene->mNumMaterials; ++m)
+        {
+            int texIndex = 0;
+            aiString path;	// filename
+
+            aiReturn texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
+            while (texFound == AI_SUCCESS) {
+                //fill map with textures, OpenGL image ids set to 0
+                materialManager.textureIdMap[path.data] = 0;
+                // more textures?
+                texIndex++;
+                texFound = scene->mMaterials[m]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path);
+            }
+        }
+
+        int numTextures = textureIdMap.size();
 }
 
 void pho::Asset::draw() {

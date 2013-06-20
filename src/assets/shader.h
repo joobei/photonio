@@ -12,6 +12,16 @@
 
 namespace pho {
 
+struct myMaterial {
+
+};
+
+class materialManager {
+public:
+    std::map<std::string, GLuint> textureIdMap;
+    std::vector<pho::myMaterial> materials;
+};
+
 	class UniformAssigner
 	{
 	public:
