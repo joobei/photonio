@@ -3,7 +3,7 @@
 pho::Asset::Asset()
 {}
 
-pho::Asset::Asset(const std::string& filename)
+pho::Asset::Asset(const std::string& filename, pho::materialManager &manager)
 {
     std::string assetpath;
 
@@ -34,7 +34,7 @@ pho::Asset::Asset(const std::string& filename)
     }
 
     upload();
-    collectMaterials();
+    collectMaterials(manager);
 }
 
 void pho::Asset::upload()
@@ -119,7 +119,7 @@ void pho::Asset::collectMaterials(pho::materialManager &materialManager) {
             }
         }
 
-        int numTextures = textureIdMap.size();
+        int numTextures = materialManager.textureIdMap.size();
 }
 
 void pho::Asset::draw() {

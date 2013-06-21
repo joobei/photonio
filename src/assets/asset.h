@@ -44,7 +44,7 @@ class Asset {
 
 public:
     Asset();
-    Asset(const std::string &filename);
+    Asset(const std::string &filename, materialManager &manager);
     void collectMaterials(materialManager &materialManager);
     void draw();
     glm::mat4 modelMatrix;

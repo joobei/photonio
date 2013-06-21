@@ -187,6 +187,7 @@ namespace pho {
 		boost::mutex ioMutex; //locks the message queue for thread access
 
 		//assets
+        pho::materialManager materialManager;
         pho::Asset target;
         pho::Asset cursor;
         pho::Asset plane;

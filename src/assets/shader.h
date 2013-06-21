@@ -13,7 +13,7 @@
 namespace pho {
 
 struct myMaterial {
-
+    GLuint diffuseTexture;
 };
 
 class materialManager {
