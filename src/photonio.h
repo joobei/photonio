@@ -135,13 +135,8 @@ namespace pho {
 		glm::vec3 cameraPosition;
 		glm::vec3 cameraDirection;
 
-		//Shaders
-        pho::Shader colorShader;
-		pho::Shader flatShader;
-		pho::Shader textureShader;
-		pho::Shader directionalShader;
-		pho::Shader normalShader;
-        pho::Shader assimpShader;
+        //Shaders
+        pho::Shader textureShader;
 
 		//Picking
 		GLuint hitObject;
@@ -187,7 +182,6 @@ namespace pho {
 		boost::mutex ioMutex; //locks the message queue for thread access
 
 		//assets
-        pho::materialManager materialManager;
         pho::Asset target;
         pho::Asset cursor;
         pho::Asset plane;

@@ -111,9 +111,26 @@ void Engine::initResources() {
         assetpath.append("/"); //at the end of the string
     }
 
-    cursor = pho::Asset("HumanHeart.obj", materialManager);
-    target = pho::Asset("house.blend", materialManager);
-    plane = pho::Asset("house.blend", materialManager);
+    pointLight.position = glm::vec3(0,55,-5);
+    pointLight.direction = glm::vec3(0,-1,0);
+    pointLight.color = glm::vec4(1,1,1,1);
+
+    pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
+
+     //load shaders from files
+    textureShader = pho::Shader(shaderpath+"texture");
+    //shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
+    //baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
+
+    //directionalShader = pho::Shader(shaderpath+"specular");
+
+    //normalShader = pho::Shader(shaderpath+"normals");
+
+    cursor = pho::Asset("HumanHeart.obj", &textureShader);
+    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-10));
+
+    target = pho::Asset("house.blend", &textureShader);
+    plane = pho::Asset("house.blend", &textureShader);
 
    
 	//Create the perspective matrix
@@ -127,33 +144,10 @@ void Engine::initResources() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_TRUE);
 
-	restoreRay=false; //used to make ray long again if NOT intersecting
-
-    pointLight.position = glm::vec3(0,55,-5);
-    pointLight.direction = glm::vec3(0,-1,0);
-    pointLight.color = glm::vec4(1,1,1,1);
-
-    pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
-
-	 //load shaders from files
-    colorShader = pho::Shader(shaderpath+"shader");
-    flatShader = pho::Shader(shaderpath+"offscreen");
-    textureShader = pho::Shader(shaderpath+"texader");
-
-    textureShader = pho::Shader(shaderpath+"texader");
-
-    shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
-    baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
-
-    assimpShader = pho::Shader(shaderpath+"assimp");
-
-    directionalShader = pho::Shader(shaderpath+"specular");
-    //normalShader = pho::Shader(shaderpath+"normals");
-
 	cursor.modelMatrix = glm::translate(vec3(0,0,-5));
 	plane.modelMatrix = cursor.modelMatrix;
 
-	generateShadowFBO();
+    //generateShadowFBO();
 }
 
 //checks event queue for events
@@ -203,7 +197,7 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-    shadowMapRender();
+    //shadowMapRender();
 
     CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
@@ -216,6 +210,7 @@ void Engine::render() {
 	
     /// CURSOR ////////////////////////////////////////
     //draw cursor
+    textureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
     cursor.draw();
 
     //draw floor
@@ -962,9 +957,9 @@ void Engine::shadowMapRender() {
 
 
 
-    flatShader.use();
-    flatShader["baseColor"] = glm::vec4(1.0f,1.0f,1.0f,1.0f);
-    flatShader["mvp"] = projectionMatrix*pointLight.viewMatrix*cursor.modelMatrix;
+    //flatShader.use();
+    //flatShader["baseColor"] = glm::vec4(1.0f,1.0f,1.0f,1.0f);
+    //flatShader["mvp"] = projectionMatrix*pointLight.viewMatrix*cursor.modelMatrix;
     //cursor.bind();
     //CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
 

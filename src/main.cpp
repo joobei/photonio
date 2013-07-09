@@ -62,12 +62,12 @@ int main()
     glfwSetMousePosCallback(&mouseFunkThunk2);
 
 	if (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_PRESENT)) {
-		std::cout << "joystick present \n";
+        std::cout << "joystick present" << std::endl;
 
 		
-		std::cout << "joystick axes" << glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) << "\n" ;
+        std::cout << "joystick axes" << glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) << std::endl;
 	}
-	else { std::cout << "joystick not present"; }
+    else { std::cout << "joystick not present" << std::endl;}
 
     engine->go();
 

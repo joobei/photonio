@@ -128,8 +128,6 @@ private:
     float decay;
 };
 
-
-
 }
 
 
