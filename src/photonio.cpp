@@ -127,11 +127,13 @@ void Engine::initResources() {
     //normalShader = pho::Shader(shaderpath+"normals");
 
     cursor = pho::Asset("HumanHeart.obj", &textureShader);
-    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-10));
+    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-80));
 
     target = pho::Asset("house.blend", &textureShader);
     plane = pho::Asset("house.blend", &textureShader);
 
+    floor = pho::Asset("floor.obj", &textureShader);
+    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-10,-30));
    
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -208,12 +210,12 @@ void Engine::render() {
 
     }	
 	
-    /// CURSOR ////////////////////////////////////////
-    //draw cursor
     textureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
     cursor.draw();
 
     //draw floor
+    textureShader["mvp"] = projectionMatrix*viewMatrix*floor.modelMatrix;
+    floor.draw();
 
 	glfwSwapBuffers();
 }

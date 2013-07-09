@@ -186,6 +186,7 @@ namespace pho {
         pho::Asset cursor;
         pho::Asset plane;
         pho::Asset ray;
+        pho::Asset floor;
 
 		GLuint rayVBO;
 		short rayVerticesCount;

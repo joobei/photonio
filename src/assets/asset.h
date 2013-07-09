@@ -36,6 +36,7 @@ public:
 
 struct myMaterial {
     GLuint diffuseTexture = 0;
+    GLuint normalTexture = 0;
 };
 
 class MyMesh {

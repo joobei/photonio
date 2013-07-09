@@ -59,12 +59,15 @@ void pho::Asset::upload(pho::Shader* tehShader)
             }
 
             if (mesh->HasNormals()) {
-                log("Has Normals");
+
                 CALL_GL(glGenBuffers(1, &buffer));
                 CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, buffer));
                 CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*mesh->mNumVertices, mesh->mNormals, GL_STATIC_DRAW));
                 CALL_GL(glEnableVertexAttribArray(normalLoc));
                 CALL_GL(glVertexAttribPointer(normalLoc, 3, GL_FLOAT,0, 0, 0));
+            }
+            else {
+                log("No Normals!!!");
             }
 
             tempMesh.numFaces = mesh->mNumFaces;
@@ -112,8 +115,16 @@ void pho::Asset::upload(pho::Shader* tehShader)
              //diffuse texture
              if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path) == AI_SUCCESS )
              {
-                 //add texture to material
+
                  newMat.diffuseTexture = gli::createTexture2D(assetpath+path.C_Str());
+             }
+
+
+             //normal map texture
+             if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_NORMALS, texIndex, &path) == AI_SUCCESS )
+             {
+
+                 newMat.normalTexture = gli::createTexture2D(assetpath+path.C_Str());
              }
 
             tempMesh.material = newMat;
