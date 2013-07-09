@@ -209,7 +209,7 @@ void Engine::render() {
     //draw plane
 
     }	
-	
+    textureShader["view"] = viewMatrix;
     textureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
     cursor.draw();
 

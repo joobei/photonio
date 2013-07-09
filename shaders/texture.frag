@@ -7,29 +7,40 @@ in vec3 normal;
 out vec4 fragColor;
 
 uniform sampler2D texturex;
+uniform mat4 view;
 
 void main()
 {
+
+    vec4 textureColor = vec4(texture(texturex, UV).rgb,1);
 
     vec3 lightDirection = normalize(vec3(0,0,1));
     float ambientIntensity = 0.2;
     vec4 diffuseLightColor = vec4(1.0);
 
-    vec4 diffuseColor;
-
-    vec4 ambientFactor = vec4(texture(texturex, UV).rgb,1)*ambientIntensity;
-
+    vec4 ambientColor = textureColor*ambientIntensity;
     float diffuseFactor = dot(normal, -lightDirection);
 
+    vec4 diffuseColor;
     if (diffuseFactor > 0) {
-                diffuseColor =  vec4(texture(texturex, UV).rgb,1) * 1.0 * diffuseFactor;
+                diffuseColor = textureColor * 1.0 * diffuseFactor;
     }
     else {
         diffuseColor = vec4(0, 0, 0, 0);
     }
 
-    fragColor = vec4(ambientFactor.xyz+diffuseColor.xyz,1.0);
+    float cosAngIncidence = dot(normal, lightDirection);
+    cosAngIncidence = clamp(cosAngIncidence, 0, 1);
 
-    //fragColor = vec4(texture(texturex, UV).rgb,1);
+    vec3 viewDirection = normalize(-(vec3(view[3])));
+    vec3 halfAngle = normalize(lightDirection + viewDirection);
+    float blinnTerm = dot(normal, halfAngle);
 
+    blinnTerm = clamp(blinnTerm, 0, 1);
+    blinnTerm = cosAngIncidence != 0.0 ? blinnTerm : 0.0;
+    blinnTerm = pow(blinnTerm, 0.9);
+
+    vec4 specularColor = textureColor*blinnTerm;
+
+    fragColor = vec4(ambientColor.xyz+diffuseColor.xyz+specularColor.xyz,1.0);
 }
