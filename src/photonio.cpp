@@ -210,10 +210,14 @@ void Engine::render() {
 
     }	
     textureShader["view"] = viewMatrix;
+    textureShader["model"] = cursor.modelMatrix;
+    textureShader["modelview"] = viewMatrix*cursor.modelMatrix;
     textureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
     cursor.draw();
 
     //draw floor
+    textureShader["model"] = floor.modelMatrix;
+    textureShader["modelview"] = viewMatrix*floor.modelMatrix;
     textureShader["mvp"] = projectionMatrix*viewMatrix*floor.modelMatrix;
     floor.draw();
 
