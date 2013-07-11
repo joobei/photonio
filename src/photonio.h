@@ -188,6 +188,9 @@ namespace pho {
         pho::Asset ray;
         pho::Asset floor;
 
+        //input
+        bool inputStarted;
+
 		GLuint rayVBO;
 		short rayVerticesCount;
 		

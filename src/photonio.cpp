@@ -36,6 +36,7 @@ calibrate(false),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
     //_serialserver(serialioservice,115200,"/dev/ttyS0",&eventQueue,&ioMutex),
     wii(false),
+    inputStarted(false),
     mouseMove(false)
 {
 #define SIZE 30                     //Size of the moving average filter
@@ -126,7 +127,7 @@ void Engine::initResources() {
 
     //normalShader = pho::Shader(shaderpath+"normals");
 
-    cursor = pho::Asset("HumanHeart.obj", &textureShader);
+    cursor = pho::Asset("bumpheart.obj", &textureShader);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
 
     target = pho::Asset("house.blend", &textureShader);
@@ -135,6 +136,8 @@ void Engine::initResources() {
     floor = pho::Asset("floor.obj", &textureShader);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-30,-60));
    
+    plane.modelMatrix = cursor.modelMatrix;
+
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
 
@@ -146,7 +149,7 @@ void Engine::initResources() {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_TRUE);
 
-	plane.modelMatrix = cursor.modelMatrix;
+
 
     //generateShadowFBO();
 }
@@ -162,6 +165,7 @@ void Engine::checkEvents() {
 			float amount = (wheel - prevMouseWheel)/10;
 			cursor.modelMatrix = glm::translate(vec3(0,0,-amount))*cursor.modelMatrix;
 			prevMouseWheel = wheel;
+            inputStarted = true;
 		}
 	}
 	  
@@ -208,6 +212,9 @@ void Engine::render() {
     //draw plane
 
     }	
+    if (!inputStarted) {
+         cursor.rotate(glm::rotate(0.1f,glm::vec3(0,1,0)));
+    }
     textureShader.use();
     textureShader["view"] = viewMatrix;  //no need to do this every frame
     textureShader["model"] = cursor.modelMatrix;
@@ -384,6 +391,8 @@ void Engine::removeTuioObject(TuioObject *tobj) {
 }
 
 void Engine::addTuioCursor(TuioCursor *tcur) {
+
+    inputStarted = true;
 
 	//TUIO variables
 	short numberOfCursors = tuioClient->getTuioCursors().size();
@@ -987,6 +996,7 @@ void Engine::checkSpaceNavigator() {
 	std::fill_n(position,6,0.0f);
 
 	if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
+        //inputStarted = true;
         glfwGetJoystickButtons(GLFW_JOYSTICK_1,buttons,2);
         if (buttons[0] == GLFW_PRESS) {
 
