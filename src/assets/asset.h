@@ -37,6 +37,10 @@ public:
 struct myMaterial {
     GLuint diffuseTexture = 0;
     GLuint normalTexture = 0;
+    glm::vec4 diffuseColor;
+    glm::vec4 specularColor;
+    float shininess;
+    bool hasBumpMap = false;
 };
 
 class MyMesh {

@@ -112,26 +112,28 @@ void Engine::initResources() {
         assetpath.append("/"); //at the end of the string
     }
 
-    pointLight.position = glm::vec3(0,55,-5);
-    pointLight.direction = glm::vec3(0,-1,0);
+    pointLight.position = glm::vec3(0,50,0);
+    pointLight.direction = glm::vec3(0,-1,-1);
     pointLight.color = glm::vec4(1,1,1,1);
 
     pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
 
-     //load shaders from files
+    //Load shaders ***************************
     textureShader = pho::Shader(shaderpath+"texture");
+    textureShader.use();
+    textureShader["light_position"] = glm::vec4(pointLight.position,1);
+    textureShader["light_diffuse"] = pointLight.color;
+    textureShader["light_specular"] = vec4(1,1,1,1);
+
     //shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
     //baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
 
-    //directionalShader = pho::Shader(shaderpath+"specular");
-
-    //normalShader = pho::Shader(shaderpath+"normals");
-
-    cursor = pho::Asset("bumpheart.obj", &textureShader);
+    //Load Assets ***************************
+    cursor = pho::Asset("HumanHeart.obj", &textureShader);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
 
-    target = pho::Asset("house.blend", &textureShader);
-    plane = pho::Asset("house.blend", &textureShader);
+    target = pho::Asset("floor.obj", &textureShader);
+    plane = pho::Asset("floor.obj", &textureShader);
 
     floor = pho::Asset("floor.obj", &textureShader);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-30,-60));

@@ -110,7 +110,6 @@ void pho::Asset::upload(pho::Shader* tehShader)
                 assetpath = assetpath.substr(0,assetpath.size()-1); //cmake puts a newline char
                 assetpath.append("/"); //at the end of the string
             }
-             pho::myMaterial newMat;
 
              aiString path;	// filename to store path got from Assimp GetTexture
 
@@ -118,22 +117,23 @@ void pho::Asset::upload(pho::Shader* tehShader)
 
              //diffuse texture
              if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path) == AI_SUCCESS )
-             {
-
-                 newMat.diffuseTexture = gli::createTexture2D(assetpath+path.C_Str());
-             }
-
+             { tempMesh.material.diffuseTexture = gli::createTexture2D(assetpath+path.C_Str()); }
 
              //normal map texture
-             if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_NORMALS, texIndex, &path) == AI_SUCCESS )
+             if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_HEIGHT, texIndex, &path) == AI_SUCCESS )
              {
-
-                 newMat.normalTexture = gli::createTexture2D(assetpath+path.C_Str());
+                 log("**** BUMP MAP!!");
+                 tempMesh.material.hasBumpMap = true;
+                 tempMesh.material.normalTexture = gli::createTexture2D(assetpath+path.C_Str());
              }
 
-            tempMesh.material = newMat;
-            tempMesh.shader = tehShader;
-            mMeshes.push_back(tempMesh);
+
+             scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->Get(AI_MATKEY_COLOR_DIFFUSE,tempMesh.material.diffuseColor);
+             scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->Get(AI_MATKEY_COLOR_SPECULAR,tempMesh.material.specularColor);
+             scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->Get(AI_MATKEY_SHININESS,tempMesh.material.shininess);
+
+             tempMesh.shader = tehShader;
+             mMeshes.push_back(tempMesh);
     }
 }
 
@@ -141,17 +141,23 @@ void pho::Asset::upload(pho::Shader* tehShader)
 void pho::Asset::draw() {
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
-        //mMeshes[i].shader->use();
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
-        //mMeshes[i].shader[0]["mvp"] = modelMatrix;
+
+        //if there's a bump map bind it
+        if (mMeshes[i].material.hasBumpMap) {
+            CALL_GL(glActiveTexture(GL_TEXTURE1));
+            CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.normalTexture));
+        }
+
+        mMeshes[i].shader[0]["material_diffuse"] = mMeshes[i].material.diffuseColor;
+        mMeshes[i].shader[0]["material_specular"] = mMeshes[i].material.specularColor;
+        mMeshes[i].shader[0]["material_shininess"] = mMeshes[i].material.shininess;
+
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
 }
-
-
-
 
 
 void pho::Asset::rotate(glm::mat4 rotationMatrix) {
