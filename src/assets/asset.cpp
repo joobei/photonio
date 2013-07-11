@@ -98,6 +98,10 @@ void pho::Asset::upload(pho::Shader* tehShader)
                 glEnableVertexAttribArray(texCoordLoc);
                 glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
             }
+            else {
+                log("No Texture Coordinates!!!");
+            }
+
 
             std::string assetpath;
 

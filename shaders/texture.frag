@@ -11,15 +11,15 @@ uniform sampler2D texturex;
 
 void main()
 {
-
     vec4 textureColor = vec4(texture(texturex, UV).rgb,1);
 
-    vec3 lightDirection = normalize(vec3(0,-1,-1));
+    //currently implementing lighting in world coordinates
+    vec3 lightDirection = normalize(vec3(0,-1,-1));  //world coordinates
     float ambientIntensity = 0.2;
     vec4 diffuseLightColor = vec4(1.0);
 
     vec4 ambientColor = textureColor*ambientIntensity;
-    float diffuseFactor = dot(normalize(normal), -lightDirection);
+    float diffuseFactor = clamp(dot(normalize(normal), -lightDirection),0.0,1.0);
 
     vec4 diffuseColor;
     if (diffuseFactor > 0) {
@@ -30,10 +30,10 @@ void main()
     }
 
     vec3 reflection = reflect(lightDirection,normalize(normal));
-    float specularFactor = dot(normalize(reflection),normalize(normal));
+    float specularFactor = clamp(dot(normalize(reflection),normalize(normal)),0.0,1.0);
 
     //kinda hacky but oh well
-    vec4 specularColor = pow(specularFactor,64) * textureColor;
+    vec4 specularColor = pow(specularFactor,128) * textureColor;
 
     fragColor = vec4(ambientColor.xyz+diffuseColor.xyz+specularColor.xyz,1.0);
 }

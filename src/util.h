@@ -28,7 +28,7 @@
     do{                                                           \
     err = glGetError();                                     \
     if(err != GL_NO_ERROR){                                 \
-    std::cout << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
+    std::cout << err << "File :" << __FILE__ << "Line : " << __LINE__ << std::endl; \
     }                                                       \
     }while(err != GL_NO_ERROR);                                  \
     }
