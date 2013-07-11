@@ -141,10 +141,10 @@ void pho::Asset::upload(pho::Shader* tehShader)
 void pho::Asset::draw() {
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
+        //mMeshes[i].shader->use();
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
-        mMeshes[i].shader->use();
-        //mMeshes[i].shader["mvp"] = modelMatrix;
+        //mMeshes[i].shader[0]["mvp"] = modelMatrix;
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
