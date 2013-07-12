@@ -71,37 +71,6 @@ void main()
         final_color += light_specular * vec4(1)/*in place of material_specular*/ * specular;
     }
     Out_Color.rgb = final_color.rgb;
-
-    //Out_Color.rgb = texture(tex0, uv).rgb;
-    //Out_Color.rgb = PN.rgb;
-    //Out_Color.rgb = N.rgb;
     Out_Color.a = 1.0;
 
 }
-
-/*
-    vec2 uv = Vertex_UV.xy;
-
-    vec3 N = normalize(Vertex_Normal.xyz);
-    vec3 L = normalize(Vertex_LightDir.xyz);
-    vec3 V = normalize(Vertex_EyeVec.xyz);
-    vec3 PN = perturb_normal(N, V, uv);
-
-    vec4 tex01_color = texture(tex0, uv).rgba;
-    vec4 final_color = vec4(0.2, 0.15, 0.15, 1.0) * tex01_color;
-
-    float lambertTerm = dot(PN, L);
-    if (lambertTerm > 0.0)
-    {
-        final_color += light_diffuse * material_diffuse * lambertTerm * tex01_color;
-
-        vec3 E = normalize(Vertex_EyeVec.xyz);
-        vec3 R = reflect(-L, PN);
-        float specular = pow( max(dot(R, E), 0.0), material_shininess);
-        final_color += light_specular * material_specular * specular;
-    }
-    Out_Color.rgb = final_color.rgb;
-    //Out_Color.rgb = PN.rgb;
-    //Out_Color.rgb = N.rgb;
-    Out_Color.a = 1.0; */
-

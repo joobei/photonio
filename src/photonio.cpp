@@ -135,7 +135,7 @@ void Engine::initResources() {
     //baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
 
     //Load Assets ***************************
-    cursor = pho::Asset("HumanHeart.obj", &textureShader);
+    cursor = pho::Asset("bump-heart.obj", &textureShader);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
 
     target = pho::Asset("floor.obj", &textureShader);
