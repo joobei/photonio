@@ -1,0 +1,11 @@
+newmtl heart-surface
+Ka  0.6 0.6 0.6
+Kd  1.000 1.000 1.000
+Ks  0.9 0.9 0.9
+d  1.0
+Ns  20
+illum 2
+map_Kd heart-diffuse.dds
+bump normal-map.dds
+#
+# EOF
