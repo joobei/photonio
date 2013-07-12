@@ -141,6 +141,10 @@ void pho::Asset::upload(pho::Shader* tehShader)
 void pho::Asset::draw() {
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
+        pho::Shader shader = mMeshes[i].shader[0];
+
+
+
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
 
@@ -150,9 +154,9 @@ void pho::Asset::draw() {
             CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.normalTexture));
         }
 
-        mMeshes[i].shader[0]["material_diffuse"] = mMeshes[i].material.diffuseColor;
-        mMeshes[i].shader[0]["material_specular"] = mMeshes[i].material.specularColor;
-        mMeshes[i].shader[0]["material_shininess"] = mMeshes[i].material.shininess;
+        shader["material_diffuse"] = mMeshes[i].material.diffuseColor;
+        shader["material_specular"] = mMeshes[i].material.specularColor;
+        shader["material_shininess"] = mMeshes[i].material.shininess;
 
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));

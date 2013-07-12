@@ -125,6 +125,12 @@ void Engine::initResources() {
     textureShader["light_diffuse"] = pointLight.color;
     textureShader["light_specular"] = vec4(1,1,1,1);
 
+    GLuint t1Location = glGetUniformLocation(textureShader.program, "tex0");
+    GLuint t2Location = glGetUniformLocation(textureShader.program, "tex1");
+
+    glUniform1i(t1Location, 0);
+    glUniform1i(t2Location, 1);
+
     //shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
     //baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
 

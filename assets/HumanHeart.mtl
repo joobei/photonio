@@ -6,6 +6,6 @@ d  1.0
 Ns  20
 illum 2
 map_Kd heart-diffuse.dds
-bump heart-bump.dds
+bump normalmap-njob.dds
 #
 # EOF
