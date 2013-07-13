@@ -119,6 +119,7 @@ void Engine::initResources() {
     pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
 
     //Load shaders ***************************
+    planeShader = pho::Shader(shaderpath+"planeShader");
     textureShader = pho::Shader(shaderpath+"texture");
     textureShader.use();
     textureShader["light_position"] = glm::vec4(pointLight.position,1);
@@ -139,12 +140,12 @@ void Engine::initResources() {
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
 
     target = pho::Asset("floor.obj", &textureShader);
-    plane = pho::Asset("floor.obj", &textureShader);
 
     floor = pho::Asset("floor.obj", &textureShader);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-30,-60));
    
     plane.modelMatrix = cursor.modelMatrix;
+    plane.setScale(15.0f);
 
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -216,10 +217,11 @@ void Engine::render() {
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     if (technique == planeCasting && appInputState != rotate) {
-
-    //draw plane
-
+        planeShader.use();
+        planeShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+        plane.draw();
     }	
+
     if (!inputStarted) {
          cursor.rotate(glm::rotate(0.1f,glm::vec3(0,1,0)));
     }
@@ -228,7 +230,7 @@ void Engine::render() {
     textureShader["model"] = cursor.modelMatrix;
     textureShader["modelview"] = viewMatrix*cursor.modelMatrix;
     textureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-    cursor.draw();
+    //cursor.draw();
 
     //draw floor
     textureShader["model"] = floor.modelMatrix;
@@ -785,8 +787,7 @@ void Engine::checkKeyboard() {
 		
 	}
 	if (glfwGetKey(GLFW_KEY_SPACE)) {
-		cursor.modelMatrix = glm::translate(0,0,-5);
-        //plane.modelMatrix = glm::translate(0,0,-5);
+        cursor.modelMatrix = glm::translate(0,0,-15);
         plane.modelMatrix = cursor.modelMatrix;
         flicker.stopFlick();
 		viewMatrix = mat4();

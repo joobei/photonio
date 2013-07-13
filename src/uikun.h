@@ -52,6 +52,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <cstdio>
 #include <functional>
 #include "shader.h"
+#include "plane.h"
 #include <GL/glfw.h>
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
@@ -137,6 +138,7 @@ namespace pho {
 
         //Shaders
         pho::Shader textureShader;
+        pho::Shader planeShader;
 
 		//Picking
 		GLuint hitObject;
@@ -184,7 +186,7 @@ namespace pho {
 		//assets
         pho::Asset target;
         pho::Asset cursor;
-        pho::Asset plane;
+        pho::Plane plane;
         pho::Asset ray;
         pho::Asset floor;
 

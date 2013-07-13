@@ -60,10 +60,13 @@ public:
     Asset(const std::string &filename,pho::Shader* tehShader);
     void draw();
     glm::mat4 modelMatrix;
+    glm::mat4 scaleMatrix;
     void rotate(glm::mat4 rotationMatrix);
     void setShader(pho::Shader* tehShader);
     void setPosition(glm::vec3 position);
+    void setScale(float scaleFactor);
 private:
+
     void upload(pho::Shader* tehShader);
     std::vector<MyMesh> mMeshes;
     const aiScene* scene;

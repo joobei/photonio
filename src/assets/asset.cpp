@@ -184,6 +184,11 @@ void pho::Asset::setPosition(glm::vec3 position)
     modelMatrix[3] = glm::vec4(position,1);
 }
 
+void pho::Asset::setScale(float scaleFactor)
+{
+    scaleMatrix = glm::scale(modelMatrix,glm::vec3(scaleFactor,scaleFactor,scaleFactor));
+}
+
 
 pho::MyMesh::MyMesh()
 {
