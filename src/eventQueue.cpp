@@ -1,4 +1,4 @@
-#include "src/data.pb.h"
+#include "data.pb.h"
 #include "eventQueue.h"
 
 namespace pho {

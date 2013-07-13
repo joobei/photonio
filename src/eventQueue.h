@@ -2,7 +2,7 @@
 #define EVENTQUEUE_H
 
 #include <deque>
-#include "src/data.pb.h"
+#include "data.pb.h"
 #include <iostream>
 #include <boost/array.hpp>
 
