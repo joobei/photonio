@@ -54,7 +54,6 @@ public:
     };
 
 enum InputState { //appInputState
-    idle,
     translate,
     rotate
 };

@@ -30,7 +30,7 @@ using namespace std;
 Engine::Engine():
 calibrate(false),
 	eventQueue(),
-	appInputState(idle),
+    appInputState(rotate),
 	udpwork(ioservice),
     //serialwork(serialioservice),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
@@ -70,9 +70,8 @@ calibrate(false),
     //if (wii) { 	remote.SetLEDs(0x01); }
     //else { errorLog << "WiiRemote Could not Connect \n"; }
 
-	appInputState = idle; 
     technique = planeCasting;
-	rotTechnique = trackBall;
+    rotTechnique = screenSpace;
 
 	prevMouseWheel = 0;
 	gyroData = false;
@@ -301,7 +300,7 @@ void Engine::mouseButtonCallback(int button, int state) {
 	}
 	if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_RELEASE)) 
 	{
-		appInputState = idle;
+        appInputState = rotate;
 	}
 	if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_PRESS)) {
 		
@@ -317,7 +316,7 @@ void Engine::mouseButtonCallback(int button, int state) {
 		mouseMove = false;
 		prevMouseExists = false;
 		
-		appInputState = idle;
+        appInputState = rotate;
 	}
 }
 
@@ -416,10 +415,6 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     if (numberOfCursors == 1) {  flicker.newFlick(); flicker.stopPinchFlick();}
 
 	switch (appInputState) {
-	case idle:
-		appInputState = translate;
-		std::cout << "translate" << std::endl;
-		break;
 	case translate:
 		break;
 	case rotate:
@@ -583,9 +578,8 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 
 	switch (appInputState) {
 	case translate:
-		appInputState = idle;
-		std::cout << "translate-->idle" << std::endl;
-        std::cout.flush();
+        appInputState = rotate;
+        std::cout << "translate-->rotate" << std::endl;
 
         flicker.endFlick(glm::mat3(orientation));
 
@@ -597,7 +591,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
             break;
 		case pinch:
 			rotTechnique = screenSpace;
-			std::cout << "screenSpace" << '\n';
+            std::cout << "screenSpace" << std::endl;
             flicker.endPinchFlick();
 			break;
 		}
@@ -641,38 +635,12 @@ void Engine::checkUDP() {
 			ma.z = magnetometerZ.get_result();
 			gyroData = false;
 			break;
-		case keimote::GYRO:
-			plane.modelMatrix[0][0] = tempEvent.m11(); plane.modelMatrix[0][1] = tempEvent.m21(); plane.modelMatrix[2][0] = tempEvent.m31();
-			plane.modelMatrix[1][0] = tempEvent.m12(); plane.modelMatrix[1][1] = tempEvent.m22(); plane.modelMatrix[2][1] = tempEvent.m32();
-			plane.modelMatrix[2][0] = tempEvent.m13(); plane.modelMatrix[2][1] = tempEvent.m23(); plane.modelMatrix[2][2] = tempEvent.m33();
-			gyroData = true;
-			break;
-		case keimote::BUTTON:
+        case keimote::BUTTON:
 			switch (tempEvent.buttontype()) {
 			case 1:
 				calibrate = true;
 				break;
 			case 2:
-				if (appInputState != rotate) {
-					printf("rotate");
-                    appInputState = rotate;
-                    rotTechnique = screenSpace;
-                }
-				else
-					{ appInputState = idle; 
-					printf("idle");}
-				break;
-			case 3:
-				if (appInputState != rotate) {
-					printf("rotate");
-                    appInputState = rotate;
-                    rotTechnique = screenSpace;
-                }
-				else
-					{ appInputState = idle; 
-					printf("idle");}
-				break;
-            case 4:
                 if (tempEvent.state() == true) {
                     appInputState = translate;
                     printf("translate");
@@ -682,7 +650,7 @@ void Engine::checkUDP() {
                     rotTechnique = screenSpace;
                     printf("rotate");
                 }
-                break;
+				break;
             default:
 				calibrate = true;
 				break;

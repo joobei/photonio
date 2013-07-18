@@ -172,7 +172,7 @@ void pho::Asset::scale()
 
 void pho::Asset::rotate(glm::mat4 rotationMatrix) {
         glm::vec4 tempPosition = modelMatrix[3];
-        modelMatrix = modelMatrix*rotationMatrix;
+        modelMatrix = rotationMatrix*modelMatrix;
         modelMatrix[3] = tempPosition;
 
 }
