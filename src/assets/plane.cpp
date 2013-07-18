@@ -29,7 +29,7 @@ void pho::Plane::upload()
 
 void pho::Plane::draw()
 {
-    CALL_GL(glLineWidth(10));
+    CALL_GL(glLineWidth(5));
     CALL_GL(glBindVertexArray(vao));
     CALL_GL(glDrawArrays(GL_LINE_LOOP,0,vertices.size()));
     CALL_GL(glLineWidth(1));

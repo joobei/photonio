@@ -59,6 +59,7 @@ public:
     Asset();
     Asset(const std::string &filename,pho::Shader* tehShader);
     void draw();
+    void scale();
     glm::mat4 modelMatrix;
     glm::mat4 scaleMatrix;
     void rotate(glm::mat4 rotationMatrix);

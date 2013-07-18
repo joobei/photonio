@@ -122,6 +122,7 @@ void Engine::initResources() {
     planeShader = pho::Shader(shaderpath+"planeShader");
     textureShader = pho::Shader(shaderpath+"texture");
     textureShader.use();
+    textureShader["view"] = viewMatrix;
     textureShader["light_position"] = glm::vec4(pointLight.position,1);
     textureShader["light_diffuse"] = pointLight.color;
     textureShader["light_specular"] = vec4(1,1,1,1);
@@ -146,6 +147,8 @@ void Engine::initResources() {
    
     plane.modelMatrix = cursor.modelMatrix;
     plane.setScale(15.0f);
+//    plane.scale();
+
 
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -157,8 +160,6 @@ void Engine::initResources() {
 	glEnable (GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glDepthMask(GL_TRUE);
-
-
 
     //generateShadowFBO();
 }
@@ -218,7 +219,7 @@ void Engine::render() {
 
     if (technique == planeCasting && appInputState != rotate) {
         planeShader.use();
-        planeShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix;
+        planeShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix*plane.scaleMatrix;
         plane.draw();
     }	
 
@@ -226,11 +227,10 @@ void Engine::render() {
          cursor.rotate(glm::rotate(0.1f,glm::vec3(0,1,0)));
     }
     textureShader.use();
-    textureShader["view"] = viewMatrix;  //no need to do this every frame
     textureShader["model"] = cursor.modelMatrix;
     textureShader["modelview"] = viewMatrix*cursor.modelMatrix;
     textureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-    //cursor.draw();
+    cursor.draw();
 
     //draw floor
     textureShader["model"] = floor.modelMatrix;
@@ -687,7 +687,8 @@ void Engine::checkUDP() {
 			}
 
 		};
-		if (computeRotationMatrix() && (!gyroData)) {
+        //apply matrix to plane
+        if (computeRotationMatrix()) {
 			plane.modelMatrix[0][0] = orientation[0][0]; plane.modelMatrix[0][1] = orientation[0][1]; plane.modelMatrix[0][2] = orientation[0][2]; 
 			plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; plane.modelMatrix[1][2] = orientation[1][2]; 
 			plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2]; 
@@ -731,38 +732,18 @@ void Engine::checkPolhemus() {
 		rayOrigin = position;
 		rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
 	}
-	
 	lock.unlock();
 }
 
 void Engine::checkKeyboard() {
 	#define FACTOR 0.5f
-	if (glfwGetKey(GLFW_KEY_DOWN)) {
+
+    if (glfwGetKey(GLFW_KEY_DOWN)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
 	}
 
 	if (glfwGetKey(GLFW_KEY_KP_4)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(0,1,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_6)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(0,1,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_8)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(FACTOR,glm::vec3(1,0,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_5)) {
-		ray.modelMatrix = ray.modelMatrix*glm::rotate(-FACTOR,glm::vec3(1,0,0));
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_7)) {
-		ray.modelMatrix[3][2] -=0.1;
-	}
-
-	if (glfwGetKey(GLFW_KEY_KP_9)) {
-		ray.modelMatrix[3][2] +=0.1;
+        plane.scale();
 	}
 
 	if (glfwGetKey(GLFW_KEY_UP)) {

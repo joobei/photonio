@@ -143,8 +143,6 @@ void pho::Asset::draw() {
     {
         pho::Shader shader = mMeshes[i].shader[0];
 
-
-
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
 
@@ -163,10 +161,18 @@ void pho::Asset::draw() {
     }
 }
 
+void pho::Asset::scale()
+{
+    glm::vec4 tempPosition = modelMatrix[3];
+    modelMatrix[3] = glm::vec4(0);
+    modelMatrix = modelMatrix*scaleMatrix;
+    modelMatrix[3] = tempPosition;
+}
+
 
 void pho::Asset::rotate(glm::mat4 rotationMatrix) {
         glm::vec4 tempPosition = modelMatrix[3];
-        modelMatrix = rotationMatrix*modelMatrix;
+        modelMatrix = modelMatrix*rotationMatrix;
         modelMatrix[3] = tempPosition;
 
 }
@@ -186,7 +192,7 @@ void pho::Asset::setPosition(glm::vec3 position)
 
 void pho::Asset::setScale(float scaleFactor)
 {
-    scaleMatrix = glm::scale(modelMatrix,glm::vec3(scaleFactor,scaleFactor,scaleFactor));
+    scaleMatrix = glm::scale(glm::mat4(1),glm::vec3(scaleFactor,scaleFactor,scaleFactor));
 }
 
 
