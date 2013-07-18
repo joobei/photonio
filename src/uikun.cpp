@@ -217,11 +217,7 @@ void Engine::render() {
     CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-    if (technique == planeCasting && appInputState != rotate) {
-        planeShader.use();
-        planeShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix*plane.scaleMatrix;
-        plane.draw();
-    }	
+
 
     if (!inputStarted) {
          cursor.rotate(glm::rotate(0.1f,glm::vec3(0,1,0)));
@@ -237,6 +233,12 @@ void Engine::render() {
     textureShader["modelview"] = viewMatrix*floor.modelMatrix;
     textureShader["mvp"] = projectionMatrix*viewMatrix*floor.modelMatrix;
     floor.draw();
+
+    if (technique == planeCasting && appInputState != rotate) {
+        planeShader.use();
+        planeShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix*plane.scaleMatrix;
+        plane.draw();
+    }
 
 	glfwSwapBuffers();
 }
