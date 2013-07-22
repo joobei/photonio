@@ -30,12 +30,12 @@ using namespace std;
 Engine::Engine():
 calibrate(false),
 	eventQueue(),
-    appInputState(rotate),
 	udpwork(ioservice),
     //serialwork(serialioservice),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
     //_serialserver(serialioservice,115200,"/dev/ttyS0",&eventQueue,&ioMutex),
     wii(false),
+    appState(select),
     inputStarted(false),
     mouseMove(false)
 {
@@ -119,12 +119,21 @@ void Engine::initResources() {
 
     //Load shaders ***************************
     planeShader = pho::Shader(shaderpath+"planeShader");
+    noTextureShader = pho::Shader(shaderpath+"notexture");
+    noTextureShader.use();
+    noTextureShader["view"] = viewMatrix;
+    noTextureShader["light_position"] = glm::vec4(pointLight.position,1);
+    noTextureShader["light_diffuse"] = pointLight.color;
+    noTextureShader["light_specular"] = vec4(1,1,1,1);
+
     textureShader = pho::Shader(shaderpath+"texture");
     textureShader.use();
     textureShader["view"] = viewMatrix;
     textureShader["light_position"] = glm::vec4(pointLight.position,1);
     textureShader["light_diffuse"] = pointLight.color;
     textureShader["light_specular"] = vec4(1,1,1,1);
+
+
 
     GLuint t1Location = glGetUniformLocation(textureShader.program, "tex0");
     GLuint t2Location = glGetUniformLocation(textureShader.program, "tex1");
@@ -136,8 +145,9 @@ void Engine::initResources() {
     //baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
 
     //Load Assets ***************************
-    cursor = pho::Asset("bump-heart.obj", &textureShader);
-    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+    //cursor = pho::Asset("bump-heart.obj", &textureShader);
+    cursor = pho::Asset("cursor.obj", &noTextureShader);
+    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
 
     target = pho::Asset("floor.obj", &textureShader);
 
@@ -146,8 +156,9 @@ void Engine::initResources() {
    
     plane.modelMatrix = cursor.modelMatrix;
     plane.setScale(15.0f);
-//    plane.scale();
 
+    heart = pho::Asset("bump-heart.obj",&textureShader);
+    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
 
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -216,24 +227,29 @@ void Engine::render() {
     CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-
-
-    if (!inputStarted) {
-         cursor.rotate(glm::rotate(0.1f,glm::vec3(0,1,0)));
-    }
-    textureShader.use();
-    textureShader["model"] = cursor.modelMatrix;
-    textureShader["modelview"] = viewMatrix*cursor.modelMatrix;
-    textureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
-    cursor.draw();
+    //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
 
     //draw floor
+    textureShader.use();
     textureShader["model"] = floor.modelMatrix;
     textureShader["modelview"] = viewMatrix*floor.modelMatrix;
     textureShader["mvp"] = projectionMatrix*viewMatrix*floor.modelMatrix;
     floor.draw();
 
-    if (technique == planeCasting && appInputState != rotate) {
+    noTextureShader.use();
+    noTextureShader["model"] = cursor.modelMatrix;
+    noTextureShader["modelview"] = viewMatrix*cursor.modelMatrix;
+    noTextureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
+    cursor.draw();
+
+    textureShader.use();
+    textureShader["model"] = heart.modelMatrix;
+    textureShader["modelview"] = viewMatrix*heart.modelMatrix;
+    textureShader["mvp"] = projectionMatrix*viewMatrix*heart.modelMatrix;
+    heart.draw();
+
+
+    if (technique == planeCasting && appState != rotate) {
         planeShader.use();
         planeShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix*plane.scaleMatrix;
         plane.draw();
@@ -296,11 +312,11 @@ void Engine::mouseButtonCallback(int button, int state) {
 
 		startDrag(rayDirection,rayOrigin);
 		
-		appInputState = rotate;
+        appState = rotate;
 	}
 	if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_RELEASE)) 
 	{
-        appInputState = rotate;
+        appState = rotate;
 	}
 	if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_PRESS)) {
 		
@@ -308,7 +324,7 @@ void Engine::mouseButtonCallback(int button, int state) {
 		prevMouseExists = true;
 		prevMousePos = glm::vec2(cur_mx,cur_my);
 
-		appInputState = translate;
+        appState = translate;
 
 	}
 	if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_RELEASE)) {
@@ -316,7 +332,7 @@ void Engine::mouseButtonCallback(int button, int state) {
 		mouseMove = false;
 		prevMouseExists = false;
 		
-        appInputState = rotate;
+        appState = rotate;
 	}
 }
 
@@ -333,12 +349,12 @@ void Engine::mouseMoveCallback(int x, int y) {
 	rayOrigin = glm::vec3(viewMatrix[3]);
 	rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 	
-	if (appInputState == rotate) {
+    if (appState == rotate) {
 		Drag(rayDirection,rayOrigin,viewMatrix);
 	}  
 	
 	
-	if (appInputState == translate) {
+    if (appState == translate) {
 		vec2 MousePt;
 
 		MousePt.x = x;
@@ -414,7 +430,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     //notify flick manager of a new gesture starting
     if (numberOfCursors == 1) {  flicker.newFlick(); flicker.stopPinchFlick();}
 
-	switch (appInputState) {
+    switch (appState) {
 	case translate:
 		break;
 	case rotate:
@@ -456,7 +472,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	y = tcur->getY();
 	mat3 tempMat;
 	mat4 newLocationMatrix;
-
 	
     flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
@@ -467,13 +482,14 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 	//std::list<TUIO::TuioCursor*> cursorList;
 	//cursorList = tuioClient->getTuioCursors();
 
-	switch (appInputState) {
-	case translate:
+    switch (appState) {
+    case select:
+    case translate:
 		//********************* TRANSLATE ****************************
         tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
 #define TFACTOR 5
 		x=(tcur->getXSpeed())/TFACTOR;
-		y=(tcur->getYSpeed())/TFACTOR;
+        y=(tcur->getYSpeed())/TFACTOR;
         //std::cout << "x: " << x;
         //std::cout << "\t\t y: " << y << '\n';
         //std::cout.flush();
@@ -576,13 +592,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 void Engine::removeTuioCursor(TuioCursor *tcur) {
 
-	switch (appInputState) {
+    switch (appState) {
 	case translate:
-        appInputState = rotate;
-        std::cout << "translate-->rotate" << std::endl;
-
         flicker.endFlick(glm::mat3(orientation));
-
 		break;
 	case rotate:
 		switch (rotTechnique) {
@@ -591,7 +603,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
             break;
 		case pinch:
 			rotTechnique = screenSpace;
-            std::cout << "screenSpace" << std::endl;
+            //std::cout << "screenSpace" << std::endl;
             flicker.endPinchFlick();
 			break;
 		}
@@ -606,6 +618,8 @@ void Engine::refresh(TuioTime frameTime) {
 }
 
 void Engine::checkUDP() {
+    glm::mat4 newLocationMatrix;
+    glm::vec3 newLocationVector;
 	//UDP queue
 	boost::mutex::scoped_lock lock(ioMutex);
 	while (!eventQueue.isEmpty()) {
@@ -622,9 +636,9 @@ void Engine::checkUDP() {
 
 			acc.x = accelerometerX.get_result();
 			acc.y = accelerometerY.get_result();
-			acc.z = accelerometerZ.get_result();
-			gyroData = false;
-			break;
+            acc.z = accelerometerZ.get_result();
+
+            break;
 		case keimote::MAG:
 			magnetometerX.update(tempEvent.x());
 			magnetometerY.update(tempEvent.y());
@@ -633,7 +647,7 @@ void Engine::checkUDP() {
 			ma.x = magnetometerX.get_result();
 			ma.y = magnetometerY.get_result();
 			ma.z = magnetometerZ.get_result();
-			gyroData = false;
+
 			break;
         case keimote::BUTTON:
 			switch (tempEvent.buttontype()) {
@@ -641,16 +655,35 @@ void Engine::checkUDP() {
 				calibrate = true;
 				break;
 			case 2:
-                if (tempEvent.state() == true) {
-                    appInputState = translate;
-                    printf("translate");
+                if (appState == direct) {
+                    newLocationVector = mat3(orientation)*vec3(0,0,-1);
+                    newLocationMatrix = glm::translate(mat4(),newLocationVector);
+                    cursor.modelMatrix = newLocationMatrix*cursor.modelMatrix;
+                    break;
                 }
-                if (tempEvent.state() == false) {
-                    appInputState = rotate;
+                if (tempEvent.state() == true && appState != translate) {
+                    appState = translate;
+                }
+                if (tempEvent.state() == false && appState == translate) {
+                    appState = rotate;
                     rotTechnique = screenSpace;
-                    printf("rotate");
+                    printf("translate --> rotate");
                 }
-				break;
+
+                break;
+            case 3:
+                if (appState == direct) {
+                    newLocationVector = mat3(orientation)*vec3(0,0,1);
+                    newLocationMatrix = glm::translate(mat4(),newLocationVector);
+                    cursor.modelMatrix = newLocationMatrix*cursor.modelMatrix;
+                    break;
+                }
+                if (tempEvent.state() == true && appState != direct) {
+                    appState = direct;
+                }
+                if (tempEvent.state() == false && appState == direct) {
+                    appState = translate;
+                }
             default:
 				calibrate = true;
 				break;
@@ -712,11 +745,7 @@ void Engine::checkKeyboard() {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
 	}
 
-	if (glfwGetKey(GLFW_KEY_KP_4)) {
-        plane.scale();
-	}
-
-	if (glfwGetKey(GLFW_KEY_UP)) {
+    if (glfwGetKey(GLFW_KEY_UP)) {
 		viewMatrix = glm::translate(viewMatrix, vec3(0,0,FACTOR));
 	}
 	if (glfwGetKey(GLFW_KEY_LEFT)) {
@@ -746,39 +775,17 @@ void Engine::checkKeyboard() {
 	if (glfwGetKey(GLFW_KEY_END)) {
 		perspective -=1.0;
 		projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
-		std::cout << "Perspective : " << perspective << '\n';
-	}
-
-	if (glfwGetKey('f') == GLFW_PRESS) {
-		cursor.rotate(glm::rotate(0.1f,glm::vec3(0,0,1)));
-	}
-
-	if (glfwGetKey('g') == GLFW_PRESS) {
-		cursor.rotate(glm::rotate(-0.1f,glm::vec3(0,0,1)));
-		
+        //log("Perspective : " +perspective);
 	}
 	
 	if (glfwGetKey('1') == GLFW_PRESS) {
-		technique = mouse;
-		std::cout << "Mouse" << '\n';
-	}
-	if (glfwGetKey('2') == GLFW_PRESS) {
-		technique = rayCasting;
-		std::cout << "Raycasting" << '\n';
-	}
-	if (glfwGetKey('3') == GLFW_PRESS) {
-		technique = spaceNavigator;
-		std::cout << "Space Navigator" << '\n';
+        appState = direct;
+        log("Direct");
 	}
 
-	if (glfwGetKey('4') == GLFW_PRESS) {
-		technique = planeCasting;
-		std::cout << "PlaneCasting" << '\n';
-	}
-
-	if (glfwGetKey('0') == GLFW_PRESS) {
-		technique = planeCasting;
-		std::cout << "PlaneCasting" << '\n';
+    if (glfwGetKey('2') == GLFW_PRESS) {
+        appState = translate;
+        log("PlaneCasting");
 	}
 }
 

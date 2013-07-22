@@ -127,10 +127,26 @@ void pho::Asset::upload(pho::Shader* tehShader)
                  tempMesh.material.normalTexture = gli::createTexture2D(assetpath+path.C_Str());
              }
 
+             aiColor3D tempColor;
+             aiMaterial* tempMat = scene->mMaterials[scene->mMeshes[n]->mMaterialIndex];
+             if(AI_SUCCESS != tempMat->Get(AI_MATKEY_COLOR_DIFFUSE,tempColor)) {
+                 log("----> FAILED Diffuse Color");
+             }
+             else {
+                 tempMesh.material.diffuseColor.r = tempColor.r;
+                 tempMesh.material.diffuseColor.g = tempColor.g;
+                 tempMesh.material.diffuseColor.b = tempColor.b;
+             }
 
-             scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->Get(AI_MATKEY_COLOR_DIFFUSE,tempMesh.material.diffuseColor);
-             scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->Get(AI_MATKEY_COLOR_SPECULAR,tempMesh.material.specularColor);
-             scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->Get(AI_MATKEY_SHININESS,tempMesh.material.shininess);
+             if(AI_SUCCESS != tempMat->Get(AI_MATKEY_COLOR_SPECULAR,tempMesh.material.specularColor)) {
+                 log("----> FAILED Specular Color");
+             }
+             else {
+                 tempMesh.material.specularColor.r = tempColor.r;
+                 tempMesh.material.specularColor.g = tempColor.g;
+                 tempMesh.material.specularColor.b = tempColor.b;
+             }
+             tempMat->Get(AI_MATKEY_SHININESS,tempMesh.material.shininess);
 
              tempMesh.shader = tehShader;
              mMeshes.push_back(tempMesh);
@@ -152,8 +168,8 @@ void pho::Asset::draw() {
             CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.normalTexture));
         }
 
-        shader["material_diffuse"] = mMeshes[i].material.diffuseColor;
-        shader["material_specular"] = mMeshes[i].material.specularColor;
+        shader["material_diffuse"] = glm::vec4(mMeshes[i].material.diffuseColor,1);
+        shader["material_specular"] = glm::vec4(mMeshes[i].material.specularColor,1);
         shader["material_shininess"] = mMeshes[i].material.shininess;
 
         CALL_GL(glBindVertexArray(mMeshes[i].vao));

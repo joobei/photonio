@@ -117,10 +117,9 @@ namespace pho {
 		std::map<std::string, GLuint> textureIdMap;	
 		bool LoadGLTextures(const aiScene* scene);
 
-		InputState appInputState;
+        AppState appState;
 		RotateTechnique rotTechnique;
 		Technique technique;
-
 
 		GLenum error;
 
@@ -138,6 +137,7 @@ namespace pho {
 
         //Shaders
         pho::Shader textureShader;
+        pho::Shader noTextureShader;
         pho::Shader planeShader;
 
 		//Picking
@@ -183,12 +183,16 @@ namespace pho {
 
 		boost::mutex ioMutex; //locks the message queue for thread access
 
-		//assets
+        //assets
         pho::Asset target;
         pho::Asset cursor;
+        pho::Asset heart;
         pho::Plane plane;
         pho::Asset ray;
         pho::Asset floor;
+
+
+
 
         //input
         bool inputStarted;

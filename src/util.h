@@ -53,17 +53,18 @@ public:
         bool phoneVolumeUp,phoneVolumeDown,phoneButtonTouch;
     };
 
-enum InputState { //appInputState
+enum AppState {
+    select,
+    intersect,
     translate,
-    rotate
+    rotate,
+    direct
 };
 
 enum RotateTechnique { //rotTechnique
-    singleAxis,
-    pinch2,
     screenSpace,
     pinch,
-    trackBall
+    clutch
 };
 
 enum Technique {  //appmode
