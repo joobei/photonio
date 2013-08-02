@@ -56,7 +56,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <GL/glfw.h>
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
-
+#include <btBulletCollisionCommon.h>
 
 using namespace std;
 using namespace TUIO;
@@ -104,10 +104,10 @@ namespace pho {
 	private:
 
 		void checkUDP();
-		void checkPolhemus();
-        //void checkWiiMote();
 		void checkKeyboard();
 		void checkSpaceNavigator();
+        void initPhysics();
+        void physicsCheck();
 		
 
 		void initSimpleGeometry();
@@ -138,7 +138,7 @@ namespace pho {
         //Shaders
         pho::Shader textureShader;
         pho::Shader noTextureShader;
-        pho::Shader planeShader;
+        pho::Shader flatShader;
 
 		//Picking
 		GLuint hitObject;
@@ -174,12 +174,6 @@ namespace pho {
 		boost::asio::io_service::work udpwork;
 		boost::thread* netThread;
 		udp_server _udpserver;
-
-		//Polhemus IO
-        //boost::asio::io_service serialioservice;
-        //boost::asio::io_service::work serialwork;
-        //boost::thread* serialThread;
-        //Minicom_client _serialserver;
 
 		boost::mutex ioMutex; //locks the message queue for thread access
 
@@ -223,7 +217,7 @@ namespace pho {
         //Flicking
         pho::flickManager flicker;
         boost::timer flickTimer;
-
+        boost::timer doubleClick;
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;
         //wiimote remote;
@@ -262,6 +256,12 @@ namespace pho {
         GLuint baseImageLoc;
         GLuint lightVAO; //debug light
         glm::mat4 lightMatrix;
+
+
+        //Physics
+        btCollisionWorld* collisionWorld = 0;
+        btCollisionObject* coCursor = 0;
+        btCollisionObject* coHeart = 0;
 	};
 
 }

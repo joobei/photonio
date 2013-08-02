@@ -71,7 +71,7 @@ int main()
 
     engine->go();
 
-	
+    delete engine;
     glfwTerminate();
     return 0;
 }

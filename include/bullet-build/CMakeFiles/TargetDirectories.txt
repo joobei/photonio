@@ -1,0 +1,11 @@
+/home/jubei/coding/uikun/include/bullet-build/Demos/HelloWorld/CMakeFiles/AppHelloWorld.dir
+/home/jubei/coding/uikun/include/bullet-build/src/BulletCollision/CMakeFiles/BulletCollision.dir
+/home/jubei/coding/uikun/include/bullet-build/src/BulletDynamics/CMakeFiles/BulletDynamics.dir
+/home/jubei/coding/uikun/include/bullet-build/Extras/Serialize/BulletFileLoader/CMakeFiles/BulletFileLoader.dir
+/home/jubei/coding/uikun/include/bullet-build/src/BulletSoftBody/CMakeFiles/BulletSoftBody.dir
+/home/jubei/coding/uikun/include/bullet-build/Extras/Serialize/BulletWorldImporter/CMakeFiles/BulletWorldImporter.dir
+/home/jubei/coding/uikun/include/bullet-build/Extras/Serialize/BulletXmlWorldImporter/CMakeFiles/BulletXmlWorldImporter.dir
+/home/jubei/coding/uikun/include/bullet-build/Extras/ConvexDecomposition/CMakeFiles/ConvexDecomposition.dir
+/home/jubei/coding/uikun/include/bullet-build/Extras/GIMPACTUtils/CMakeFiles/GIMPACTUtils.dir
+/home/jubei/coding/uikun/include/bullet-build/Extras/HACD/CMakeFiles/HACD.dir
+/home/jubei/coding/uikun/include/bullet-build/src/LinearMath/CMakeFiles/LinearMath.dir

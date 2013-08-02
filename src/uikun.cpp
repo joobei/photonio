@@ -31,9 +31,7 @@ Engine::Engine():
 calibrate(false),
 	eventQueue(),
 	udpwork(ioservice),
-    //serialwork(serialioservice),
 	_udpserver(ioservice,&eventQueue,&ioMutex),
-    //_serialserver(serialioservice,115200,"/dev/ttyS0",&eventQueue,&ioMutex),
     wii(false),
     appState(select),
     inputStarted(false),
@@ -118,7 +116,7 @@ void Engine::initResources() {
     pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
 
     //Load shaders ***************************
-    planeShader = pho::Shader(shaderpath+"planeShader");
+    flatShader = pho::Shader(shaderpath+"flat");
     noTextureShader = pho::Shader(shaderpath+"notexture");
     noTextureShader.use();
     noTextureShader["view"] = viewMatrix;
@@ -172,6 +170,7 @@ void Engine::initResources() {
 	glDepthMask(GL_TRUE);
 
     //generateShadowFBO();
+    initPhysics();
 }
 
 //checks event queue for events
@@ -191,11 +190,6 @@ void Engine::checkEvents() {
 	  
 	if (technique == planeCasting) {
 		checkUDP();
-	}
-
-	if (technique == rayCasting && wii) {
-		checkPolhemus();
-        //checkWiiMote();
 	}
 
     if (flicker.inFlick()) {
@@ -248,14 +242,15 @@ void Engine::render() {
     textureShader["mvp"] = projectionMatrix*viewMatrix*heart.modelMatrix;
     heart.draw();
 
-
     if (technique == planeCasting && appState != rotate) {
-        planeShader.use();
-        planeShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix*plane.scaleMatrix;
+        flatShader.use();
+        flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix*plane.scaleMatrix;
         plane.draw();
     }
 
 	glfwSwapBuffers();
+
+    physicsCheck();
 }
 
 bool Engine::computeRotationMatrix() {
@@ -375,7 +370,6 @@ void Engine::mouseMoveCallback(int x, int y) {
 }
 
 void Engine::go() {
-
 	initResources();
 	while(true) {
 		checkEvents();
@@ -388,13 +382,7 @@ void Engine::go() {
 }
 
 void Engine::shutdown() {
-
-    //_serialserver.shutDown();
-    //serialioservice.stop();
-    //serialThread->join();
-
 	ioservice.stop();
-
 	errorLog.close();
 }
 
@@ -428,7 +416,17 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 	//std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
-    if (numberOfCursors == 1) {  flicker.newFlick(); flicker.stopPinchFlick();}
+    if (numberOfCursors == 1) {  flicker.newFlick(); flicker.stopPinchFlick();
+
+    }
+
+    //check for double click
+     if (numberOfCursors == 1) {
+         if (doubleClick.elapsed() < 500) {
+
+         }
+         doubleClick.restart();
+     }
 
     switch (appState) {
 	case translate:
@@ -467,11 +465,13 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 void Engine::updateTuioCursor(TuioCursor *tcur) {
 	vec3 newLocationVector;
+    btTransform temp;
 	float x,y;
 	x = tcur->getX();
 	y = tcur->getY();
 	mat3 tempMat;
 	mat4 newLocationMatrix;
+    mat4 tempMatrix;
 	
     flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
@@ -499,8 +499,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
         plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
-        pho::locationMatch(cursor.modelMatrix,plane.modelMatrix);  //put cursor in plane's location
+        pho::locationMatch(heart.modelMatrix,plane.modelMatrix);  //put cursor in plane's location
 
+        temp.setFromOpenGLMatrix(glm::value_ptr(tempMatrix));
+        coHeart->setWorldTransform(temp);
 		break;		  
 	   //*********************   ROTATE  ****************************
     case rotate:
@@ -697,45 +699,6 @@ void Engine::checkUDP() {
 			plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2]; 
 		}
 	}
-}
-
-void Engine::checkPolhemus() {
-	
-	boost::mutex::scoped_lock lock(ioMutex);
-	//SERIAL Queue
-	while(!eventQueue.isSerialEmpty()) {
-		boost::array<float,7> temp = eventQueue.serialPop();
-		
-		vec3 position;
-		glm::quat orientation;
-		mat4 transform;
-
-		position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
-		//position += vec3(0,-0.575f,2.1f);
-		position += vec3(0,-0.25f,0.51f);
-
-		orientation.w = temp[3];
-		orientation.x = temp[4];
-		orientation.y = temp[5];
-		orientation.z = temp[6];
-
-		//transform=glm::translate(transform,position);
-
-		transform=glm::toMat4(orientation);
-		
-		//Rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
-		transform = transform*glm::toMat4(glm::angleAxis(-90.0f,vec3(0,0,1)));  //multiply from the right --- WRONG!!!!!! but works for the time being
-
-		transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
-		transform[3][1] = position.y;
-		transform[3][2] = position.z;
-
-		ray.modelMatrix = transform;
-
-		rayOrigin = position;
-		rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
-	}
-	lock.unlock();
 }
 
 void Engine::checkKeyboard() {
@@ -981,7 +944,77 @@ void Engine::checkSpaceNavigator() {
             cursor.rotate(glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0)));
             cursor.rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
             cursor.rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));
+
+            btTransform objTrans;
+            objTrans.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+            coCursor->setWorldTransform(objTrans);
         }
 	}
 
+}
+
+void Engine::initPhysics()
+{
+    btTransform temp;
+
+    btSphereShape* csSphere = new btSphereShape(1.0f);
+    coCursor = new btCollisionObject();
+    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+    coCursor->setCollisionShape(csSphere);
+    coCursor->setWorldTransform(temp);
+
+    btConvexHullShape* csHeart = new btConvexHullShape();
+
+    for (int i=0;i<heart.vertices.size();++i) {
+        csHeart->addPoint(btVector3(heart.vertices[i].x,heart.vertices[i].y,heart.vertices[i].z));
+    }
+    coHeart = new btCollisionObject();
+    temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
+    coHeart->setCollisionShape(csHeart);
+    coHeart->setWorldTransform(temp);
+
+    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+
+    btVector3  worldAabbMin(-100,-100,-100);
+    btVector3  worldAabbMax(100,100,100);
+
+    btAxisSweep3* broadphase = new btAxisSweep3(worldAabbMin,worldAabbMax);
+
+    collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
+    //collisionWorld->setDebugDrawer(&debugDrawer);
+
+    btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),1);
+    collisionWorld->addCollisionObject(coCursor);
+    collisionWorld->addCollisionObject(coHeart);
+
+}
+
+void Engine::physicsCheck()
+{
+    if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
+
+    int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
+        for (int i=0;i<numManifolds;i++)
+        {
+            btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
+            btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
+            btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+
+            int numContacts = contactManifold->getNumContacts();
+            for (int j=0;j<numContacts;j++)
+            {
+
+                btManifoldPoint& pt = contactManifold->getContactPoint(j);
+                if (pt.getDistance()<0.f)
+                {
+
+                    log("we have contact ");
+
+                    const btVector3& ptA = pt.getPositionWorldOnA();
+                    const btVector3& ptB = pt.getPositionWorldOnB();
+                    const btVector3& normalOnB = pt.m_normalWorldOnB;
+                }
+            }
+        }
 }

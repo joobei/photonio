@@ -66,8 +66,8 @@ public:
     void setShader(pho::Shader* tehShader);
     void setPosition(glm::vec3 position);
     void setScale(float scaleFactor);
+    std::vector<glm::vec3> vertices;
 private:
-
     void upload(pho::Shader* tehShader);
     std::vector<MyMesh> mMeshes;
     const aiScene* scene;

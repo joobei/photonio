@@ -58,6 +58,11 @@ void pho::Asset::upload(pho::Shader* tehShader)
                 CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
             }
 
+            //store vertices for physics
+            for (int i=0;i<mesh->mNumVertices;++i) {
+                vertices.push_back(glm::vec3(mesh->mVertices[i].x,mesh->mVertices[i].y,mesh->mVertices[i].z));
+            }
+
             if (mesh->HasNormals()) {
 
                 CALL_GL(glGenBuffers(1, &buffer));
