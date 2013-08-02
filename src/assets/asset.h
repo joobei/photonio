@@ -58,6 +58,7 @@ class Asset {
 public:
     Asset();
     Asset(const std::string &filename,pho::Shader* tehShader);
+    void linkViewMatrices(glm::mat4* viewMatrix, glm::mat4* projectionMatrix);
     void draw();
     void scale();
     glm::mat4 modelMatrix;
@@ -67,8 +68,12 @@ public:
     void setPosition(glm::vec3 position);
     void setScale(float scaleFactor);
     std::vector<glm::vec3> vertices;
+    bool beingIntersected;
+    pho::Shader* shader;
 private:
-    void upload(pho::Shader* tehShader);
+    void upload();
+    glm::mat4* viewMatrix;
+    glm::mat4* projectionMatrix;
     std::vector<MyMesh> mMeshes;
     const aiScene* scene;
 

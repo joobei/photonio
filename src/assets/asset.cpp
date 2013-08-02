@@ -5,6 +5,8 @@ pho::Asset::Asset()
 
 pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader)
 {
+    beingIntersected = false;
+    this->shader = tehShader;
     std::string assetpath;
     //load the asset path and store it
     if (boost::filesystem::exists("assetpath")) { //if you're not using cmake put the shaders in the same dir as the binary
@@ -32,10 +34,16 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader)
 
     }
 
-    upload(tehShader);
+    upload();
 }
 
-void pho::Asset::upload(pho::Shader* tehShader)
+void pho::Asset::linkViewMatrices(glm::mat4 *viewMatrix, glm::mat4 *projectionMatrix)
+{
+    this->viewMatrix = viewMatrix;
+    this->projectionMatrix = projectionMatrix;
+}
+
+void pho::Asset::upload()
 {
 
     //log("Number of Meshes :");
@@ -152,18 +160,15 @@ void pho::Asset::upload(pho::Shader* tehShader)
                  tempMesh.material.specularColor.b = tempColor.b;
              }
              tempMat->Get(AI_MATKEY_SHININESS,tempMesh.material.shininess);
-
-             tempMesh.shader = tehShader;
              mMeshes.push_back(tempMesh);
     }
 }
 
 
-void pho::Asset::draw() {
+void pho::Asset::draw() {   
+
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
-        pho::Shader shader = mMeshes[i].shader[0];
-
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
 
@@ -173,9 +178,13 @@ void pho::Asset::draw() {
             CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.normalTexture));
         }
 
-        shader["material_diffuse"] = glm::vec4(mMeshes[i].material.diffuseColor,1);
-        shader["material_specular"] = glm::vec4(mMeshes[i].material.specularColor,1);
-        shader["material_shininess"] = mMeshes[i].material.shininess;
+        shader->use();
+        shader[0]["model"] = modelMatrix;
+        shader[0]["modelview"] = (*viewMatrix)*modelMatrix;
+        shader[0]["mvp"] = (*projectionMatrix)*(*viewMatrix)*modelMatrix;
+        shader[0]["material_diffuse"] = glm::vec4(mMeshes[i].material.diffuseColor,1);
+        shader[0]["material_specular"] = glm::vec4(mMeshes[i].material.specularColor,1);
+        shader[0]["material_shininess"] = mMeshes[i].material.shininess;
 
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
@@ -200,10 +209,7 @@ void pho::Asset::rotate(glm::mat4 rotationMatrix) {
 
 void pho::Asset::setShader(pho::Shader *tehShader)
 {
-    for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
-    {
-        mMeshes[i].shader = tehShader;
-    }
+    this->shader = tehShader;
 }
 
 void pho::Asset::setPosition(glm::vec3 position)

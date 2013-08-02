@@ -131,8 +131,6 @@ void Engine::initResources() {
     textureShader["light_diffuse"] = pointLight.color;
     textureShader["light_specular"] = vec4(1,1,1,1);
 
-
-
     GLuint t1Location = glGetUniformLocation(textureShader.program, "tex0");
     GLuint t2Location = glGetUniformLocation(textureShader.program, "tex1");
 
@@ -146,17 +144,23 @@ void Engine::initResources() {
     //cursor = pho::Asset("bump-heart.obj", &textureShader);
     cursor = pho::Asset("cursor.obj", &noTextureShader);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
+    cursor.linkViewMatrices(&viewMatrix,&projectionMatrix);
 
     target = pho::Asset("floor.obj", &textureShader);
+    target.linkViewMatrices(&viewMatrix,&projectionMatrix);
 
     floor = pho::Asset("floor.obj", &textureShader);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-30,-60));
+    floor.linkViewMatrices(&viewMatrix,&projectionMatrix);
    
+    plane.setShader(&flatShader);
     plane.modelMatrix = cursor.modelMatrix;
     plane.setScale(15.0f);
+    plane.linkViewMatrices(&viewMatrix,&projectionMatrix);
 
     heart = pho::Asset("bump-heart.obj",&textureShader);
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+    heart.linkViewMatrices(&viewMatrix,&projectionMatrix);
 
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -222,29 +226,11 @@ void Engine::render() {
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
-
-    //draw floor
-    textureShader.use();
-    textureShader["model"] = floor.modelMatrix;
-    textureShader["modelview"] = viewMatrix*floor.modelMatrix;
-    textureShader["mvp"] = projectionMatrix*viewMatrix*floor.modelMatrix;
     floor.draw();
-
-    noTextureShader.use();
-    noTextureShader["model"] = cursor.modelMatrix;
-    noTextureShader["modelview"] = viewMatrix*cursor.modelMatrix;
-    noTextureShader["mvp"] = projectionMatrix*viewMatrix*cursor.modelMatrix;
     cursor.draw();
-
-    textureShader.use();
-    textureShader["model"] = heart.modelMatrix;
-    textureShader["modelview"] = viewMatrix*heart.modelMatrix;
-    textureShader["mvp"] = projectionMatrix*viewMatrix*heart.modelMatrix;
     heart.draw();
 
     if (technique == planeCasting && appState != rotate) {
-        flatShader.use();
-        flatShader["mvp"] = projectionMatrix*viewMatrix*plane.modelMatrix*plane.scaleMatrix;
         plane.draw();
     }
 
