@@ -35,4 +35,9 @@ void pho::Plane::draw()
     CALL_GL(glLineWidth(1));
 }
 
+void pho::Plane::setShader(pho::Shader *tehShader)
+{
+    this->shader = tehShader;
+}
+
 

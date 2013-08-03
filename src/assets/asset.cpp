@@ -167,6 +167,25 @@ void pho::Asset::upload()
 
 void pho::Asset::draw() {   
 
+    if (beingIntersected) {
+
+        CALL_GL(glDisable(GL_DEPTH_TEST));
+
+        scaleMatrix = glm::scale(glm::mat4(),glm::vec3(1.05,1.05,1.05));
+        flatShader->use();
+        flatShader[0]["mvp"] = (*projectionMatrix)*(*viewMatrix)*modelMatrix*scaleMatrix;
+        flatShader[0]["color"] = glm::vec4(0,1,0,1);
+
+        for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
+        {
+            CALL_GL(glBindVertexArray(mMeshes[i].vao));
+            CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+        }
+
+        CALL_GL(glEnable(GL_DEPTH_TEST));
+        beingIntersected = false;
+    }
+
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
         CALL_GL(glActiveTexture(GL_TEXTURE0));
@@ -207,9 +226,9 @@ void pho::Asset::rotate(glm::mat4 rotationMatrix) {
 
 }
 
-void pho::Asset::setShader(pho::Shader *tehShader)
+void pho::Asset::setFlatShader(pho::Shader *tehShader)
 {
-    this->shader = tehShader;
+    this->flatShader = tehShader;
 }
 
 void pho::Asset::setPosition(glm::vec3 position)

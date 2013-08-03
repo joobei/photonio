@@ -145,22 +145,27 @@ void Engine::initResources() {
     cursor = pho::Asset("cursor.obj", &noTextureShader);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     cursor.linkViewMatrices(&viewMatrix,&projectionMatrix);
+    cursor.setFlatShader(&flatShader);
 
     target = pho::Asset("floor.obj", &textureShader);
     target.linkViewMatrices(&viewMatrix,&projectionMatrix);
+    target.setFlatShader(&flatShader);
 
     floor = pho::Asset("floor.obj", &textureShader);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-30,-60));
     floor.linkViewMatrices(&viewMatrix,&projectionMatrix);
-   
+    floor.setFlatShader(&flatShader);
+
     plane.setShader(&flatShader);
     plane.modelMatrix = cursor.modelMatrix;
     plane.setScale(15.0f);
     plane.linkViewMatrices(&viewMatrix,&projectionMatrix);
+    plane.setFlatShader(&flatShader);
 
     heart = pho::Asset("bump-heart.obj",&textureShader);
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
     heart.linkViewMatrices(&viewMatrix,&projectionMatrix);
+    heart.setFlatShader(&flatShader);
 
 	//Create the perspective matrix
 	projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f); 
@@ -227,16 +232,15 @@ void Engine::render() {
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
     floor.draw();
-    cursor.draw();
     heart.draw();
-
+    cursor.draw();
     if (technique == planeCasting && appState != rotate) {
         plane.draw();
     }
 
 	glfwSwapBuffers();
 
-    physicsCheck();
+    checkPhysics();
 }
 
 bool Engine::computeRotationMatrix() {
@@ -976,7 +980,7 @@ void Engine::initPhysics()
 
 }
 
-void Engine::physicsCheck()
+void Engine::checkPhysics()
 {
     if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
 
@@ -990,13 +994,11 @@ void Engine::physicsCheck()
             int numContacts = contactManifold->getNumContacts();
             for (int j=0;j<numContacts;j++)
             {
-
                 btManifoldPoint& pt = contactManifold->getContactPoint(j);
                 if (pt.getDistance()<0.f)
                 {
-
-                    log("we have contact ");
-
+                    //log("we have contact ");
+                    heart.beingIntersected = true;
                     const btVector3& ptA = pt.getPositionWorldOnA();
                     const btVector3& ptB = pt.getPositionWorldOnB();
                     const btVector3& normalOnB = pt.m_normalWorldOnB;

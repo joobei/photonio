@@ -13,7 +13,7 @@
 #include "shader.h"
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
-
+#include <btBulletCollisionCommon.h>
 
 namespace pho {
 
@@ -64,19 +64,19 @@ public:
     glm::mat4 modelMatrix;
     glm::mat4 scaleMatrix;
     void rotate(glm::mat4 rotationMatrix);
-    void setShader(pho::Shader* tehShader);
+    void setFlatShader(pho::Shader* tehShader);
     void setPosition(glm::vec3 position);
     void setScale(float scaleFactor);
     std::vector<glm::vec3> vertices;
     bool beingIntersected;
-    pho::Shader* shader;
-private:
+protected:
     void upload();
     glm::mat4* viewMatrix;
     glm::mat4* projectionMatrix;
     std::vector<MyMesh> mMeshes;
     const aiScene* scene;
-
+    pho::Shader* shader;
+    pho::Shader* flatShader;
 };
 }
 

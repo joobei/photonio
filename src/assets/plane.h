@@ -11,6 +11,7 @@ public:
     Plane();
     void extendToObject(pho::Asset &toMatch);
     void draw();
+    void setShader(pho::Shader* tehShader);
 private:
     void upload();
     std::vector<glm::vec3> vertices;

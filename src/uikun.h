@@ -107,7 +107,7 @@ namespace pho {
 		void checkKeyboard();
 		void checkSpaceNavigator();
         void initPhysics();
-        void physicsCheck();
+        void checkPhysics();
 		
 
 		void initSimpleGeometry();
