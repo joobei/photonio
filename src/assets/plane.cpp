@@ -29,6 +29,9 @@ void pho::Plane::upload()
 
 void pho::Plane::draw()
 {
+    shader->use();
+    shader[0]["mvp"] = (*projectionMatrix)*(*viewMatrix)*modelMatrix*scaleMatrix;
+    shader[0]["color"] = glm::vec4(0.f,0.f,1.f,1.f);
     CALL_GL(glLineWidth(5));
     CALL_GL(glBindVertexArray(vao));
     CALL_GL(glDrawArrays(GL_LINE_LOOP,0,vertices.size()));
