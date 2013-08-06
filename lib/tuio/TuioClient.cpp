@@ -380,7 +380,7 @@ void TuioClient::ProcessMessage( const ReceivedMessage& msg, const IpEndpointNam
 										if((*iter)->getDistance(tcur)<(*closestCursor)->getDistance(tcur)) closestCursor = iter;
 									}
 									
-									TuioCursor *freeCursor = (*closestCursor);
+                                    TuioCursor *freeCursor = (*closestCursor);
 									c_id = freeCursor->getCursorID();
 									freeCursorList.erase(closestCursor);
 									delete freeCursor;

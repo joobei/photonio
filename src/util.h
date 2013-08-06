@@ -13,7 +13,7 @@
 #include "glm/gtx/rotate_vector.hpp"
 #include "glm/gtx/quaternion.hpp"
 #include "glm/gtx/compatibility.hpp"
-#include "boost/timer.hpp"
+#include "boost/timer/timer.hpp"
 
 //errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
 
@@ -117,7 +117,7 @@ private:
     bool currentlyInFlick;
     bool currentlyInRotationFlick;
     bool currentlyInPinchFlick;
-    boost::timer flickTimer;
+    boost::timer::cpu_timer flickTimer;
     std::deque<glm::vec2> touchHistory; //store a number of values
     std::deque<float> angleHistory;
     glm::vec2 launchPair;  //to save the speed of the cursor on the last movement before the flick was initiated

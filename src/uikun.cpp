@@ -56,7 +56,7 @@ Engine::Engine():
     }
 
     verbose = false;
-    //doubleClick.restart();
+    doubleClick.start();
     //Protobuf custom protocol listener
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
     //Polhemus (disabled because it requires usb converter attached)
@@ -234,7 +234,7 @@ void Engine::render() {
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
     floor.draw();
     heart.draw();
-    if (appState != translate) {
+    if (appState == select) {
         cursor.draw();
     }
     if (technique == planeCasting && appState != rotate) {
@@ -403,10 +403,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     inputStarted = true;
 
     //TUIO variables
-    short numberOfCursors = tuioClient->getTuioCursors().size();
     std::list<TUIO::TuioCursor*> cursorList;
     cursorList = tuioClient->getTuioCursors();
-    std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
+    short numberOfCursors = cursorList.size();
+    //std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
     if (numberOfCursors == 1) {
@@ -414,27 +414,18 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         flicker.stopPinchFlick();
     }
 
+    boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
+    double difference = elapsed_times.wall-previousTime.wall;
+    //cout.precision(15);
+    //std::cout << "Elapsed :" << difference << std::endl;
     //check for double click
-    /*if (numberOfCursors == 1 ) {
-        if (doubleClick.elapsed() < 1) {
-
-            switch(appState) {
-            case select:
-                if(heart.beingIntersected) {
-                    selectedAsset = &heart;
-                    appState = translate;
-                    log("doubleClick");
-                    doubleClick.restart();
-                }
-                break;
-
-            case translate:
-                selectedAsset = &cursor;
-                appState = select;
-                break;
-            }
+    if (numberOfCursors == 1 ) {
+        if (difference < 150000000) {
+        doubleClickPerformed = true;
         }
-    }*/
+    }
+    previousTime = elapsed_times;
+
 
     switch (appState) {
     case translate:
@@ -1014,33 +1005,50 @@ void Engine::checkPhysics()
 
     if (appState == select) {
 
-    if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
+        if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
 
-    std::map<btCollisionObject*,pho::Asset*>::iterator it;
-    int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
-    for (int i=0;i<numManifolds;i++)
-    {
-        btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
-        btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-        btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
-
-        it = selectMap.find(obB);
-        if ( it != selectMap.end()) {
-            it->second->beingIntersected = true;
-        }
-
-
-        int numContacts = contactManifold->getNumContacts();
-        for (int j=0;j<numContacts;j++)
+        std::map<btCollisionObject*,pho::Asset*>::iterator it;
+        int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
+        for (int i=0;i<numManifolds;i++)
         {
-            btManifoldPoint& pt = contactManifold->getContactPoint(j);
-            if (pt.getDistance()<0.f)
-            {
-                const btVector3& ptA = pt.getPositionWorldOnA();
-                const btVector3& ptB = pt.getPositionWorldOnB();
-                const btVector3& normalOnB = pt.m_normalWorldOnB;
+            btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
+            btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
+            btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+
+            it = selectMap.find(obB);
+            if ( it != selectMap.end()) {
+                it->second->beingIntersected = true;
+                if (doubleClickPerformed) {
+                    switch (appState) {
+                    case select:
+                        selectedAsset = it->second;
+                        grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]);
+                        appState = translate;
+                        break;
+                    case translate:
+                        cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3]) +grabbedVector ,1);
+                        selectedAsset = &cursor;
+                        appState = select;
+                        break;
+                    }
+
+
+                }
             }
+
+
+            /*int numContacts = contactManifold->getNumContacts();
+            for (int j=0;j<numContacts;j++)
+            {
+                btManifoldPoint& pt = contactManifold->getContactPoint(j);
+                if (pt.getDistance()<0.f)
+                {
+                    const btVector3& ptA = pt.getPositionWorldOnA();
+                    const btVector3& ptB = pt.getPositionWorldOnB();
+                    const btVector3& normalOnB = pt.m_normalWorldOnB;
+                }
+            }*/
         }
-    }
+
     }
 }

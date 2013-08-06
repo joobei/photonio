@@ -60,7 +60,7 @@ pho::flickManager::flickManager() {
 void pho::flickManager::addTouch(glm::vec2 point){
     touchHistory.push_front(point);
     if (touchHistory.size() > 10) touchHistory.pop_back();
-    flickTimer.restart(); //not being used currently
+    //flickTimer.start(); //not being used currently
 }
 
 
@@ -68,7 +68,7 @@ void pho::flickManager::addTouch(glm::vec2 point){
 void pho::flickManager::addRotate(float angle){
     angleHistory.push_front(angle);
     if (touchHistory.size() > 10) touchHistory.pop_back();
-    flickTimer.restart(); //not being used currently
+    //flickTimer.restart(); //not being used currently
 }
 
 void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){

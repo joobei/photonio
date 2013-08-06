@@ -20,7 +20,7 @@ SET(Boost_USE_STATIC_LIBS   ON)
 SET(Boost_USE_MULTITHREADED ON)
 #set(Boost_DEBUG 1)
 
-FIND_PACKAGE(Boost COMPONENTS system thread filesystem regex date_time serialization)
+FIND_PACKAGE(Boost COMPONENTS system thread filesystem regex date_time serialization timer chrono)
 IF(Boost_FOUND)
       include_directories(${Boost_INCLUDE_DIRS})
 ENDIF()

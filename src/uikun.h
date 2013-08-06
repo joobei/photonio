@@ -35,7 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "util.h"
 #include <boost/static_assert.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/timer.hpp> //for stopwatch and time output
+#include <boost/timer/timer.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 #include <boost/scoped_array.hpp>
@@ -141,6 +141,7 @@ namespace pho {
         pho::Shader flatShader;
 
 		//Picking
+        bool doubleClickPerformed =false;
 		GLuint hitObject;
 		bool objectHit,sphereHit;
 		
@@ -216,8 +217,9 @@ namespace pho {
 		bool consumed;
         //Flicking
         pho::flickManager flicker;
-        boost::timer flickTimer;
-        boost::timer doubleClick;
+        boost::timer::cpu_timer flickTimer;
+        boost::timer::cpu_timer doubleClick;
+        boost::timer::cpu_times previousTime;
 		//Wii-Mote Stuff
 		pho::WiiButtonState wiiButton;
         //wiimote remote;
@@ -262,6 +264,8 @@ namespace pho {
         btCollisionWorld* collisionWorld = 0;
         btCollisionObject* coCursor = 0;
         btCollisionObject* coHeart = 0;
+
+
 	};
 
 }
