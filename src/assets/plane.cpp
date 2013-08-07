@@ -1,7 +1,8 @@
 #include "plane.h"
 
-pho::Plane::Plane()
+pho::Plane::Plane(sharedResources* sr)
 {
+    res = sr;
     vertices.push_back(glm::vec3(0.3,0,-0.5));
     vertices.push_back(glm::vec3(0.3,0,0.5));
     vertices.push_back(glm::vec3(-0.3,0,0.5));
@@ -29,9 +30,9 @@ void pho::Plane::upload()
 
 void pho::Plane::draw()
 {
-    shader->use();
-    shader[0]["mvp"] = (*projectionMatrix)*(*viewMatrix)*modelMatrix*scaleMatrix;
-    shader[0]["color"] = glm::vec4(0.f,0.f,1.f,1.f);
+    res->flatShader.use();
+    res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
+    res->flatShader["color"] = glm::vec4(0.f,0.f,1.f,1.f);
     CALL_GL(glLineWidth(5));
     CALL_GL(glBindVertexArray(vao));
     CALL_GL(glDrawArrays(GL_LINE_LOOP,0,vertices.size()));

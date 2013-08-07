@@ -2,8 +2,9 @@
 #version 330
 precision highp float;
 
-uniform sampler2D tex0; // texture of colors
-uniform sampler2D tex1; // normal map
+uniform sampler2D diffuseTexture; // texture of colors
+uniform sampler2D normalMap; // normal map
+uniform sampler2DShadow shadowMap;  //self explanatory
 
 uniform vec4 material_diffuse;
 uniform vec4 material_specular;
@@ -16,6 +17,8 @@ in vec2 Vertex_UV;
 in vec3 Vertex_Normal;
 in vec4 Vertex_LightDir;
 in vec4 Vertex_EyeVec;
+in vec4 v_projCoord; //for shadow mapping
+
 out vec4 Out_Color;
 
 // http://www.thetenthplanet.de/archives/1180
@@ -42,7 +45,7 @@ vec3 perturb_normal( vec3 N, vec3 V, vec2 texcoord )
 {
     // N, the interpolated normal
     // V, the view vector (vertex to eye)
-    vec3 map = texture(tex1, texcoord ).xyz;
+    vec3 map = texture(normalMap, texcoord ).xyz;
     map = map * 255./127. - 128./127.;
     mat3 TBN = cotangent_frame(N, -V, texcoord);
     return normalize(TBN * map);
@@ -50,6 +53,10 @@ vec3 perturb_normal( vec3 N, vec3 V, vec2 texcoord )
 
 void main()
 {
+
+
+
+
     vec2 uv = Vertex_UV.xy;
 
     vec3 N = normalize(Vertex_Normal.xyz);
@@ -57,20 +64,32 @@ void main()
     vec3 V = normalize(Vertex_EyeVec.xyz);
     vec3 PN = perturb_normal(N, V, uv);
 
-    vec4 tex01_color = texture(tex0, uv).rgba;
+    vec4 tex01_color = texture(diffuseTexture, uv).rgba;
     vec4 final_color = vec4(0.4* tex01_color.rgb,1*tex01_color.a); //ambient light
 
     float lambertTerm = dot(PN, L);
-    if (lambertTerm > 0.0)
-    {
-        final_color += light_diffuse * vec4(1) * lambertTerm * tex01_color;
+    bool inShadow;
 
-        vec3 E = normalize(Vertex_EyeVec.xyz);
-        vec3 R = reflect(-L, PN);
-        float specular = pow( max(dot(R, E), 0.0), material_shininess);
-        final_color += light_specular * vec4(1)/*in place of material_specular*/ * specular;
-    }
+    // Similar as seen in OpenGL 4.0 Shading Language Cookbook
+
+
+        if (lambertTerm > 0.0)
+        {
+            final_color += light_diffuse * vec4(1) * lambertTerm * tex01_color;
+
+            vec3 E = normalize(Vertex_EyeVec.xyz);
+            vec3 R = reflect(-L, PN);
+            float specular = pow( max(dot(R, E), 0.0), material_shininess);
+            final_color += light_specular * vec4(1)/*in place of material_specular*/ * specular;
+        }
+
     Out_Color.rgb = final_color.rgb;
+
+    if (textureProj(shadowMap, v_projCoord) < 1.0)
+    {
+        Out_Color.rgb = Out_Color.rgb*0.5;
+    }
+
     Out_Color.a = 1.0;
 
 }

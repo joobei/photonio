@@ -16,11 +16,11 @@ pho::Shader::Shader() {
 	vertex = fragment = geometry = 0;
 }
 
-pho::Shader::Shader(std::string filename) {
-	vertex = CreateShader(GL_VERTEX_SHADER,pho::readTextFile(filename+".vert"));
-	fragment = CreateShader(GL_FRAGMENT_SHADER,pho::readTextFile(filename+".frag"));
+pho::Shader::Shader(const std::string filename) {
+    vertex = CreateShader(GL_VERTEX_SHADER,pho::readTextFile(filename+".vert"),filename);
+    fragment = CreateShader(GL_FRAGMENT_SHADER,pho::readTextFile(filename+".frag"),filename);
 	if (exists(filename+".geom")) {
-	geometry = CreateShader(GL_GEOMETRY_SHADER,pho::readTextFile(filename+".geom"));
+    geometry = CreateShader(GL_GEOMETRY_SHADER,pho::readTextFile(filename+".geom"),filename);
 	program = CreateProgram(vertex, fragment, geometry);
 	}
 	else {
@@ -28,7 +28,7 @@ pho::Shader::Shader(std::string filename) {
 	}
 }
 
-GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile) {
+GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile, const std::string &filename) {
 	GLuint shader = glCreateShader(eShaderType);
 	const char *strFileData = strShaderFile.c_str();
 	CALL_GL(glShaderSource(shader, 1, &strFileData, NULL));
@@ -53,6 +53,7 @@ GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShade
 		case GL_FRAGMENT_SHADER: strShaderType = "fragment"; break;
 		}
 
+        std::cout << "Problem file: " << filename << std::endl;
 		fprintf(stderr, "Compile failure in %s shader:\n%s\n", strShaderType, strInfoLog);
 		delete[] strInfoLog;
 

@@ -34,6 +34,15 @@ public:
     GLuint uniformBlockIndex;
 };
 
+struct sharedResources {
+    LightSource light;
+    glm::mat4 viewMatrix;
+    glm::mat4 projectionMatrix;
+    glm::mat4 biasMatrix;
+    glm::mat4 shadowMatrix;
+    pho::Shader flatShader;
+};
+
 struct myMaterial {
     GLuint diffuseTexture = 0;
     GLuint normalTexture = 0;
@@ -57,9 +66,9 @@ class Asset {
 
 public:
     Asset();
-    Asset(const std::string &filename,pho::Shader* tehShader);
-    void linkViewMatrices(glm::mat4* viewMatrix, glm::mat4* projectionMatrix);
+    Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared);
     void draw();
+    void drawFlat();
     void scale();
     glm::mat4 modelMatrix;
     glm::mat4 scaleMatrix;
@@ -69,14 +78,16 @@ public:
     void setScale(float scaleFactor);
     std::vector<glm::vec3> vertices;
     bool beingIntersected;
+    bool receiveShadow;
+    glm::mat4* viewMatrix; //public because shadow map render function updates it to the pointlight matrix temporarily
+    sharedResources* res;
 protected:
     void upload();
-    glm::mat4* viewMatrix;
     glm::mat4* projectionMatrix;
+    glm::mat4* biasMatrix;
     std::vector<MyMesh> mMeshes;
     const aiScene* scene;
     pho::Shader* shader;
-    pho::Shader* flatShader;
 };
 }
 

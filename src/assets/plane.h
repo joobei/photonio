@@ -8,7 +8,7 @@ namespace pho {
 
 class Plane : public Asset {
 public:
-    Plane();
+    Plane(sharedResources *sr);
     void extendToObject(pho::Asset &toMatch);
     void draw();
     void setShader(pho::Shader* tehShader);

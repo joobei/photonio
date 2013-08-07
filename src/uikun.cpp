@@ -35,7 +35,8 @@ Engine::Engine():
     wii(false),
     appState(select),
     inputStarted(false),
-    mouseMove(false)
+    mouseMove(false),
+    plane(&sr)
 {
 #define SIZE 30                     //Size of the moving average filter
     accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -57,16 +58,8 @@ Engine::Engine():
 
     verbose = false;
     doubleClick.start();
-    //Protobuf custom protocol listener
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
-    //Polhemus (disabled because it requires usb converter attached)
-    //serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
-
-    //wii=remote.Connect(wiimote::FIRST_AVAILABLE);
-
-    //if (wii) { 	remote.SetLEDs(0x01); }
-    //else { errorLog << "WiiRemote Could not Connect \n"; }
 
     technique = planeCasting;
     rotTechnique = screenSpace;
@@ -109,77 +102,75 @@ void Engine::initResources() {
         assetpath.append("/"); //at the end of the string
     }
 
-    pointLight.position = glm::vec3(0,50,0);
-    pointLight.direction = glm::vec3(0,-1,-1);
-    pointLight.color = glm::vec4(1,1,1,1);
+    generateShadowFBO();
 
-    pointLight.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
+    sr.light.position = glm::vec3(0,50,-15);
+    sr.light.direction = glm::vec3(0,-1,-1);
+    sr.light.color = glm::vec4(1,1,1,1);
+    sr.light.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
 
-    //Load shaders ***************************
-    flatShader = pho::Shader(shaderpath+"flat");
+    //*************************************************************
+    //********************  Load Shaders **************************
+    //*************************************************************
+    sr.flatShader = pho::Shader(shaderpath+"flat");
+
     noTextureShader = pho::Shader(shaderpath+"notexture");
     noTextureShader.use();
-    noTextureShader["view"] = viewMatrix;
+    noTextureShader["view"] = sr->viewMatrix;
     noTextureShader["light_position"] = glm::vec4(pointLight.position,1);
     noTextureShader["light_diffuse"] = pointLight.color;
     noTextureShader["light_specular"] = vec4(1,1,1,1);
 
     textureShader = pho::Shader(shaderpath+"texture");
     textureShader.use();
-    textureShader["view"] = viewMatrix;
+    textureShader["view"] = sr->viewMatrix;
     textureShader["light_position"] = glm::vec4(pointLight.position,1);
     textureShader["light_diffuse"] = pointLight.color;
     textureShader["light_specular"] = vec4(1,1,1,1);
 
-    GLuint t1Location = glGetUniformLocation(textureShader.program, "tex0");
-    GLuint t2Location = glGetUniformLocation(textureShader.program, "tex1");
+    GLuint t1Location = glGetUniformLocation(textureShader.program, "diffuseTexture");
+    GLuint t2Location = glGetUniformLocation(textureShader.program, "normalMap");
+    GLuint t3Location = glGetUniformLocation(textureShader.program, "shadowMap");
 
     glUniform1i(t1Location, 0);
     glUniform1i(t2Location, 1);
+    glUniform1i(t3Location, 3);
 
-    //shadowMapLoc = glGetUniformLocation(textureShader.program, "shadowMap");
-    //baseImageLoc = glGetUniformLocation(textureShader.program, "texturex");
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, shadowTexture);
 
-    //Load Assets ***************************
-    //cursor = pho::Asset("bump-heart.obj", &textureShader);
-    cursor = pho::Asset("cursor.obj", &noTextureShader);
+    //*************************************************************
+    //********************  Load Assets ***************************
+    //*************************************************************
+    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
-    cursor.linkViewMatrices(&viewMatrix,&projectionMatrix);
-    cursor.setFlatShader(&flatShader);
     selectedAsset = &cursor; //when app starts we control the cursor
 
-    target = pho::Asset("floor.obj", &textureShader);
-    target.linkViewMatrices(&viewMatrix,&projectionMatrix);
-    target.setFlatShader(&flatShader);
+    target = pho::Asset("floor.obj", &textureShader,&sr);
 
-    floor = pho::Asset("floor.obj", &textureShader);
+    floor = pho::Asset("floor.obj", &textureShader,&sr);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-30,-60));
-    floor.linkViewMatrices(&viewMatrix,&projectionMatrix);
-    floor.setFlatShader(&flatShader);
+    floor.receiveShadow = true;
 
     plane.setShader(&flatShader);
     plane.modelMatrix = cursor.modelMatrix;
     plane.setScale(15.0f);
-    plane.linkViewMatrices(&viewMatrix,&projectionMatrix);
-    plane.setFlatShader(&flatShader);
 
-    heart = pho::Asset("bump-heart.obj",&textureShader);
+    heart = pho::Asset("bump-heart.obj",&textureShader,&sr);
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
-    heart.linkViewMatrices(&viewMatrix,&projectionMatrix);
-    heart.setFlatShader(&flatShader);
 
     //Create the perspective matrix
-    projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+    sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
     cameraPosition = vec3(0,0,0);
-    viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
+    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
     glEnable (GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
 
-    //generateShadowFBO();
+
     initPhysics();
 }
 
@@ -226,7 +217,7 @@ void Engine::checkEvents() {
 }
 
 void Engine::render() {
-    //shadowMapRender();
+    shadowMapRender();
 
     CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
@@ -293,9 +284,9 @@ void Engine::mouseButtonCallback(int button, int state) {
 
         glm::vec4 mouse_clip = glm::vec4((float)cur_mx * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(cur_my) * 2 / float(WINDOW_SIZE_Y),0,1);
 
-        glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;
+        glm::vec4 mouse_world = glm::inverse(sr->viewMatrix) * glm::inverse(sr->projectionMatrix) * mouse_clip;
 
-        rayOrigin = glm::vec3(viewMatrix[3]);
+        rayOrigin = glm::vec3(sr->viewMatrix[3]);
         rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 
         startDrag(rayDirection,rayOrigin);
@@ -332,13 +323,13 @@ void Engine::mouseMoveCallback(int x, int y) {
     //glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
     glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
 
-    glm::vec4 mouse_world = glm::inverse(viewMatrix) * glm::inverse(projectionMatrix) * mouse_clip;
+    glm::vec4 mouse_world = glm::inverse(sr->viewMatrix) * glm::inverse(sr->projectionMatrix) * mouse_clip;
 
-    rayOrigin = glm::vec3(viewMatrix[3]);
+    rayOrigin = glm::vec3(sr->viewMatrix[3]);
     rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 
     if (appState == rotate) {
-        Drag(rayDirection,rayOrigin,viewMatrix);
+        Drag(rayDirection,rayOrigin,sr->viewMatrix);
     }
 
 
@@ -704,27 +695,27 @@ void Engine::checkKeyboard() {
 #define FACTOR 0.5f
 
     if (glfwGetKey(GLFW_KEY_DOWN)) {
-        viewMatrix = glm::translate(viewMatrix, vec3(0,0,-FACTOR));
+        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,0,-FACTOR));
     }
 
     if (glfwGetKey(GLFW_KEY_UP)) {
-        viewMatrix = glm::translate(viewMatrix, vec3(0,0,FACTOR));
+        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,0,FACTOR));
     }
     if (glfwGetKey(GLFW_KEY_LEFT)) {
-        viewMatrix = glm::translate(viewMatrix, vec3(FACTOR,0,0));
+        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(FACTOR,0,0));
     }
     if (glfwGetKey(GLFW_KEY_RIGHT)) {
-        viewMatrix = glm::translate(viewMatrix, vec3(-FACTOR,0,0));
+        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(-FACTOR,0,0));
     }
     if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-        viewMatrix = glm::translate(viewMatrix, vec3(0,-FACTOR,0));
+        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,-FACTOR,0));
     }
     if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
-        viewMatrix = glm::translate(viewMatrix, vec3(0,FACTOR,0));
+        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,FACTOR,0));
     }
     if (glfwGetKey(GLFW_KEY_HOME)) {
         perspective +=1.0;
-        projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+        sr->projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
         std::cout << "Perspective : " << perspective << '\n';
 
     }
@@ -732,11 +723,11 @@ void Engine::checkKeyboard() {
         selectedAsset->modelMatrix = glm::translate(0,0,-15);
         plane.modelMatrix = selectedAsset->modelMatrix;
         flicker.stopFlick();
-        viewMatrix = mat4();
+        sr->viewMatrix = mat4();
     }
     if (glfwGetKey(GLFW_KEY_END)) {
         perspective -=1.0;
-        projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+        sr->projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
         //log("Perspective : " +perspective);
     }
 
@@ -751,63 +742,6 @@ void Engine::checkKeyboard() {
     }
 }
 
-/*void Engine::checkWiiMote() {
-    //if the connection to the wii-mote was successful
-
-        remote.RefreshState();
-
-        if (appInputState == translate && remote.Button.B()) {
-            //mat4 newMat = glm::translate(ray.modelMatrix,);
-            cursor.setPosition(
-
-                //ray.getPosition()+glm::mat3(ray.modelMatrix)*glm::vec3(0,0,grabbedDistance)+grabOffset
-                ray.getPosition()+glm::mat3(ray.modelMatrix)*glm::vec3(0,0,grabbedDistance) +grabOffset
-
-                );
-        }
-
-        if (appInputState == idle && remote.Button.B() && objectHit) {
-            appInputState = translate;
-            grabbedDistance = rayLengthObject;
-            grabbedVector = objectIntersectionPoint-ray.getPosition();
-
-            //possibly costly calculation:
-            grabOffset = cursor.getPosition()-objectIntersectionPoint;
-            std::cout << "translate" << '\n';
-        }
-
-        if (appInputState == translate && !remote.Button.B()) {
-            appInputState = idle;
-            std::cout << "idle" << '\n';
-        }
-
-
-        if (appInputState == translate && remote.Button.Down() && grabbedDistance < 0) {
-            grabbedDistance+=0.5;
-        }
-
-        if (appInputState == translate && remote.Button.Up()) {
-            grabbedDistance-=0.5;
-        }
-
-        if (appInputState == rotate && remote.Button.A()) {
-            Drag(rayDirection,rayOrigin,viewMatrix);
-        }
-
-        if (appInputState == idle && remote.Button.A()) {
-
-            if(startDrag(rayDirection,rayOrigin)) {
-                std::cout << "rotate" << '\n';
-                appInputState = rotate;
-            }
-        }
-
-        if (appInputState == rotate && !remote.Button.A()) {
-            appInputState = idle;
-            std::cout << "idle" << '\n';
-        }
-
-}*/
 
 bool Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
     vec3 tempPoint;
@@ -881,7 +815,7 @@ void Engine::generateShadowFBO()
         0.0f, 0.0f, 0.5f, 0.0f,
         0.5f, 0.5f, 0.5f, 1.0f };
 
-    biasMatrix = glm::make_mat4(biasMatrixf);
+    sr.biasMatrix = glm::make_mat4(biasMatrixf);
 }
 
 void Engine::shadowMapRender() {
@@ -889,7 +823,7 @@ void Engine::shadowMapRender() {
     int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
     // Rendering into the shadow texture.
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE3);
     CALL_GL(glBindTexture(GL_TEXTURE_2D, shadowTexture));
     // Bind the framebuffer.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO));
@@ -897,15 +831,10 @@ void Engine::shadowMapRender() {
     CALL_GL(glClear(GL_DEPTH_BUFFER_BIT));
     CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
-    //Render stuff
 
-
-
-    //flatShader.use();
-    //flatShader["baseColor"] = glm::vec4(1.0f,1.0f,1.0f,1.0f);
-    //flatShader["mvp"] = projectionMatrix*pointLight.viewMatrix*cursor.modelMatrix;
-    //cursor.bind();
-    //CALL_GL(glDrawArrays(GL_TRIANGLES,0,cursor.vertices.size()));
+    heart.viewMatrix = &pointLight.viewMatrix;
+    heart.drawFlat();
+    heart.viewMatrix = &(sr->viewMatrix);
 
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));

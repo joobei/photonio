@@ -1,11 +1,11 @@
 #include "asset.h"
 
-pho::Asset::Asset()
+pho::Asset::Asset():receiveShadow(false)
 {}
 
-pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader)
+pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedResources* shared) :receiveShadow(false), beingIntersected(false)
 {
-    beingIntersected = false;
+    res = shared;
     this->shader = tehShader;
     std::string assetpath;
     //load the asset path and store it
@@ -37,17 +37,9 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader)
     upload();
 }
 
-void pho::Asset::linkViewMatrices(glm::mat4 *viewMatrix, glm::mat4 *projectionMatrix)
-{
-    this->viewMatrix = viewMatrix;
-    this->projectionMatrix = projectionMatrix;
-}
-
 void pho::Asset::upload()
 {
-
     //log("Number of Meshes :");
-
     for (unsigned int n = 0; n < scene->mNumMeshes; ++n)
         {
             const struct aiMesh* mesh = scene->mMeshes[n];
@@ -172,9 +164,9 @@ void pho::Asset::draw() {
         CALL_GL(glDisable(GL_DEPTH_TEST));
 
         scaleMatrix = glm::scale(glm::mat4(),glm::vec3(1.05,1.05,1.05));
-        flatShader->use();
-        flatShader[0]["mvp"] = (*projectionMatrix)*(*viewMatrix)*modelMatrix*scaleMatrix;
-        flatShader[0]["color"] = glm::vec4(0,1,0,1);
+        res->flatShader.use();
+        res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
+        res->flatShader["color"] = glm::vec4(1,0,0,1);
 
         for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
         {
@@ -188,23 +180,42 @@ void pho::Asset::draw() {
 
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
-        CALL_GL(glActiveTexture(GL_TEXTURE0));
-        CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
 
         //if there's a bump map bind it
         if (mMeshes[i].material.hasBumpMap) {
             CALL_GL(glActiveTexture(GL_TEXTURE1));
             CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.normalTexture));
         }
+        else {
+            CALL_GL(glActiveTexture(GL_TEXTURE1));
+            CALL_GL(glBindTexture(GL_TEXTURE_2D,0));
+        }
+
+        CALL_GL(glActiveTexture(GL_TEXTURE0));
+        CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
 
         shader->use();
         shader[0]["model"] = modelMatrix;
-        shader[0]["modelview"] = (*viewMatrix)*modelMatrix;
-        shader[0]["mvp"] = (*projectionMatrix)*(*viewMatrix)*modelMatrix;
+        shader[0]["modelview"] = res->viewMatrix*modelMatrix;
+        shader[0]["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
         shader[0]["material_diffuse"] = glm::vec4(mMeshes[i].material.diffuseColor,1);
         shader[0]["material_specular"] = glm::vec4(mMeshes[i].material.specularColor,1);
         shader[0]["material_shininess"] = mMeshes[i].material.shininess;
+        shader[0]["shadowMatrix"] = res->biasMatrix*res->projectionMatrix*res->light.viewMatrix*modelMatrix;
 
+        CALL_GL(glBindVertexArray(mMeshes[i].vao));
+        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+    }
+}
+
+void pho::Asset::drawFlat()
+{
+    res->flatShader.use();
+    res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+    res->flatShader["color"] = glm::vec4(1,1,1,1);
+
+    for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
+    {
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
@@ -224,11 +235,6 @@ void pho::Asset::rotate(glm::mat4 rotationMatrix) {
         modelMatrix = rotationMatrix*modelMatrix;
         modelMatrix[3] = tempPosition;
 
-}
-
-void pho::Asset::setFlatShader(pho::Shader *tehShader)
-{
-    this->flatShader = tehShader;
 }
 
 void pho::Asset::setPosition(glm::vec3 position)

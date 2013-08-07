@@ -39,10 +39,10 @@ private:
 class Shader {
 public:
     Shader();
-    Shader(std::string filename);
+    Shader(const std::string filename);
     GLuint program;
     const char* filename;
-    GLuint CreateShader(GLenum eShaderType, const std::string &strShaderFile);
+    GLuint CreateShader(GLenum eShaderType, const std::string &strShaderFile, const std::string &filename);
     GLuint CreateProgram(const GLuint vert, const GLuint frag, const GLuint geom);
     GLuint CreateProgram(const GLuint vert, const GLuint frag);
     void SetAttribute(char * name, int val);

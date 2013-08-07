@@ -127,7 +127,6 @@ namespace pho {
 		mat3 axisChange;
 		mat4 trackerMatrix;
 		mat3 orientation3;
-		mat4 projectionMatrix, viewMatrix;
 		vec3 acc,ma,gyro;
 		bool calibrate;
 		bool gyroData;
@@ -169,6 +168,8 @@ namespace pho {
 
 		EventQueue eventQueue;
 		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
+
+        sharedResources sr;
 
 		//SmartPhone IO
 		boost::asio::io_service ioservice;
@@ -247,7 +248,6 @@ namespace pho {
 		glm::mat4 floorMatrix;
 
         //Shadowmap ****************************
-        pho::Shader renderShadow, useShadow, shadow;
         GLuint shadowTexture;
         GLuint shadowFBO;
         mat4 biasMatrix;
