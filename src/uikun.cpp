@@ -32,7 +32,6 @@ Engine::Engine():
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
-    wii(false),
     appState(select),
     inputStarted(false),
     mouseMove(false),
@@ -136,9 +135,6 @@ void Engine::initResources() {
     glUniform1i(t2Location, 1);
     glUniform1i(t3Location, 3);
 
-    glActiveTexture(GL_TEXTURE3);
-    glBindTexture(GL_TEXTURE_2D, shadowTexture);
-
     //*************************************************************
     //********************  Load Assets ***************************
     //*************************************************************
@@ -214,6 +210,17 @@ void Engine::checkEvents() {
 
     //Joystick
     checkSpaceNavigator();
+
+    if (doubleClickPerformed && (appState == translate || appState == rotate)) {
+
+        cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);
+        //grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]); //just for reference
+        cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector,1);
+        selectedAsset = &cursor;
+        pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+        appState = select;
+        doubleClickPerformed = false;
+    }
 }
 
 void Engine::render() {
@@ -510,8 +517,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     case rotate:
         switch (rotTechnique) {
         case screenSpace:
-
-
             if (flicker.inFlick()) { flicker.stopFlick(); } //probably have come back from a pinch flick so need to stop the flick?? test without.
 
             if (tcur->getCursorID() == f1id) {
@@ -796,30 +801,31 @@ void Engine::generateShadowFBO()
     int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
     int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
-    glGenTextures(1, &shadowTexture);
-    glBindTexture(GL_TEXTURE_2D, shadowTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
-    glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT,shadowMapWidth,shadowMapHeight,0,GL_DEPTH_COMPONENT,GL_FLOAT,NULL);
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_COMPARE_MODE,GL_COMPARE_R_TO_TEXTURE);
-    glBindTexture(GL_TEXTURE_2D, 0); //unbind the texture
+    CALL_GL(glGenTextures(1, &(sr.shadowTexture)));
+    CALL_GL(glActiveTexture(GL_TEXTURE3));
+    CALL_GL(glBindTexture(GL_TEXTURE_2D, sr.shadowTexture));
+    CALL_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0));
+    CALL_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+    CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE));
+    CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE));
+    CALL_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
+    CALL_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS));
+    CALL_GL(glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT,shadowMapWidth,shadowMapHeight,0,GL_DEPTH_COMPONENT,GL_FLOAT,NULL));
+    CALL_GL(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_COMPARE_MODE,GL_COMPARE_R_TO_TEXTURE));
+    CALL_GL(glBindTexture(GL_TEXTURE_2D, 0)); //unbind the texture
 
-    glGenFramebuffers(1, &shadowFBO);
-    glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadowTexture, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
+    CALL_GL(glGenFramebuffers(1, &shadowFBO));
+    CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO));
+    CALL_GL(glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, sr.shadowTexture, 0));
+    CALL_GL(glDrawBuffer(GL_NONE));
+    CALL_GL(glReadBuffer(GL_NONE));
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     { printf("GL_FRAMEBUFFER_COMPLETE error 0x%x", glCheckFramebufferStatus(GL_FRAMEBUFFER)); }
 
-    glClearDepth(1.0f); glEnable(GL_DEPTH_TEST);
+    CALL_GL(glClearDepth(1.0f); glEnable(GL_DEPTH_TEST));
     // Needed when rendering the shadow map. This will avoid artifacts.
-    glPolygonOffset(1.0f, 0.0f); glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    CALL_GL(glPolygonOffset(1.0f, 0.0f); glBindFramebuffer(GL_FRAMEBUFFER, 0));
     //to convert the texture coordinates to -1 ~ 1
     GLfloat biasMatrixf[] = {
         0.5f, 0.0f, 0.0f, 0.0f,
@@ -835,8 +841,8 @@ void Engine::shadowMapRender() {
     int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
     // Rendering into the shadow texture.
-    glActiveTexture(GL_TEXTURE3);
-    CALL_GL(glBindTexture(GL_TEXTURE_2D, shadowTexture));
+    CALL_GL(glActiveTexture(GL_TEXTURE3));
+    CALL_GL(glBindTexture(GL_TEXTURE_2D, sr.shadowTexture));
     // Bind the framebuffer.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO));
     //Clear it
@@ -968,15 +974,11 @@ void Engine::checkPhysics()
                     case select:
                         selectedAsset = it->second;
                         grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]);
+                        plane.modelMatrix = it->second->modelMatrix;
                         appState = translate;
-                        break;
-                    case translate:
-                        cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3]) +grabbedVector ,1);
-                        selectedAsset = &cursor;
-                        appState = select;
+                        doubleClickPerformed = false;
                         break;
                     }
-
 
                 }
             }

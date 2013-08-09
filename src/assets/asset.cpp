@@ -188,6 +188,10 @@ void pho::Asset::draw() {
     shader[0]["light_position"] = glm::vec4(res->light.position,1);
     shader[0]["light_diffuse"] = glm::vec4(1,1,1,1);
     shader[0]["light_specular"] = glm::vec4(1,1,1,1);
+
+    CALL_GL(glActiveTexture(GL_TEXTURE3));
+    CALL_GL(glBindTexture(GL_TEXTURE_2D, res->shadowTexture));
+
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
 

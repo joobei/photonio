@@ -222,10 +222,6 @@ namespace pho {
         boost::timer::cpu_timer flickTimer;
         boost::timer::cpu_timer doubleClick;
         boost::timer::cpu_times previousTime;
-		//Wii-Mote Stuff
-		pho::WiiButtonState wiiButton;
-        //wiimote remote;
-		bool wii;
 
         //lighting
         pho::LightSource pointLight;
@@ -244,21 +240,13 @@ namespace pho {
 
 		//Textures
         std::string assetpath;
-		GLuint floorVAO,floorVBO, floorIBO, texCoordVBO;
-		GLuint floorTexture;
-		glm::mat4 floorMatrix;
 
         //Shadowmap ****************************
-        GLuint shadowTexture;
         GLuint shadowFBO;
-        mat4 biasMatrix;
-        mat4 shadowMatrix;
         void generateShadowFBO();
         void shadowMapRender();
         GLuint shadowMapLoc;
         GLuint baseImageLoc;
-        GLuint lightVAO; //debug light
-        glm::mat4 lightMatrix;
 
 
         //Physics

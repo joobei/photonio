@@ -41,6 +41,7 @@ struct sharedResources {
     glm::mat4 biasMatrix;
     glm::mat4 shadowMatrix;
     pho::Shader flatShader;
+    GLuint shadowTexture;
 };
 
 struct myMaterial {

@@ -15,8 +15,6 @@
 #include "glm/gtx/compatibility.hpp"
 #include "boost/timer/timer.hpp"
 
-//errorLog << err << "File :" << __FILE__ << "Line : " << __LINE__ << '\n'; \
-
 #define ARCBALL_RADIUS 2.0f
 
 #define GLDEBUG
