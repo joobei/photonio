@@ -116,14 +116,14 @@ void Engine::initResources() {
 
     noTextureShader = pho::Shader(shaderpath+"notexture");
     noTextureShader.use();
-    noTextureShader["view"] = sr->viewMatrix;
+    noTextureShader["view"] = sr.viewMatrix;
     noTextureShader["light_position"] = glm::vec4(pointLight.position,1);
     noTextureShader["light_diffuse"] = pointLight.color;
     noTextureShader["light_specular"] = vec4(1,1,1,1);
 
     textureShader = pho::Shader(shaderpath+"texture");
     textureShader.use();
-    textureShader["view"] = sr->viewMatrix;
+    textureShader["view"] = sr.viewMatrix;
     textureShader["light_position"] = glm::vec4(pointLight.position,1);
     textureShader["light_diffuse"] = pointLight.color;
     textureShader["light_specular"] = vec4(1,1,1,1);
@@ -276,6 +276,18 @@ bool Engine::computeRotationMatrix() {
 void Engine::mouseButtonCallback(int button, int state) {
     glfwGetMousePos(&cur_mx,&cur_my);
 
+    boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
+    double difference = elapsed_times.wall-previousTime.wall;
+    //cout.precision(15);
+    //std::cout << "Elapsed :" << difference << std::endl;
+    //check for double click
+
+    if (difference < 150000000) {
+        doubleClickPerformed = true;
+    }
+
+    previousTime = elapsed_times;
+
 
     if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_PRESS))
     {
@@ -284,9 +296,9 @@ void Engine::mouseButtonCallback(int button, int state) {
 
         glm::vec4 mouse_clip = glm::vec4((float)cur_mx * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(cur_my) * 2 / float(WINDOW_SIZE_Y),0,1);
 
-        glm::vec4 mouse_world = glm::inverse(sr->viewMatrix) * glm::inverse(sr->projectionMatrix) * mouse_clip;
+        glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
 
-        rayOrigin = glm::vec3(sr->viewMatrix[3]);
+        rayOrigin = glm::vec3(sr.viewMatrix[3]);
         rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 
         startDrag(rayDirection,rayOrigin);
@@ -323,13 +335,13 @@ void Engine::mouseMoveCallback(int x, int y) {
     //glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
     glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
 
-    glm::vec4 mouse_world = glm::inverse(sr->viewMatrix) * glm::inverse(sr->projectionMatrix) * mouse_clip;
+    glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
 
-    rayOrigin = glm::vec3(sr->viewMatrix[3]);
+    rayOrigin = glm::vec3(sr.viewMatrix[3]);
     rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 
     if (appState == rotate) {
-        Drag(rayDirection,rayOrigin,sr->viewMatrix);
+        Drag(rayDirection,rayOrigin,sr.viewMatrix);
     }
 
 
@@ -695,27 +707,27 @@ void Engine::checkKeyboard() {
 #define FACTOR 0.5f
 
     if (glfwGetKey(GLFW_KEY_DOWN)) {
-        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,0,-FACTOR));
+        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,-FACTOR));
     }
 
     if (glfwGetKey(GLFW_KEY_UP)) {
-        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,0,FACTOR));
+        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,FACTOR));
     }
     if (glfwGetKey(GLFW_KEY_LEFT)) {
-        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(FACTOR,0,0));
+        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(FACTOR,0,0));
     }
     if (glfwGetKey(GLFW_KEY_RIGHT)) {
-        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(-FACTOR,0,0));
+        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(-FACTOR,0,0));
     }
     if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,-FACTOR,0));
+        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,-FACTOR,0));
     }
     if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
-        sr->viewMatrix = glm::translate(sr->viewMatrix, vec3(0,FACTOR,0));
+        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,FACTOR,0));
     }
     if (glfwGetKey(GLFW_KEY_HOME)) {
         perspective +=1.0;
-        sr->projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+        sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
         std::cout << "Perspective : " << perspective << '\n';
 
     }
@@ -723,11 +735,11 @@ void Engine::checkKeyboard() {
         selectedAsset->modelMatrix = glm::translate(0,0,-15);
         plane.modelMatrix = selectedAsset->modelMatrix;
         flicker.stopFlick();
-        sr->viewMatrix = mat4();
+        sr.viewMatrix = mat4();
     }
     if (glfwGetKey(GLFW_KEY_END)) {
         perspective -=1.0;
-        sr->projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+        sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
         //log("Perspective : " +perspective);
     }
 
@@ -832,9 +844,13 @@ void Engine::shadowMapRender() {
     CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
 
-    heart.viewMatrix = &pointLight.viewMatrix;
+    glm::mat4 tempMatrix = sr.viewMatrix;
+    sr.viewMatrix = sr.light.viewMatrix;
+
+    cursor.drawFlat();
     heart.drawFlat();
-    heart.viewMatrix = &(sr->viewMatrix);
+
+    sr.viewMatrix = tempMatrix;
 
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -858,12 +874,12 @@ void Engine::checkSpaceNavigator() {
         glfwGetJoystickButtons(GLFW_JOYSTICK_1,buttons,2);
         if (buttons[0] == GLFW_PRESS) {
 
-            viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*viewMatrix;
-            viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*viewMatrix;
-            viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*viewMatrix;
-            viewMatrix = glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0))*viewMatrix;
-            viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*viewMatrix;
-            viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*viewMatrix;
+            sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
+            sr.viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*sr.viewMatrix;
+            sr.viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
         }
         else {
             selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;

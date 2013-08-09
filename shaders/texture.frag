@@ -12,12 +12,14 @@ uniform float material_shininess;
 
 uniform vec4 light_diffuse;
 uniform vec4 light_specular;
+uniform bool receiveShadow;
 
 in vec2 Vertex_UV;
 in vec3 Vertex_Normal;
 in vec4 Vertex_LightDir;
 in vec4 Vertex_EyeVec;
 in vec4 v_projCoord; //for shadow mapping
+
 
 out vec4 Out_Color;
 
@@ -53,10 +55,6 @@ vec3 perturb_normal( vec3 N, vec3 V, vec2 texcoord )
 
 void main()
 {
-
-
-
-
     vec2 uv = Vertex_UV.xy;
 
     vec3 N = normalize(Vertex_Normal.xyz);
@@ -84,10 +82,11 @@ void main()
         }
 
     Out_Color.rgb = final_color.rgb;
-
-    if (textureProj(shadowMap, v_projCoord) < 1.0)
-    {
-        Out_Color.rgb = Out_Color.rgb*0.5;
+    if(receiveShadow) {
+        if (textureProj(shadowMap, v_projCoord) < 1.0)
+        {
+            Out_Color.rgb = Out_Color.rgb*0.5;
+        }
     }
 
     Out_Color.a = 1.0;

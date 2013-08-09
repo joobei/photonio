@@ -186,6 +186,7 @@ namespace pho {
         pho::Plane plane;
         pho::Asset ray;
         pho::Asset floor;
+        pho::Asset head;
         pho::Asset* selectedAsset;
 
         std::map<btCollisionObject*,pho::Asset*> selectMap;

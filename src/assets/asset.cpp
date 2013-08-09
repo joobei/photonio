@@ -178,6 +178,16 @@ void pho::Asset::draw() {
         beingIntersected = false;
     }
 
+
+    shader->use();
+    shader[0]["model"] = modelMatrix;
+    shader[0]["modelview"] = res->viewMatrix*modelMatrix;
+    shader[0]["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+    shader[0]["shadowMatrix"] = res->biasMatrix*res->projectionMatrix*res->light.viewMatrix*modelMatrix;
+    shader[0]["receiveShadow"] = receiveShadow;
+    shader[0]["light_position"] = glm::vec4(res->light.position,1);
+    shader[0]["light_diffuse"] = glm::vec4(1,1,1,1);
+    shader[0]["light_specular"] = glm::vec4(1,1,1,1);
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
 
@@ -194,14 +204,11 @@ void pho::Asset::draw() {
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
 
-        shader->use();
-        shader[0]["model"] = modelMatrix;
-        shader[0]["modelview"] = res->viewMatrix*modelMatrix;
-        shader[0]["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+
         shader[0]["material_diffuse"] = glm::vec4(mMeshes[i].material.diffuseColor,1);
         shader[0]["material_specular"] = glm::vec4(mMeshes[i].material.specularColor,1);
         shader[0]["material_shininess"] = mMeshes[i].material.shininess;
-        shader[0]["shadowMatrix"] = res->biasMatrix*res->projectionMatrix*res->light.viewMatrix*modelMatrix;
+
 
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
