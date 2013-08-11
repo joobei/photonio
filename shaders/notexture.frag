@@ -38,6 +38,6 @@ void main()
         final_color += light_specular * vec4(1)/*in place of material_specular*/ * specular;
     }
     Out_Color.rgb = final_color.rgb;
-    Out_Color.a = 1.0;
+    Out_Color.a = material_diffuse.w;
 
 }

@@ -62,6 +62,7 @@ void main()
     vec3 V = normalize(Vertex_EyeVec.xyz);
     vec3 PN = perturb_normal(N, V, uv);
 
+
     vec4 tex01_color = texture(diffuseTexture, uv).rgba;
     vec4 final_color = vec4(0.4* tex01_color.rgb,1*tex01_color.a); //ambient light
 
@@ -82,10 +83,10 @@ void main()
         }
 
     Out_Color.rgb = final_color.rgb;
-    //Out_Color.a = 1.0;
+    //Out_Color.a = 0.4;
     Out_Color.a = material_diffuse.w;
 
-    if(receiveShadow) {
+    /*if(receiveShadow) {
         float sh = textureProj(shadowMap, v_projCoord);
         if ( sh != 1.0)
         {
@@ -96,5 +97,5 @@ void main()
             Out_Color *= sh;
 
         }
-    }
+    }*/
 }
