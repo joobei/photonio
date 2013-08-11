@@ -120,26 +120,26 @@ void Engine::initResources() {
     noTextureShader["light_diffuse"] = pointLight.color;
     noTextureShader["light_specular"] = vec4(1,1,1,1);
 
-    textureShader = pho::Shader(shaderpath+"texture");
-    textureShader.use();
-    textureShader["view"] = sr.viewMatrix;
-    textureShader["light_position"] = glm::vec4(pointLight.position,1);
-    textureShader["light_diffuse"] = pointLight.color;
-    textureShader["light_specular"] = vec4(1,1,1,1);
+    normalMap = pho::Shader(shaderpath+"texture");
+    normalMap.use();
+    normalMap["view"] = sr.viewMatrix;
+    normalMap["light_position"] = glm::vec4(pointLight.position,1);
+    normalMap["light_diffuse"] = pointLight.color;
+    normalMap["light_specular"] = vec4(1,1,1,1);
 
-    GLuint t1Location = glGetUniformLocation(textureShader.program, "diffuseTexture");
-    GLuint t2Location = glGetUniformLocation(textureShader.program, "normalMap");
-    GLuint t3Location = glGetUniformLocation(textureShader.program, "shadowMap");
+    GLuint t1Location = glGetUniformLocation(normalMap.program, "diffuseTexture");
+    GLuint t2Location = glGetUniformLocation(normalMap.program, "normalMap");
+    GLuint t3Location = glGetUniformLocation(normalMap.program, "shadowMap");
 
     glUniform1i(t1Location, 0);
     glUniform1i(t2Location, 1);
     glUniform1i(t3Location, 2);
 
     //shadow map debug
-    smdebug = pho::Shader(shaderpath+"texader");
-    smdebug.use();
-    shadowMapLoc = glGetUniformLocation(smdebug.program, "shadowMap");
-    baseImageLoc = glGetUniformLocation(smdebug.program, "texturex");
+    singleTexture = pho::Shader(shaderpath+"texader");
+    singleTexture.use();
+    shadowMapLoc = glGetUniformLocation(singleTexture.program, "shadowMap");
+    baseImageLoc = glGetUniformLocation(singleTexture.program, "texturex");
 
     glUniform1i(baseImageLoc, 0);
     glUniform1i(shadowMapLoc, 2);
@@ -153,7 +153,8 @@ void Engine::initResources() {
     //cursor.receiveShadow = true;
 
     //floor = pho::Asset("floor.obj", &textureShader,&sr);
-    floor = pho::Asset("floor.obj", &smdebug,&sr);
+    //floor = pho::Asset("floor.obj", &singleTexture,&sr);
+    floor = pho::Asset("floor.obj", &singleTexture,&sr);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 
@@ -162,9 +163,10 @@ void Engine::initResources() {
     plane.setScale(15.0f);
     //plane.receiveShadow = true;
 
-    heart = pho::Asset("bump-heart.obj",&textureShader,&sr);
-    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-45));
+    heart = pho::Asset("bump-heart.obj",&normalMap,&sr);
+    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-25));
     //heart.receiveShadow = true;
+
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
@@ -175,40 +177,6 @@ void Engine::initResources() {
     glEnable (GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
-
-    //debug floor
-    CALL_GL(glGenVertexArrays(1,&floorVao));
-    CALL_GL(glBindVertexArray(floorVao));
-    float vertices[] = {-10.0f,0.0f,10.0f,
-                        0.0f,0.0f,-10.0f,
-                        10.0f,0.0f,10.0f,
-                       0.0f,0.0f,-10.0f,
-                         10.0f,0.0f,10.0f,
-                        15.0f,0.0f,10.0f,
-                       };
-
-    float uv[] = {0.f,1.f,0.f,0.f,1.f,0.f,1.f,1.f,0.f,1.f,1.f,0.f};
-
-    GLuint buffer;
-    CALL_GL(glGenBuffers(1, &buffer));
-    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, buffer));
-    CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*18,vertices, GL_STATIC_DRAW));
-    CALL_GL(glEnableVertexAttribArray(vertexLoc));
-    CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
-
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*6, uv, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(texCoordLoc);
-    glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
-
-    CALL_GL(glBindVertexArray(0));
-
-    CALL_GL(glActiveTexture(GL_TEXTURE0));
-    CALL_GL(glGenTextures(1,&floorTexture));
-    floorTexture = gli::createTexture2D("assets/grid.dds");
-
-    floorMatrix = glm::translate(glm::mat4(),glm::vec3(0,-12,-25));
 
     initPhysics();
 }
@@ -275,9 +243,11 @@ void Engine::render() {
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
     floor.draw();
     heart.draw();
+
     if (appState == select) {
         cursor.draw();
     }
+
     if (technique == planeCasting && appState != rotate) {
         plane.draw();
     }
@@ -782,9 +752,11 @@ void Engine::checkKeyboard() {
     }
     if (glfwGetKey(GLFW_KEY_SPACE)) {
         selectedAsset->modelMatrix = glm::translate(0,0,-15);
-        plane.modelMatrix = selectedAsset->modelMatrix;
+        cursor.modelMatrix = glm::translate(0,0,-5);
+        plane.modelMatrix = cursor.modelMatrix;
         flicker.stopFlick();
         sr.viewMatrix = mat4();
+        appState = select;
     }
     if (glfwGetKey(GLFW_KEY_END)) {
         perspective -=1.0;

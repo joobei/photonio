@@ -135,9 +135,10 @@ namespace pho {
 		glm::vec3 cameraDirection;
 
         //Shaders
-        pho::Shader textureShader;
+        pho::Shader normalMap;
         pho::Shader noTextureShader;
         pho::Shader flatShader;
+        pho::Shader singleTexture;
 
 		//Picking
         bool doubleClickPerformed =false;
@@ -253,11 +254,7 @@ namespace pho {
         btCollisionObject* coCursor = 0;
         btCollisionObject* coHeart = 0;
 
-        //debug shadow mapping
-        pho::Shader smdebug;
-        GLuint floorVao;
-        glm::mat4 floorMatrix;
-        GLuint floorTexture;
+
 	};
 
 }

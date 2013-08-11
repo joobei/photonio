@@ -78,25 +78,23 @@ void main()
             vec3 E = normalize(Vertex_EyeVec.xyz);
             vec3 R = reflect(-L, PN);
             float specular = pow( max(dot(R, E), 0.0), material_shininess);
-            final_color += light_specular * vec4(1)/*in place of material_specular*/ * specular;
+            final_color += light_specular * specular;
         }
 
     Out_Color.rgb = final_color.rgb;
-    Out_Color.a = 1.0;
+    //Out_Color.a = 1.0;
+    Out_Color.a = material_diffuse.w;
 
     if(receiveShadow) {
         float sh = textureProj(shadowMap, v_projCoord);
         if ( sh != 1.0)
         {
-            //Out_Color.rgb -= 0.5;
-            Out_Color = vec4(1,1,1,1);
+            Out_Color.rgb -= 0.2;
+
         }
         else {
-            //Out_Color *= sh;
-            Out_Color = vec4(1,0,0,1);
+            Out_Color *= sh;
+
         }
     }
-
-
-
 }

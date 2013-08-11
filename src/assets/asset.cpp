@@ -152,6 +152,16 @@ void pho::Asset::upload()
                  tempMesh.material.specularColor.b = tempColor.b;
              }
              tempMat->Get(AI_MATKEY_SHININESS,tempMesh.material.shininess);
+
+             float opacity;
+             if(AI_SUCCESS != tempMat->Get(AI_MATKEY_OPACITY,opacity)) {
+                 tempMesh.material.diffuseColor.w = 1.0f;
+             }
+             else {
+                 tempMesh.material.diffuseColor.w = opacity;
+             }
+
+
              mMeshes.push_back(tempMesh);
     }
 }
@@ -208,7 +218,7 @@ void pho::Asset::draw() {
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
 
-        shader[0]["material_diffuse"] = glm::vec4(mMeshes[i].material.diffuseColor,1);
+        shader[0]["material_diffuse"] = mMeshes[i].material.diffuseColor;
         shader[0]["material_specular"] = glm::vec4(mMeshes[i].material.specularColor,1);
         shader[0]["material_shininess"] = mMeshes[i].material.shininess;
 

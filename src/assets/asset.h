@@ -48,7 +48,7 @@ struct sharedResources {
 struct myMaterial {
     GLuint diffuseTexture = 0;
     GLuint normalTexture = 0;
-    glm::vec3 diffuseColor;
+    glm::vec4 diffuseColor;
     glm::vec3 specularColor;
     float shininess;
     bool hasBumpMap = false;
