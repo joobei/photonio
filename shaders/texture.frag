@@ -82,13 +82,21 @@ void main()
         }
 
     Out_Color.rgb = final_color.rgb;
+    Out_Color.a = 1.0;
+
     if(receiveShadow) {
-        if (textureProj(shadowMap, v_projCoord) < 1.0)
+        float sh = textureProj(shadowMap, v_projCoord);
+        if ( sh != 1.0)
         {
-            Out_Color.rgb = Out_Color.rgb*0.5;
+            //Out_Color.rgb -= 0.5;
+            Out_Color = vec4(1,1,1,1);
+        }
+        else {
+            //Out_Color *= sh;
+            Out_Color = vec4(1,0,0,1);
         }
     }
 
-    Out_Color.a = 1.0;
+
 
 }

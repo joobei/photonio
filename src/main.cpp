@@ -54,6 +54,8 @@ int main()
     }
     std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) <<std::endl;
 
+    std::cout << "Texture units " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS <<std::endl;
+
     pho::Engine *engine = new Engine();
 
     mouseFunc = std::bind(&pho::Engine::mouseButtonCallback,engine,_1,_2);

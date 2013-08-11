@@ -103,10 +103,10 @@ void Engine::initResources() {
 
     generateShadowFBO();
 
-    sr.light.position = glm::vec3(0,50,-15);
-    sr.light.direction = glm::vec3(0,-1,-1);
+    sr.light.position = glm::vec3(0,160,-60);
+    sr.light.direction = glm::vec3(0,-1,0);
     sr.light.color = glm::vec4(1,1,1,1);
-    sr.light.viewMatrix = glm::lookAt(pointLight.position,glm::vec3(0,0,-5),glm::vec3(0,0,-1));
+    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -133,7 +133,16 @@ void Engine::initResources() {
 
     glUniform1i(t1Location, 0);
     glUniform1i(t2Location, 1);
-    glUniform1i(t3Location, 3);
+    glUniform1i(t3Location, 2);
+
+    //shadow map debug
+    smdebug = pho::Shader(shaderpath+"texader");
+    smdebug.use();
+    shadowMapLoc = glGetUniformLocation(smdebug.program, "shadowMap");
+    baseImageLoc = glGetUniformLocation(smdebug.program, "texturex");
+
+    glUniform1i(baseImageLoc, 0);
+    glUniform1i(shadowMapLoc, 2);
 
     //*************************************************************
     //********************  Load Assets ***************************
@@ -141,20 +150,21 @@ void Engine::initResources() {
     cursor = pho::Asset("cursor.obj", &noTextureShader,&sr);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
+    //cursor.receiveShadow = true;
 
-    target = pho::Asset("floor.obj", &textureShader,&sr);
-
-    floor = pho::Asset("floor.obj", &textureShader,&sr);
-    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-30,-60));
+    //floor = pho::Asset("floor.obj", &textureShader,&sr);
+    floor = pho::Asset("floor.obj", &smdebug,&sr);
+    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 
     plane.setShader(&flatShader);
     plane.modelMatrix = cursor.modelMatrix;
     plane.setScale(15.0f);
+    //plane.receiveShadow = true;
 
     heart = pho::Asset("bump-heart.obj",&textureShader,&sr);
-    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
-
+    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-45));
+    //heart.receiveShadow = true;
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
@@ -166,6 +176,39 @@ void Engine::initResources() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
 
+    //debug floor
+    CALL_GL(glGenVertexArrays(1,&floorVao));
+    CALL_GL(glBindVertexArray(floorVao));
+    float vertices[] = {-10.0f,0.0f,10.0f,
+                        0.0f,0.0f,-10.0f,
+                        10.0f,0.0f,10.0f,
+                       0.0f,0.0f,-10.0f,
+                         10.0f,0.0f,10.0f,
+                        15.0f,0.0f,10.0f,
+                       };
+
+    float uv[] = {0.f,1.f,0.f,0.f,1.f,0.f,1.f,1.f,0.f,1.f,1.f,0.f};
+
+    GLuint buffer;
+    CALL_GL(glGenBuffers(1, &buffer));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, buffer));
+    CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*18,vertices, GL_STATIC_DRAW));
+    CALL_GL(glEnableVertexAttribArray(vertexLoc));
+    CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
+
+    glGenBuffers(1, &buffer);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float)*2*6, uv, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(texCoordLoc);
+    glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
+
+    CALL_GL(glBindVertexArray(0));
+
+    CALL_GL(glActiveTexture(GL_TEXTURE0));
+    CALL_GL(glGenTextures(1,&floorTexture));
+    floorTexture = gli::createTexture2D("assets/grid.dds");
+
+    floorMatrix = glm::translate(glm::mat4(),glm::vec3(0,-12,-25));
 
     initPhysics();
 }
@@ -602,6 +645,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 void Engine::removeTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
+    case select:
     case translate:
         flicker.endFlick(glm::mat3(orientation));
         break;
@@ -802,7 +846,7 @@ void Engine::generateShadowFBO()
     int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
     CALL_GL(glGenTextures(1, &(sr.shadowTexture)));
-    CALL_GL(glActiveTexture(GL_TEXTURE3));
+    CALL_GL(glActiveTexture(GL_TEXTURE0));
     CALL_GL(glBindTexture(GL_TEXTURE_2D, sr.shadowTexture));
     CALL_GL(glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowMapWidth, shadowMapHeight, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_BYTE, 0));
     CALL_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
@@ -841,7 +885,7 @@ void Engine::shadowMapRender() {
     int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
     // Rendering into the shadow texture.
-    CALL_GL(glActiveTexture(GL_TEXTURE3));
+    CALL_GL(glActiveTexture(GL_TEXTURE0));
     CALL_GL(glBindTexture(GL_TEXTURE_2D, sr.shadowTexture));
     // Bind the framebuffer.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, shadowFBO));
@@ -850,13 +894,8 @@ void Engine::shadowMapRender() {
     CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
 
-    glm::mat4 tempMatrix = sr.viewMatrix;
-    sr.viewMatrix = sr.light.viewMatrix;
-
-    cursor.drawFlat();
-    heart.drawFlat();
-
-    sr.viewMatrix = tempMatrix;
+    if (appState == select) cursor.drawFromLight();
+    heart.drawFromLight();
 
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));

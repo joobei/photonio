@@ -72,10 +72,10 @@ GLuint pho::Shader::CreateProgram(const GLuint vert, const GLuint frag, const GL
 	glAttachShader(program, geom);
 	}
 
-	CALL_GL(glBindAttribLocation(program,vertexLoc,"in_Position"));
+    CALL_GL(glBindAttribLocation(program,vertexLoc,"in_Position"));
 	CALL_GL(glBindAttribLocation(program,colorLoc,"in_Color"));
 	CALL_GL(glBindAttribLocation(program,texCoordLoc,"in_TexCoord"));
-	CALL_GL(glBindAttribLocation(program,normalLoc,"in_Normal"));
+    CALL_GL(glBindAttribLocation(program,normalLoc,"in_Normal"));
 
 	CALL_GL(glLinkProgram(program));
 

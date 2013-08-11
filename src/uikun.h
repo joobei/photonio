@@ -180,7 +180,6 @@ namespace pho {
 		boost::mutex ioMutex; //locks the message queue for thread access
 
         //assets
-        pho::Asset target;
         pho::Asset cursor;
         pho::Asset heart;
         pho::Plane plane;
@@ -254,7 +253,11 @@ namespace pho {
         btCollisionObject* coCursor = 0;
         btCollisionObject* coHeart = 0;
 
-
+        //debug shadow mapping
+        pho::Shader smdebug;
+        GLuint floorVao;
+        glm::mat4 floorMatrix;
+        GLuint floorTexture;
 	};
 
 }

@@ -42,6 +42,7 @@ struct sharedResources {
     glm::mat4 shadowMatrix;
     pho::Shader flatShader;
     GLuint shadowTexture;
+    GLuint t1Location,t2Location,t3Location;
 };
 
 struct myMaterial {
@@ -70,6 +71,7 @@ public:
     Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared);
     void draw();
     void drawFlat();
+    void drawFromLight();
     void scale();
     glm::mat4 modelMatrix;
     glm::mat4 scaleMatrix;
