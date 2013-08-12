@@ -1,0 +1,12 @@
+# Blender MTL File: 'floor.blend'
+# Material Count: 1
+
+newmtl grid-texture
+Ns 0.000000
+Ka 0.000000 0.000000 0.000000
+Kd 0.90000 0.90000 0.90000
+Ks 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 1
+map_Kd grid.dds
