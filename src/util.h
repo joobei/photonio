@@ -59,6 +59,12 @@ enum AppState {
     direct
 };
 
+enum flickState {
+    translation,
+    rotation,
+    pinchy
+};
+
 enum RotateTechnique { //rotTechnique
     screenSpace,
     pinch,
@@ -97,23 +103,20 @@ public:
     flickManager();
     void addTouch(glm::vec2 speeds); //adds one point to the flickManager
     void addRotate(float angle); //adds one point to the flickManager
-    void endFlick(glm::mat3 orientationSnapshot);  //the flick manager returns true if it's a flick or false if not (also resets history?)
-    void endPinchFlick();
-    void endRotationFlick();
-    void stopFlick(); //stops the flying
-    void stopPinchFlick(); //stops the flying
+    void endFlick(glm::mat3 orientationSnapshot, flickState state);  //the flick manager returns true if it's a flick or false if not (also resets history?)
+    void stopFlick(flickState flickstate); //stops the flying
     glm::mat4 dampenAndGiveMatrix(glm::mat3 rotationMat);
     glm::mat4 dampenAndGivePinchMatrix();
     glm::vec2 dampenAndGiveRotationMatrix();
-    void newFlick();
+    void newFlick(flickState flickstate);
     glm::mat4 transform;
     glm::mat3 rotation;
-    bool inFlick();
+    bool inFlick(flickState flickstate);
     bool inPinchFlick();
     bool inRotationFlick();
 private:
-    bool currentlyInFlick;
-    bool currentlyInRotationFlick;
+    bool currentlyInTranslateFlick;
+    bool currentlyInRotateFlick;
     bool currentlyInPinchFlick;
     boost::timer::cpu_timer flickTimer;
     std::deque<glm::vec2> touchHistory; //store a number of values
@@ -121,7 +124,8 @@ private:
     glm::vec2 launchPair;  //to save the speed of the cursor on the last movement before the flick was initiated
     glm::vec2 launchAnglePair; //hold rotation for each axis upon launch
     float launchPinchAngle;
-    short times;
+    short translateTimes;
+    short rotateTimes;
     int pinchTimes;
     float decay;
 };

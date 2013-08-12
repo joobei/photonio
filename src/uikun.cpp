@@ -200,7 +200,7 @@ void Engine::checkEvents() {
         checkUDP();
     }
 
-    if (flicker.inFlick()) {
+    if (flicker.inFlick(flickState::translation)) {
         glm::mat4 flickTransform = flicker.dampenAndGiveMatrix(glm::mat3(plane.modelMatrix));
         plane.modelMatrix = flickTransform*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
@@ -208,12 +208,12 @@ void Engine::checkEvents() {
         //plane.modelMatrix = selectedAsset->modelMatrix;
     }
 
-    if (flicker.inPinchFlick()) {
+    if (flicker.inFlick(pinchy)) {
         glm::mat4 flickTransform = flicker.dampenAndGivePinchMatrix();
         selectedAsset->rotate(flickTransform);
     }
 
-    if (flicker.inRotationFlick()){
+    if (flicker.inFlick(rotation)){
         glm::vec2 rotation = flicker.dampenAndGiveRotationMatrix();
         selectedAsset->rotate(glm::rotate(rotation.x*3.0f,vec3(0,1,0)));
         selectedAsset->rotate(glm::rotate(rotation.y*3.0f,vec3(1,0,0)));
@@ -432,9 +432,9 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     //std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
-    if (numberOfCursors == 1) {
-        flicker.newFlick();
-        flicker.stopPinchFlick();
+    if (numberOfCursors == 1 && appState == translate ) {
+        flicker.newFlick(flickState::translation);
+        flicker.stopFlick(flickState::pinchy);
     }
 
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
@@ -455,7 +455,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         break;
     case rotate:
         if (numberOfCursors == 0) {
-            flicker.stopFlick();
+            flicker.stopFlick(rotation);
         }
         if (numberOfCursors == 1) {
             p1c.x = tcur->getX();
@@ -468,7 +468,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         }
         if (numberOfCursors == 2) {
 
-            flicker.stopPinchFlick();
+            flicker.stopFlick(pinchy);
             rotTechnique = pinch;
             std::cout << "pinch rotate" << '\n';
             p2c.x = tcur->getX();
@@ -530,7 +530,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     case rotate:
         switch (rotTechnique) {
         case screenSpace:
-            if (flicker.inFlick()) { flicker.stopFlick(); } //probably have come back from a pinch flick so need to stop the flick?? test without.
+            if (flicker.inFlick(rotation)) { flicker.stopFlick(rotation); } //probably have come back from a pinch flick so need to stop the flick?? test without.
 
             if (tcur->getCursorID() == f1id) {
 
@@ -617,17 +617,17 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
     switch (appState) {
     case select:
     case translate:
-        flicker.endFlick(glm::mat3(orientation));
+        flicker.endFlick(glm::mat3(orientation),translation);
         break;
     case rotate:
         switch (rotTechnique) {
         case screenSpace:
-            flicker.endRotationFlick();
+            flicker.endFlick(glm::mat3(orientation),rotation);
             break;
         case pinch:
             rotTechnique = screenSpace;
             //std::cout << "screenSpace" << std::endl;
-            flicker.endPinchFlick();
+            flicker.endFlick(glm::mat3(orientation),pinchy);
             break;
         }
     }
@@ -678,35 +678,27 @@ void Engine::checkUDP() {
                 calibrate = true;
                 break;
             case 2:
-                if (appState == direct) {
-                    newLocationVector = mat3(orientation)*vec3(0,0,-1);
-                    newLocationMatrix = glm::translate(mat4(),newLocationVector);
-                    selectedAsset->modelMatrix = newLocationMatrix*selectedAsset->modelMatrix;
-                    break;
-                }
-                if (tempEvent.state() == true && appState != translate) {
-                    appState = translate;
-                }
-                if (tempEvent.state() == false && appState == translate) {
+                if (tempEvent.state() == true && appState == translate) {
                     appState = rotate;
                     rotTechnique = screenSpace;
-                    printf("translate --> rotate");
+                    printf("translate --> rotate (Screenspace)");
+                }
+                if (tempEvent.state() == false && appState == rotate) {
+                    appState = translate;
                 }
 
                 break;
             case 3:
-                if (appState == direct) {
-                    newLocationVector = mat3(orientation)*vec3(0,0,1);
-                    newLocationMatrix = glm::translate(mat4(),newLocationVector);
-                    selectedAsset->modelMatrix = newLocationMatrix*selectedAsset->modelMatrix;
-                    break;
+                if (tempEvent.state() == true && appState == translate) {
+                    appState = rotate;
+                    rotTechnique = screenSpace;
+                    printf("translate --> rotate (Screenspace)");
                 }
-                if (tempEvent.state() == true && appState != direct) {
-                    appState = direct;
-                }
-                if (tempEvent.state() == false && appState == direct) {
+                if (tempEvent.state() == false && appState == rotate) {
                     appState = translate;
                 }
+
+                break;
             default:
                 calibrate = true;
                 break;
@@ -754,7 +746,9 @@ void Engine::checkKeyboard() {
         selectedAsset->modelMatrix = glm::translate(0,0,-15);
         cursor.modelMatrix = glm::translate(0,0,-5);
         plane.modelMatrix = cursor.modelMatrix;
-        flicker.stopFlick();
+        flicker.stopFlick(translation);
+        flicker.stopFlick(rotation);
+        flicker.stopFlick(pinchy);
         sr.viewMatrix = mat4();
         appState = select;
     }

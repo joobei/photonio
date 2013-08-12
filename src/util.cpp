@@ -51,8 +51,12 @@ void pho::WiiButtonState::reset() {
 
 pho::flickManager::flickManager() {
     transform = glm::mat4();
-    currentlyInFlick = false;
-    times = 0;
+    currentlyInTranslateFlick = false;
+    currentlyInRotateFlick = false;
+    currentlyInPinchFlick = false;
+    translateTimes = 0;
+    rotateTimes = 0;
+    translateTimes = 0;
     decay = 0.95;
 }
 
@@ -71,73 +75,100 @@ void pho::flickManager::addRotate(float angle){
     //flickTimer.restart(); //not being used currently
 }
 
-void pho::flickManager::endFlick(glm::mat3 orientationSnapshot){
+void pho::flickManager::endFlick(glm::mat3 orientationSnapshot, flickState flickstate){
 
     rotation = orientationSnapshot;
-    if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
-        times = 500;
-        currentlyInFlick = true;
-        launchPair.x = touchHistory[0].x/50;
-        launchPair.y = touchHistory[0].y/50;
-    }
-}
 
-void pho::flickManager::endRotationFlick(){
-
-    if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
-        times = 1000;
-        currentlyInRotationFlick = true;
-        launchPair.x = touchHistory[0].x;
-        launchPair.y = touchHistory[0].y;
+    switch (flickstate) {
+    case translation:
+        if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
+            translateTimes = 500;
+            currentlyInTranslateFlick = true;
+            launchPair.x = touchHistory[0].x/20;
+            launchPair.y = touchHistory[0].y/20;
+        }
+        break;
+    case flickState::rotation:
+        if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
+            rotateTimes = 1000;
+            currentlyInRotateFlick = true;
+            launchPair.x = touchHistory[0].x;
+            launchPair.y = touchHistory[0].y;
+        }
+        break;
+    case pinchy:
+        if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
+            pinchTimes = 1000;
+            currentlyInPinchFlick = true;
+            launchPinchAngle = angleHistory[0];
+        }
+        break;
     }
-}
 
-void pho::flickManager::endPinchFlick(){
-    if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
-    //if ((glm::abs(angleHistory[0]) > 5.0f) || (glm::abs(angleHistory[0]) > 5.0f)) {
-        pinchTimes = 1000;
-        currentlyInPinchFlick = true;
-        launchPinchAngle = angleHistory[0];
-    }
 }
 
 //resets everything
-void pho::flickManager::newFlick(){
-    //also tested mode without stopping the flick
-    currentlyInFlick = false;
+void pho::flickManager::newFlick(flickState flickstate){
+
     touchHistory.clear();
-    times = 0;
-}
 
-bool pho::flickManager::inFlick() {
-    return currentlyInFlick;
-}
-
-bool pho::flickManager::inPinchFlick() {
-    return currentlyInPinchFlick;
-}
-
-
-bool pho::flickManager::inRotationFlick() {
-    return currentlyInRotationFlick;
-}
-
-void pho::flickManager::stopFlick() {
-    currentlyInFlick = false;
-    currentlyInRotationFlick = false;
-    times = 0;
+    switch (flickstate) {
+    case translation:
+        currentlyInTranslateFlick = false;
+        translateTimes = 0;
+        break;
+    case rotate:
+        currentlyInRotateFlick = false;
+        rotateTimes = 0;
+        break;
+    case pinchy:
+        currentlyInPinchFlick = false;
+        pinchTimes = 0;
+        break;
+    }
 }
 
 
-void pho::flickManager::stopPinchFlick() {
-    currentlyInPinchFlick = false;
-    pinchTimes = 0;
+bool pho::flickManager::inFlick(flickState flickstate) {
+
+    switch (flickstate) {
+    case translation:
+        return currentlyInTranslateFlick;
+        break;
+    case rotate:
+        return currentlyInRotateFlick;
+        break;
+    case pinchy:
+        return currentlyInPinchFlick;
+        break;
+    }
+
 }
+
+void pho::flickManager::stopFlick(flickState flickstate) {
+
+    switch (flickstate) {
+    case translation:
+        currentlyInTranslateFlick = false;
+        translateTimes = 0;
+        break;
+    case rotate:
+        currentlyInRotateFlick = false;
+        rotateTimes = 0;
+        break;
+    case pinchy:
+        currentlyInPinchFlick = false;
+        pinchTimes = 0;
+        break;
+    }
+
+}
+
 
 //dampen the saved matrix and feed us the dampened value
 glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 rotationMat){
-    times--;
-    if (times == 0) { stopFlick(); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
+    translateTimes--;
+    if (translateTimes == 0) { stopFlick(translation); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
     }
     else {
         glm::mat4 newLocationMatrix;
@@ -153,8 +184,10 @@ glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 rotationMat){
 }
 
 glm::vec2 pho::flickManager::dampenAndGiveRotationMatrix(){
-    times--;
-    if (times == 0 || times < 0) { stopFlick(); return glm::vec2(0,0);  //if the flick counter has come to zero just return an identity matrix
+    rotateTimes--;
+    if (rotateTimes == 0 || rotateTimes < 0) {
+        stopFlick(flickState::rotation);
+        return glm::vec2(0,0);  //if the flick counter has come to zero just return an identity matrix
     }
     else {
         launchPair *= decay; //dampen vector
@@ -167,7 +200,7 @@ glm::vec2 pho::flickManager::dampenAndGiveRotationMatrix(){
 
 glm::mat4 pho::flickManager::dampenAndGivePinchMatrix(){
     pinchTimes--;
-    if (pinchTimes == 0) { stopPinchFlick(); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
+    if (pinchTimes == 0) { stopFlick(pinchy); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
     }
     else {
         launchPinchAngle *= decay; //dampen vector
