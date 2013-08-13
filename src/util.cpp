@@ -57,7 +57,7 @@ pho::flickManager::flickManager() {
     translateTimes = 0;
     rotateTimes = 0;
     translateTimes = 0;
-    decay = 0.95;
+    decay = 0.98;
 }
 
 //adds one point to the flickManager

@@ -432,7 +432,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     //std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
-    if (numberOfCursors == 1 && appState == translate ) {
+    if (numberOfCursors == 1 && ( appState == translate || appState == select)) {
         flicker.newFlick(flickState::translation);
         flicker.stopFlick(flickState::pinchy);
     }

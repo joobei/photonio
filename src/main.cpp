@@ -39,8 +39,8 @@ int main()
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
 	//glfwSetWindowPos(1920,-27);  //for dual display
-    //glfwSetWindowPos(-6,-27); //full screen
-    glfwSetWindowPos(810,130);
+    glfwSetWindowPos(-6,-27); //full screen
+    //glfwSetWindowPos(810,130);
 
     glfwSetWindowTitle("Plane-Casting");
 	glfwEnable( GLFW_MOUSE_CURSOR );
