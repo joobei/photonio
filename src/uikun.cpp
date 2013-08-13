@@ -33,6 +33,7 @@ Engine::Engine():
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
     appState(select),
+    selectionTechnique(indieSelectRelative),
     inputStarted(false),
     mouseMove(false),
     plane(&sr)
@@ -158,7 +159,7 @@ void Engine::initResources() {
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 
-    plane.setShader(&flatShader);
+    plane.setShader(&sr.flatShader);
     plane.modelMatrix = cursor.modelMatrix;
     plane.setScale(15.0f);
     //plane.receiveShadow = true;
@@ -166,6 +167,18 @@ void Engine::initResources() {
     heart = pho::Asset("bump-heart.obj",&normalMap,&sr);
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-25));
     //heart.receiveShadow = true;
+
+    glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
+    GLuint buffer;
+
+    glGenVertexArrays(1,&pointVao);
+    glBindVertexArray(pointVao);
+
+    CALL_GL(glGenBuffers(1, &buffer));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, buffer));
+    CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3, glm::value_ptr(disc), GL_STATIC_DRAW));
+    CALL_GL(glEnableVertexAttribArray(vertexLoc));
+    CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
 
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
@@ -245,10 +258,18 @@ void Engine::render() {
     heart.draw();
 
     if (appState == select) {
-        cursor.draw();
+        //cursor.draw();
+
+        sr.flatShader.use();
+        sr.flatShader["color"] = glm::vec4(0,0,1,1.0);
+        //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*glm::mat4();
+        sr.flatShader["mvp"] = glm::translate(glm::mat4(),glm::vec3(touchPoint.x,touchPoint.y,0));
+        CALL_GL(glBindVertexArray(pointVao));
+        CALL_GL(glPointSize(10));
+        CALL_GL(glDrawArrays(GL_POINTS,0,1));
     }
 
-    if (technique == planeCasting && appState != rotate) {
+    if (technique == planeCasting && appState == translate) {
         plane.draw();
     }
 
@@ -424,6 +445,9 @@ void Engine::removeTuioObject(TuioObject *tobj) {
 void Engine::addTuioCursor(TuioCursor *tcur) {
 
     inputStarted = true;
+    float x,y;
+    x = tcur->getX();
+    y = tcur->getY();
 
     //TUIO variables
     std::list<TUIO::TuioCursor*> cursorList;
@@ -451,6 +475,16 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
 
     switch (appState) {
+    case select:
+        if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
+            touchPoint.x = 2*x-1;
+            touchPoint.y = 2*(1-y)-1;
+            break;
+        }
+        if ((selectionTechnique == indieSelectRelative) || (selectionTechnique == planeSelectRelative )) {
+            break;
+        }
+        break;
     case translate:
         break;
     case rotate:
@@ -458,8 +492,8 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             flicker.stopFlick(rotation);
         }
         if (numberOfCursors == 1) {
-            p1c.x = tcur->getX();
-            p1c.y = tcur->getY();
+            p1c.x = x;
+            p1c.y = y;
             f1id = tcur->getCursorID();
 
             p1p = p1c;  //when first putting finger down there must be
@@ -495,6 +529,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     mat4 newLocationMatrix;
     mat4 tempMatrix;
 
+    //std::cout << "x: " << x;
+    //std::cout << "\t\t y: " << y << std::endl;
+
     flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
     vec2 ft;
@@ -506,15 +543,35 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
+        if (selectionTechnique == indieSelectAbsolute ) {
+            touchPoint.x = 2*x-1;
+            touchPoint.y = 2*(1-y)-1;
+            break;
+        }
+        if ((selectionTechnique == indieSelectRelative) || (selectionTechnique == indieSelectHybrid)) {
+            touchPoint.x += tcur->getXSpeed()/50;
+            touchPoint.y += -1*tcur->getYSpeed()/50;
+            break;
+        }
+        if (selectionTechnique == planeSelectRelative) {
+#define TFACTOR 20
+            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+
+            x=(tcur->getXSpeed())/TFACTOR;
+            y=(tcur->getYSpeed())/TFACTOR;
+
+            newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
+            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+            touchPoint.x += newLocationVector.x;
+            touchPoint.y += newLocationVector.y;
+            break;
+        }
     case translate:
         //********************* TRANSLATE ****************************
         tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
 #define TFACTOR 5
         x=(tcur->getXSpeed())/TFACTOR;
         y=(tcur->getYSpeed())/TFACTOR;
-        //std::cout << "x: " << x;
-        //std::cout << "\t\t y: " << y << '\n';
-        //std::cout.flush();
         //add cursor to queue for flicking
 
         newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
@@ -759,13 +816,28 @@ void Engine::checkKeyboard() {
     }
 
     if (glfwGetKey('1') == GLFW_PRESS) {
-        appState = direct;
-        log("Direct");
+        selectionTechnique = virtualHand;
+        log("virtualHand");
     }
 
     if (glfwGetKey('2') == GLFW_PRESS) {
-        appState = translate;
-        log("PlaneCasting");
+        selectionTechnique = indieSelectAbsolute;
+        log("indieSelectAbsolute");
+    }
+
+    if (glfwGetKey('3') == GLFW_PRESS) {
+        selectionTechnique = indieSelectRelative;
+        log("indieSelectRelative");
+    }
+
+    if (glfwGetKey('4') == GLFW_PRESS) {
+        selectionTechnique = indieSelectHybrid;
+        log("indieCursorHybrid");
+    }
+
+    if (glfwGetKey('5') == GLFW_PRESS) {
+        selectionTechnique = planeSelectRelative;
+        log("planeSelectRelative");
     }
 }
 

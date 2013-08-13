@@ -84,10 +84,10 @@ namespace pho {
 		static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        static const int WINDOW_SIZE_X = 1920;
-        static const int WINDOW_SIZE_Y = 1080;
-        //static const int WINDOW_SIZE_X = 800;
-        //static const int WINDOW_SIZE_Y = 600;
+        //static const int WINDOW_SIZE_X = 1920;
+        //static const int WINDOW_SIZE_Y = 1080;
+        static const int WINDOW_SIZE_X = 800;
+        static const int WINDOW_SIZE_Y = 600;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -119,6 +119,7 @@ namespace pho {
 
         AppState appState;
 		RotateTechnique rotTechnique;
+        SelectionTechnique selectionTechnique;
 		Technique technique;
 
 		GLenum error;
@@ -137,7 +138,6 @@ namespace pho {
         //Shaders
         pho::Shader normalMap;
         pho::Shader noTextureShader;
-        pho::Shader flatShader;
         pho::Shader singleTexture;
 
 		//Picking
@@ -202,21 +202,15 @@ namespace pho {
 
 		//TUIO input stuff
 		void refresh(TuioTime frameTime);
-		glm::vec2 xyOrigin;
-		glm::vec3 tempOrigin;
-		TUIO::TuioCursor* trackedCursor;
-		int trackedCursorId;
-		glm::vec2 trackedCursorPrevPoint;
 		bool f1,f2;
 		bool verbose;
 		int f1id,f2id;
-		glm::vec2 f1prev,f2prev;
-		glm::vec2 f1speed,f2speed;
 		float referenceAngle;
 		glm::vec2 p1p,p2p,p1c,p2c;
 		glm::vec2 p1t,p2t;
 		bool both;
 		bool consumed;
+
         //Flicking
         pho::flickManager flicker;
         boost::timer::cpu_timer flickTimer;
@@ -254,7 +248,9 @@ namespace pho {
         btCollisionObject* coCursor = 0;
         btCollisionObject* coHeart = 0;
 
-
+        //Indirect Finger
+        glm::vec2 touchPoint;
+        GLuint pointVao;
 	};
 
 }

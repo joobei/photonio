@@ -71,6 +71,14 @@ enum RotateTechnique { //rotTechnique
     clutch
 };
 
+enum SelectionTechnique {
+    virtualHand,
+    indieSelectAbsolute,
+    indieSelectRelative,
+    indieSelectHybrid,
+    planeSelectRelative
+};
+
 enum Technique {  //appmode
     planeCasting,
     rayCasting,
