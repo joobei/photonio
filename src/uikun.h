@@ -100,6 +100,7 @@ namespace pho {
 		void updateTuioCursor(TuioCursor *tcur);
 		void removeTuioCursor(TuioCursor *tcur);
 
+        btVector3 getRayTo(glm::vec2 xy);
 		TuioClient* tuioClient;
 	private:
 
@@ -142,6 +143,7 @@ namespace pho {
 
 		//Picking
         bool doubleClickPerformed =false;
+        bool doRayTest =false;
 		GLuint hitObject;
 		bool objectHit,sphereHit;
 		

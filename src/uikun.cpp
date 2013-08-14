@@ -476,6 +476,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
+        if (numberOfCursors == 2) {
+            //raytest
+            break;
+        }
         if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
             touchPoint.x = 2*x-1;
             touchPoint.y = 2*(1-y)-1;
@@ -484,6 +488,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         if ((selectionTechnique == indieSelectRelative) || (selectionTechnique == planeSelectRelative )) {
             break;
         }
+        doRayTest = true;
         break;
     case translate:
         break;
@@ -548,9 +553,14 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             touchPoint.y = 2*(1-y)-1;
             break;
         }
-        if ((selectionTechnique == indieSelectRelative) || (selectionTechnique == indieSelectHybrid)) {
-            touchPoint.x += tcur->getXSpeed()/50;
-            touchPoint.y += -1*tcur->getYSpeed()/50;
+        if (selectionTechnique == indieSelectRelative) {
+            touchPoint.x += tcur->getXSpeed()/30;
+            touchPoint.y += -1*tcur->getYSpeed()/30;
+            break;
+        }
+        if (selectionTechnique == indieSelectHybrid) {
+            touchPoint.x += tcur->getXSpeed()/100;
+            touchPoint.y += -1*tcur->getYSpeed()/100;
             break;
         }
         if (selectionTechnique == planeSelectRelative) {
@@ -566,6 +576,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             touchPoint.y += newLocationVector.y;
             break;
         }
+        doRayTest = true;
+        break;
     case translate:
         //********************* TRANSLATE ****************************
         tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
@@ -693,6 +705,58 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
         std::cout << "del cur " << tcur->getCursorID() << " (" <<  tcur->getSessionID() << ")" << std::endl;
 }
 
+btVector3 Engine::getRayTo(glm::vec2 xy)
+{
+    //btVector3	DemoApplication::getRayTo(int x,int y)
+
+
+        float top = 1.f;
+        float bottom = -1.f;
+        float nearPlane = 1.f;
+        float tanFov = (top-bottom)*0.5f / nearPlane;
+        float fov = btScalar(2.0) * btAtan(tanFov);
+
+        btVector3 rayFrom = btVector3(xy.x,xy.y,0);
+        glm::vec3 rf = glm::mat3(sr.viewMatrix)*glm::vec3(0,0,-1);
+        btVector3 rayForward = btVector3(rf.x,rf.y,rf.z);
+
+        rayForward.normalize();
+        float farPlane = -10000.f;
+        rayForward*= farPlane;
+
+        btVector3 rightOffset;
+        btVector3 vertical = btVector3(0,1,0);
+
+        btVector3 hor;
+        hor = rayForward.cross(vertical);
+        hor.normalize();
+        vertical = hor.cross(rayForward);
+        vertical.normalize();
+
+        float tanfov = tanf(0.5f*fov);
+
+
+        hor *= 2.f * farPlane * tanfov;
+        vertical *= 2.f * farPlane * tanfov;
+
+        btScalar aspect;
+
+        aspect = WINDOW_SIZE_X / (btScalar)WINDOW_SIZE_Y;
+
+        hor*=aspect;
+
+
+        btVector3 rayToCenter = rayFrom + rayForward;
+        btVector3 dHor = hor * 1.f/float(WINDOW_SIZE_X);
+        btVector3 dVert = vertical * 1.f/float(WINDOW_SIZE_Y);
+
+
+        btVector3 rayTo = rayToCenter - 0.5f * hor + 0.5f * vertical;
+        rayTo += btScalar(xy.x) * dHor;
+        rayTo -= btScalar(xy.y) * dVert;
+        return rayTo;
+}
+
 void Engine::refresh(TuioTime frameTime) {
     //std::cout << "refresh " << frameTime.getTotalMilliseconds() << std::endl;
 }
@@ -817,26 +881,31 @@ void Engine::checkKeyboard() {
 
     if (glfwGetKey('1') == GLFW_PRESS) {
         selectionTechnique = virtualHand;
+        collisionWorld->addCollisionObject(coCursor);
         log("virtualHand");
     }
 
     if (glfwGetKey('2') == GLFW_PRESS) {
         selectionTechnique = indieSelectAbsolute;
+        collisionWorld->removeCollisionObject(coCursor);
         log("indieSelectAbsolute");
     }
 
     if (glfwGetKey('3') == GLFW_PRESS) {
         selectionTechnique = indieSelectRelative;
+        collisionWorld->removeCollisionObject(coCursor);
         log("indieSelectRelative");
     }
 
     if (glfwGetKey('4') == GLFW_PRESS) {
         selectionTechnique = indieSelectHybrid;
+        collisionWorld->removeCollisionObject(coCursor);
         log("indieCursorHybrid");
     }
 
     if (glfwGetKey('5') == GLFW_PRESS) {
         selectionTechnique = planeSelectRelative;
+        collisionWorld->removeCollisionObject(coCursor);
         log("planeSelectRelative");
     }
 }
@@ -1028,10 +1097,26 @@ void Engine::checkPhysics()
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setWorldTransform(temp);
 
-    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-    coCursor->setWorldTransform(temp);
+    if ((appState == select) && (selectionTechnique == virtualHand)) {
+        temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+        coCursor->setWorldTransform(temp);
+    }
+
 
     if (appState == select) {
+        if (doRayTest) {
+            btVector3 btRayFrom = btVector3(touchPoint.x, touchPoint.y, 0);
+            //glm::vec4 viewport = glm::vec4(0.0f, 0.0f, (float)pho::Engine::WINDOW_SIZE_X, (float)pho::Engine::WINDOW_SIZE_Y);
+            //glm:vec3 farPoint = glm::unProject(glm::vec3(touchPoint.x,touchPoint.y,-1000),sr.viewMatrix,sr.projectionMatrix,viewport);
+            //btVector3 btRayTo = btVector3(farPoint.x, farPoint.y, farPoint.z);
+            btVector3 btRayTo = getRayTo(touchPoint);
+            btCollisionWorld::ClosestRayResultCallback rayCallBack(btRayFrom,btRayTo);
+            collisionWorld->rayTest(btRayFrom,btRayTo,rayCallBack);
+            if (rayCallBack.hasHit()) {
+                std::cout << "I'z gone hit sumthin'" << std::endl;
+            }
+            doRayTest = false;
+        }
 
         if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
 
