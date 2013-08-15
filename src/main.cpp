@@ -54,7 +54,9 @@ int main()
     }
     std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) <<std::endl;
 
-    std::cout << "Texture units " << GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS <<std::endl;
+    //int iu = 0;
+    //glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&iu);
+    //std::cout << "Texture units " << iu <<std::endl;
 
     pho::Engine *engine = new Engine();
 

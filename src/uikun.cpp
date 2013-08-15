@@ -191,6 +191,11 @@ void Engine::initResources() {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
 
+
+    InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
+    InverseViewMatrix = glm::inverse(sr.viewMatrix);
+
+
     initPhysics();
 }
 
@@ -258,6 +263,9 @@ void Engine::render() {
     heart.draw();
 
     if (appState == select) {
+        if(rayTest(touchPoint.x,touchPoint.y)) {
+            heart.beingIntersected = true;
+        }
         //cursor.draw();
 
         sr.flatShader.use();
@@ -315,13 +323,11 @@ bool Engine::computeRotationMatrix() {
 }
 
 void Engine::mouseButtonCallback(int button, int state) {
+
     glfwGetMousePos(&cur_mx,&cur_my);
 
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
     double difference = elapsed_times.wall-previousTime.wall;
-    //cout.precision(15);
-    //std::cout << "Elapsed :" << difference << std::endl;
-    //check for double click
 
     if (difference < 150000000) {
         doubleClickPerformed = true;
@@ -332,19 +338,8 @@ void Engine::mouseButtonCallback(int button, int state) {
 
     if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_PRESS))
     {
-        float norm_x = 1.0*cur_mx/WINDOW_SIZE_X*2 - 1.0;
-        float norm_y = -(1.0*cur_my/WINDOW_SIZE_Y*2 - 1.0);
 
-        glm::vec4 mouse_clip = glm::vec4((float)cur_mx * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(cur_my) * 2 / float(WINDOW_SIZE_Y),0,1);
 
-        glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
-
-        rayOrigin = glm::vec3(sr.viewMatrix[3]);
-        rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
-
-        startDrag(rayDirection,rayOrigin);
-
-        appState = rotate;
     }
     if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_RELEASE))
     {
@@ -380,11 +375,6 @@ void Engine::mouseMoveCallback(int x, int y) {
 
     rayOrigin = glm::vec3(sr.viewMatrix[3]);
     rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
-
-    if (appState == rotate) {
-        Drag(rayDirection,rayOrigin,sr.viewMatrix);
-    }
-
 
     if (appState == translate) {
         vec2 MousePt;
@@ -476,8 +466,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if (numberOfCursors == 2) {
-            //raytest
+        if ((numberOfCursors == 2) && heart.beingIntersected) {
+            appState = translate;
+            selectedAsset = &heart;
+            pho::locationMatch(plane.modelMatrix,heart.modelMatrix);
             break;
         }
         if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
@@ -488,7 +480,6 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         if ((selectionTechnique == indieSelectRelative) || (selectionTechnique == planeSelectRelative )) {
             break;
         }
-        doRayTest = true;
         break;
     case translate:
         break;
@@ -576,14 +567,13 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             touchPoint.y += newLocationVector.y;
             break;
         }
-        doRayTest = true;
         break;
     case translate:
         //********************* TRANSLATE ****************************
         tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-#define TFACTOR 5
-        x=(tcur->getXSpeed())/TFACTOR;
-        y=(tcur->getYSpeed())/TFACTOR;
+#define TFACTORA 5
+        x=(tcur->getXSpeed())/TFACTORA;
+        y=(tcur->getYSpeed())/TFACTORA;
         //add cursor to queue for flicking
 
         newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
@@ -911,40 +901,7 @@ void Engine::checkKeyboard() {
 }
 
 
-bool Engine::startDrag(const vec3& rayDirection, const vec3& rayOrigin) {
-    vec3 tempPoint;
-    vec3 tempNormal;
 
-    float tempFloat;
-    /*if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,tempNormal)) {
-        previousVector = glm::normalize(glm::vec3(cursor.modelMatrix[3])-tempPoint);
-        return true;
-    }
-    else return false;*/
-    return false;
-
-}
-
-void Engine::Drag(const vec3& rayDirection, const vec3& rayOrigin, glm::mat4 viewMatrix) {
-    /*glm::vec3 currentVector;
-    glm::vec3 tempPoint;
-     vec3 tempNormal;
-    float tempFloat;
-
-    if (cursor.findSphereIntersection(rayOrigin,rayDirection,tempPoint,tempFloat,tempNormal)) {
-
-        currentVector = glm::normalize(glm::vec3(cursor.modelMatrix[3])-tempPoint);
-
-        float angle = acos(glm::min(1.0f, glm::dot(previousVector, currentVector)));
-        glm::vec3 axis_in_camera_coord = glm::cross(previousVector, currentVector);
-        glm::mat3 camera2object = glm::inverse(glm::mat3(viewMatrix) * glm::mat3(cursor.modelMatrix));
-        glm::vec3 axis_in_object_coord = camera2object * axis_in_camera_coord;
-        cursor.modelMatrix = glm::rotate(cursor.modelMatrix,glm::degrees(angle), axis_in_object_coord);
-
-        previousVector = currentVector;
-    }
-    */
-}
 
 
 void Engine::generateShadowFBO()
@@ -1001,7 +958,7 @@ void Engine::shadowMapRender() {
     CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
 
-    if (appState == select) cursor.drawFromLight();
+    if ((appState == select) && (selectionTechnique == virtualHand)) cursor.drawFromLight();
     heart.drawFromLight();
 
     // Revert for the scene.
@@ -1070,14 +1027,15 @@ void Engine::initPhysics()
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setCollisionShape(csHeart);
     coHeart->setWorldTransform(temp);
+    coHeart->setUserPointer(&heart);
 
     selectMap.insert(std::make_pair(coHeart,&heart));
 
     btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 
-    btVector3  worldAabbMin(-100,-100,-100);
-    btVector3  worldAabbMax(100,100,100);
+    btVector3 worldAabbMin(-1000,-1000,-1000);
+    btVector3 worldAabbMax(1000,1000,1000);
 
     btAxisSweep3* broadphase = new btAxisSweep3(worldAabbMin,worldAabbMax);
 
@@ -1088,12 +1046,14 @@ void Engine::initPhysics()
     collisionWorld->addCollisionObject(coCursor);
     collisionWorld->addCollisionObject(coHeart);
 
+
+
 }
 
 void Engine::checkPhysics()
 {
     btTransform temp;
-
+    collisionWorld->debugDrawWorld();
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setWorldTransform(temp);
 
@@ -1103,20 +1063,7 @@ void Engine::checkPhysics()
     }
 
 
-    if (appState == select) {
-        if (doRayTest) {
-            btVector3 btRayFrom = btVector3(touchPoint.x, touchPoint.y, 0);
-            //glm::vec4 viewport = glm::vec4(0.0f, 0.0f, (float)pho::Engine::WINDOW_SIZE_X, (float)pho::Engine::WINDOW_SIZE_Y);
-            //glm:vec3 farPoint = glm::unProject(glm::vec3(touchPoint.x,touchPoint.y,-1000),sr.viewMatrix,sr.projectionMatrix,viewport);
-            //btVector3 btRayTo = btVector3(farPoint.x, farPoint.y, farPoint.z);
-            btVector3 btRayTo = getRayTo(touchPoint);
-            btCollisionWorld::ClosestRayResultCallback rayCallBack(btRayFrom,btRayTo);
-            collisionWorld->rayTest(btRayFrom,btRayTo,rayCallBack);
-            if (rayCallBack.hasHit()) {
-                std::cout << "I'z gone hit sumthin'" << std::endl;
-            }
-            doRayTest = false;
-        }
+    if ((appState == select ) && (selectionTechnique = virtualHand)) {
 
         if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
 
@@ -1131,6 +1078,7 @@ void Engine::checkPhysics()
             it = selectMap.find(obB);
             if ( it != selectMap.end()) {
                 it->second->beingIntersected = true;
+
                 if (doubleClickPerformed) {
                     switch (appState) {
                     case select:
@@ -1160,4 +1108,31 @@ void Engine::checkPhysics()
         }
 
     }
+}
+
+bool pho::Engine::rayTest(float normalizedX, float normalizedY) {
+
+    //glm::vec4 mouse_clip = glm::vec4((float)cur_mx * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(cur_my) * 2 / float(WINDOW_SIZE_Y),0,1);
+    glm::vec4 mouse_clip = glm::vec4(normalizedX,normalizedY,0,1);
+
+    glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
+
+    rayOrigin = glm::vec3(sr.viewMatrix[3]);
+    rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
+
+    glm::vec3 rayEnd = rayDirection*1000.0f;
+
+    btCollisionWorld::ClosestRayResultCallback RayCallback(
+        btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),
+        btVector3(rayEnd.x, rayEnd.y, rayEnd.z)
+    );
+
+    collisionWorld->rayTest(
+                btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),
+                btVector3(rayEnd.x, rayEnd.y, rayEnd.z),
+        RayCallback
+    );
+
+    if(RayCallback.hasHit()) return true;
+    else return false;
 }
