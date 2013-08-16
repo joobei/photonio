@@ -57,6 +57,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
 #include <btBulletCollisionCommon.h>
+#include <LinearMath/btIDebugDraw.h>
 
 using namespace std;
 using namespace TUIO;
@@ -69,7 +70,7 @@ using glm::mat4;
 #define LOGITECH_VENDOR_ID 0x46d
 
 namespace pho {
-	class Engine: public TuioListener {
+    class Engine: public TuioListener, public btIDebugDraw {
 
 	public:
 		Engine();
@@ -81,7 +82,16 @@ namespace pho {
 		bool computeRotationMatrix();
 		void shutdown();
 
-		static const int TOUCH_SCREEN_SIZE_X = 480;
+        //bullet debug shit
+        void drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color);
+        void drawContactPoint(const btVector3 &	PointOnB, const btVector3 & 	normalOnB,  btScalar 	distance,  int 	lifeTime, const btVector3 & 	color )		;
+        void reportErrorWarning	(	const char * 	warningString	);
+        void draw3dText	(	const btVector3 & 	location,      const char * 	textString         );
+        void setDebugMode	(	int 	debugMode	);
+        int getDebugMode() const;
+
+
+        static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
         //static const int WINDOW_SIZE_X = 1920;
@@ -102,6 +112,7 @@ namespace pho {
 
         btVector3 getRayTo(glm::vec2 xy);
 		TuioClient* tuioClient;
+        std::vector<glm::vec3> linestack;
 	private:
 
         void ScreenPosToWorldRay(
@@ -224,8 +235,14 @@ namespace pho {
         //Flicking
         pho::flickManager flicker;
         boost::timer::cpu_timer flickTimer;
+
+        //Timers
         boost::timer::cpu_timer doubleClick;
+        boost::timer::cpu_timer keyboardTimer;
+
         boost::timer::cpu_times previousTime;
+        boost::timer::cpu_times keyboardPreviousTime;
+        bool keyPressOK=true;
 
         //lighting
         pho::LightSource pointLight;
@@ -257,6 +274,8 @@ namespace pho {
         btCollisionWorld* collisionWorld = 0;
         btCollisionObject* coCursor = 0;
         btCollisionObject* coHeart = 0;
+
+        bool switchOnNextFrame=false;
 
         //Indirect Finger
         glm::vec2 touchPoint;

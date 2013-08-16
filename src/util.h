@@ -113,12 +113,12 @@ public:
     void addRotate(float angle); //adds one point to the flickManager
     void endFlick(glm::mat3 orientationSnapshot, flickState state);  //the flick manager returns true if it's a flick or false if not (also resets history?)
     void stopFlick(flickState flickstate); //stops the flying
-    glm::mat4 dampenAndGiveMatrix(glm::mat3 rotationMat);
+    glm::mat4 dampenAndGiveMatrix(glm::mat3 planeRotationMat);
     glm::mat4 dampenAndGivePinchMatrix();
     glm::vec2 dampenAndGiveRotationMatrix();
     void newFlick(flickState flickstate);
     glm::mat4 transform;
-    glm::mat3 rotation;
+    glm::mat3 rotationSnapshot;
     bool inFlick(flickState flickstate);
     bool inPinchFlick();
     bool inRotationFlick();

@@ -77,7 +77,7 @@ void pho::flickManager::addRotate(float angle){
 
 void pho::flickManager::endFlick(glm::mat3 orientationSnapshot, flickState flickstate){
 
-    rotation = orientationSnapshot;
+    rotationSnapshot = orientationSnapshot;
 
     switch (flickstate) {
     case translation:
@@ -117,9 +117,11 @@ void pho::flickManager::newFlick(flickState flickstate){
         currentlyInTranslateFlick = false;
         translateTimes = 0;
         break;
-    case rotate:
+    case rotation:
         currentlyInRotateFlick = false;
         rotateTimes = 0;
+        currentlyInPinchFlick = false;
+        pinchTimes = 0;
         break;
     case pinchy:
         currentlyInPinchFlick = false;
@@ -152,7 +154,7 @@ void pho::flickManager::stopFlick(flickState flickstate) {
         currentlyInTranslateFlick = false;
         translateTimes = 0;
         break;
-    case rotate:
+    case rotation:
         currentlyInRotateFlick = false;
         rotateTimes = 0;
         break;
@@ -166,7 +168,7 @@ void pho::flickManager::stopFlick(flickState flickstate) {
 
 
 //dampen the saved matrix and feed us the dampened value
-glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 rotationMat){
+glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 planeRotationMat){
     translateTimes--;
     if (translateTimes == 0) { stopFlick(translation); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
     }
@@ -176,7 +178,7 @@ glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 rotationMat){
 
         launchPair *= decay; //dampen vector
 
-        newLocationVector = rotationMat*glm::vec3(launchPair.x,0,launchPair.y);  //rotate the motion vector from TUIO in the direction of the plane
+        newLocationVector = planeRotationMat*glm::vec3(launchPair.x,0,launchPair.y);  //rotate the motion vector from TUIO in the direction of the plane
         newLocationMatrix = glm::translate(glm::mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
         return newLocationMatrix;

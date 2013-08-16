@@ -33,7 +33,7 @@ Engine::Engine():
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(indieSelectRelative),
+    selectionTechnique(virtualHand),
     inputStarted(false),
     mouseMove(false),
     plane(&sr)
@@ -48,6 +48,8 @@ Engine::Engine():
 
     errorLog.open("error.log",std::ios_base::app);
 
+
+
     tuioClient = new TuioClient(3333);
     tuioClient->addTuioListener(this);
     tuioClient->connect();
@@ -57,7 +59,10 @@ Engine::Engine():
     }
 
     verbose = false;
+
     doubleClick.start();
+    keyboardTimer.start();
+
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
 
@@ -74,7 +79,6 @@ Engine::Engine():
     axisChange[2][0] = 0; axisChange[2][1] =  -1;  axisChange[2][2] = 0;
 
     tf = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
-    deltat = -1.0f; //so as to not repeat keystrokes
 
     perspective = 80.0f;
 
@@ -165,7 +169,7 @@ void Engine::initResources() {
     //plane.receiveShadow = true;
 
     heart = pho::Asset("bump-heart.obj",&normalMap,&sr);
-    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-25));
+    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     //heart.receiveShadow = true;
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
@@ -202,6 +206,7 @@ void Engine::initResources() {
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
+    //std::cout << touchPoint.x << "\t" << touchPoint.y << std::endl;
     checkKeyboard();
 
     if (technique == mouse) {
@@ -239,51 +244,72 @@ void Engine::checkEvents() {
 
     //Joystick
     checkSpaceNavigator();
+    if ((appState == select) && (selectionTechnique != virtualHand)) {
+        if (rayTest(touchPoint.x,touchPoint.y)) heart.beingIntersected = true;
+    }
 
-    if (doubleClickPerformed && (appState == translate || appState == rotate)) {
+    checkPhysics();
 
-        cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);
-        //grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]); //just for reference
-        cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector,1);
-        selectedAsset = &cursor;
-        pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
-        appState = select;
-        doubleClickPerformed = false;
+    if(switchOnNextFrame) {
+    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+    //Put 2d cursor where object was dropped:
+    //1st. calculate clip space coordinates
+    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*heart.modelMatrix*glm::vec4(0,0,0,1);
+    //2nd. convert it in normalized device coordinates by dividing with w
+    newtp/=newtp.w;
+    touchPoint.x = newtp.x;
+    touchPoint.y = newtp.y;
+    switchOnNextFrame = false;
     }
 }
 
 void Engine::render() {
     shadowMapRender();
 
-    CALL_GL(glClearColor(0.0f,0.0f,0.0f,0.0f));
+    CALL_GL(glClearColor(1.0f,1.0f,1.0f,1.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
+
+
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
     floor.draw();
     heart.draw();
 
     if (appState == select) {
-        if(rayTest(touchPoint.x,touchPoint.y)) {
-            heart.beingIntersected = true;
+        if (selectionTechnique == virtualHand) {
+            cursor.draw();
         }
-        //cursor.draw();
+        else {
+            sr.flatShader.use();
 
-        sr.flatShader.use();
-        sr.flatShader["color"] = glm::vec4(0,0,1,1.0);
-        //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*glm::mat4();
-        sr.flatShader["mvp"] = glm::translate(glm::mat4(),glm::vec3(touchPoint.x,touchPoint.y,0));
-        CALL_GL(glBindVertexArray(pointVao));
-        CALL_GL(glPointSize(10));
-        CALL_GL(glDrawArrays(GL_POINTS,0,1));
+            //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*glm::mat4();
+            sr.flatShader["mvp"] = glm::translate(glm::mat4(),glm::vec3(touchPoint.x,touchPoint.y,-1));
+            CALL_GL(glBindVertexArray(pointVao));
+            CALL_GL(glPointSize(20));
+            sr.flatShader["color"] = glm::vec4(0,0,0,1.0);
+            CALL_GL(glDrawArrays(GL_POINTS,0,1));
+
+            CALL_GL(glDisable(GL_DEPTH_TEST));
+            sr.flatShader["color"] = glm::vec4(1,1,1,1.0);
+            CALL_GL(glPointSize(10));
+            CALL_GL(glDrawArrays(GL_POINTS,0,1));
+            CALL_GL(glEnable(GL_DEPTH_TEST));
+        }
     }
+    /*sr.flatShader.use();
+    sr.flatShader["color"] = glm::vec4(0,0,0,1.0);
+    sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix;
+    //sr.flatShader["mvp"] = glm::mat4();
+    //glMatrixMode(GL_MODELVIEW);
+    //glLoadIdentity();
+    collisionWorld->debugDrawWorld();*/
 
-    if (technique == planeCasting && appState == translate) {
+    if (technique == planeCasting) {
+        if ((appState == translate) || ((appState == select ) && (selectionTechnique == virtualHand))) {
         plane.draw();
+        }
     }
-
     glfwSwapBuffers();
-
-    checkPhysics();
 }
 
 bool Engine::computeRotationMatrix() {
@@ -329,7 +355,7 @@ void Engine::mouseButtonCallback(int button, int state) {
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
     double difference = elapsed_times.wall-previousTime.wall;
 
-    if (difference < 150000000) {
+    if (difference > 150000000) {
         doubleClickPerformed = true;
     }
 
@@ -413,6 +439,44 @@ void Engine::shutdown() {
     errorLog.close();
 }
 
+void Engine::drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color)
+{
+   /* glm::vec3 temp;
+    temp.x = from.x();
+    temp.y = from.y();
+    temp.z = from.z();
+    linestack.push_back(temp);
+    temp.x = to.x();
+    temp.y = to.y();
+    temp.z = to.z();
+    linestack.push_back(temp);*/
+    glBegin(GL_LINES);
+           glColor3f(color.getX(), color.getY(), color.getZ());
+           glVertex3d(from.getX(), from.getY(), from.getZ());
+           glVertex3d(to.getX(), to.getY(), to.getZ());
+       glEnd();
+}
+
+void Engine::drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB, btScalar distance, int lifeTime, const btVector3 &color)
+{
+}
+
+void Engine::reportErrorWarning(const char *warningString)
+{
+}
+
+void Engine::draw3dText(const btVector3 &location, const char *textString)
+{
+}
+
+void Engine::setDebugMode(int debugMode)
+{
+}
+
+int Engine::getDebugMode() const
+{
+}
+
 void Engine::addTuioObject(TuioObject *tobj) {
     if (verbose)
         std::cout << "add obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ") "<< tobj->getX() << " " << tobj->getY() << " " << tobj->getAngle() << std::endl;
@@ -450,15 +514,55 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         flicker.newFlick(flickState::translation);
         flicker.stopFlick(flickState::pinchy);
     }
+    if (numberOfCursors == 1 && ( appState == rotate)) {
+        flicker.stopFlick(flickState::rotation);
+    }
 
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
     double difference = elapsed_times.wall-previousTime.wall;
-    //cout.precision(15);
-    //std::cout << "Elapsed :" << difference << std::endl;
-    //check for double click
+
     if (numberOfCursors == 1 ) {
-        if (difference < 150000000) {
-        doubleClickPerformed = true;
+        if (difference < 150000000) {  //if doubleClick
+
+            if ((appState == translate) || (appState == rotate)) {
+
+                appState = select;
+
+                if (selectionTechnique == virtualHand) {
+                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);
+                    //grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]); //just for reference
+                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector,1);
+                    selectedAsset = &cursor;
+                    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+                    collisionWorld->addCollisionObject(coCursor);
+                }
+                else {
+                    collisionWorld->addCollisionObject(coCursor);
+                    locationMatch(cursor.modelMatrix,heart.modelMatrix);
+                    locationMatch(plane.modelMatrix,cursor.modelMatrix);
+                    selectedAsset = &cursor;
+                    appState = select;
+                    //selectionTechnique = virtualHand;
+
+                    //switchOnNextFrame = true;
+                    collisionWorld->performDiscreteCollisionDetection();
+
+                    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+                    //Put 2d cursor where object was dropped:
+                    //1st. calculate clip space coordinates
+                    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*heart.modelMatrix*glm::vec4(0,0,0,1);
+                    //2nd. convert it in normalized device coordinates by dividing with w
+                    newtp/=newtp.w;
+                    touchPoint.x = newtp.x;
+                    touchPoint.y = newtp.y;
+
+                }
+
+
+                doubleClickPerformed = false;
+            }
+            else doubleClickPerformed = true;
+
         }
     }
     previousTime = elapsed_times;
@@ -466,7 +570,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if ((numberOfCursors == 2) && heart.beingIntersected) {
+        if ((numberOfCursors == 2) && rayTest(touchPoint.x,touchPoint.y) && (selectionTechnique !=virtualHand)) {
             appState = translate;
             selectedAsset = &heart;
             pho::locationMatch(plane.modelMatrix,heart.modelMatrix);
@@ -475,9 +579,6 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
             touchPoint.x = 2*x-1;
             touchPoint.y = 2*(1-y)-1;
-            break;
-        }
-        if ((selectionTechnique == indieSelectRelative) || (selectionTechnique == planeSelectRelative )) {
             break;
         }
         break;
@@ -533,7 +634,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     vec2 ft;
     float newAngle;
 
-    short numberOfCursors = tuioClient->getTuioCursors().size();
+    //short numberOfCursors = tuioClient->getTuioCursors().size();
     //std::list<TUIO::TuioCursor*> cursorList;
     //cursorList = tuioClient->getTuioCursors();
 
@@ -567,7 +668,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             touchPoint.y += newLocationVector.y;
             break;
         }
-        break;
     case translate:
         //********************* TRANSLATE ****************************
         tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
@@ -582,8 +682,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
 
-        temp.setFromOpenGLMatrix(glm::value_ptr(tempMatrix));
-        coHeart->setWorldTransform(temp);
+        //temp.setFromOpenGLMatrix(glm::value_ptr(tempMatrix));
+        //coHeart->setWorldTransform(temp);
+
         break;
         //*********************   ROTATE  ****************************
     case rotate:
@@ -675,6 +776,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
+        if (selectionTechnique != virtualHand) break;
     case translate:
         flicker.endFlick(glm::mat3(orientation),translation);
         break;
@@ -689,6 +791,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
             flicker.endFlick(glm::mat3(orientation),pinchy);
             break;
         }
+        break;
     }
 
     if (verbose)
@@ -827,76 +930,108 @@ void Engine::checkUDP() {
 
 void Engine::checkKeyboard() {
 #define FACTOR 0.5f
+    //static bool started = false;
+    boost::timer::cpu_times const elapsed_times(keyboardTimer.elapsed());
+    double difference = elapsed_times.wall-keyboardPreviousTime.wall;
 
-    if (glfwGetKey(GLFW_KEY_DOWN)) {
-        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,-FACTOR));
-    }
+    if (difference > 800000000) { keyPressOK = true;}
+    //to stop multiple keypresses
+    if (keyPressOK) {
+        if (glfwGetKey(GLFW_KEY_DOWN)) {
+            sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,-FACTOR));
+        }
 
-    if (glfwGetKey(GLFW_KEY_UP)) {
-        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,FACTOR));
-    }
-    if (glfwGetKey(GLFW_KEY_LEFT)) {
-        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(FACTOR,0,0));
-    }
-    if (glfwGetKey(GLFW_KEY_RIGHT)) {
-        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(-FACTOR,0,0));
-    }
-    if (glfwGetKey(GLFW_KEY_PAGEUP)) {
-        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,-FACTOR,0));
-    }
-    if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
-        sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,FACTOR,0));
-    }
-    if (glfwGetKey(GLFW_KEY_HOME)) {
-        perspective +=1.0;
-        sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
-        std::cout << "Perspective : " << perspective << '\n';
+        if (glfwGetKey(GLFW_KEY_UP)) {
+            sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,FACTOR));
+        }
+        if (glfwGetKey(GLFW_KEY_LEFT)) {
+            sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(FACTOR,0,0));
+        }
+        if (glfwGetKey(GLFW_KEY_RIGHT)) {
+            sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(-FACTOR,0,0));
+        }
+        if (glfwGetKey(GLFW_KEY_PAGEUP)) {
+            sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,-FACTOR,0));
+        }
+        if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
+            sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,FACTOR,0));
+        }
+        if (glfwGetKey(GLFW_KEY_HOME)) {
+            perspective +=1.0;
+            sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+            std::cout << "Perspective : " << perspective << '\n';
 
-    }
-    if (glfwGetKey(GLFW_KEY_SPACE)) {
-        selectedAsset->modelMatrix = glm::translate(0,0,-15);
-        cursor.modelMatrix = glm::translate(0,0,-5);
-        plane.modelMatrix = cursor.modelMatrix;
-        flicker.stopFlick(translation);
-        flicker.stopFlick(rotation);
-        flicker.stopFlick(pinchy);
-        sr.viewMatrix = mat4();
-        appState = select;
-    }
-    if (glfwGetKey(GLFW_KEY_END)) {
-        perspective -=1.0;
-        sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
-        //log("Perspective : " +perspective);
-    }
+        }
+        if (glfwGetKey(GLFW_KEY_SPACE)) {
+            selectedAsset->modelMatrix = glm::translate(0,0,-15);
+            cursor.modelMatrix = glm::translate(0,0,-5);
+            heart.modelMatrix = glm::translate(-5,10,-15);
+            plane.modelMatrix = cursor.modelMatrix;
+            flicker.stopFlick(translation);
+            flicker.stopFlick(rotation);
+            flicker.stopFlick(pinchy);
+            sr.viewMatrix = mat4();
+            appState = select;
+            touchPoint.x=0.0f;
+            touchPoint.y=0.0f;
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
+        if (glfwGetKey(GLFW_KEY_END)) {
+            perspective -=1.0;
+            sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+            //log("Perspective : " +perspective);
+        }
 
-    if (glfwGetKey('1') == GLFW_PRESS) {
-        selectionTechnique = virtualHand;
-        collisionWorld->addCollisionObject(coCursor);
-        log("virtualHand");
-    }
+        if (glfwGetKey('1') == GLFW_PRESS) {
+            collisionWorld->addCollisionObject(coCursor);
+            locationMatch(cursor.modelMatrix,heart.modelMatrix);
+            locationMatch(plane.modelMatrix,cursor.modelMatrix);
+            selectedAsset = &cursor;
+            appState = select;
+            selectionTechnique = virtualHand;
+            log("virtualHand");
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
 
-    if (glfwGetKey('2') == GLFW_PRESS) {
-        selectionTechnique = indieSelectAbsolute;
-        collisionWorld->removeCollisionObject(coCursor);
-        log("indieSelectAbsolute");
-    }
+        if (glfwGetKey('2') == GLFW_PRESS) {
 
-    if (glfwGetKey('3') == GLFW_PRESS) {
-        selectionTechnique = indieSelectRelative;
-        collisionWorld->removeCollisionObject(coCursor);
-        log("indieSelectRelative");
-    }
+            appState = select;
+            selectionTechnique = indieSelectAbsolute;
+            log("indieSelectAbsolute");
+            collisionWorld->removeCollisionObject(coCursor);
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
 
-    if (glfwGetKey('4') == GLFW_PRESS) {
-        selectionTechnique = indieSelectHybrid;
-        collisionWorld->removeCollisionObject(coCursor);
-        log("indieCursorHybrid");
-    }
+        if (glfwGetKey('3') == GLFW_PRESS) {
+            appState = select;
+            selectionTechnique = indieSelectRelative;
+            collisionWorld->removeCollisionObject(coCursor);
+            log("indieSelectRelative");
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
 
-    if (glfwGetKey('5') == GLFW_PRESS) {
-        selectionTechnique = planeSelectRelative;
-        collisionWorld->removeCollisionObject(coCursor);
-        log("planeSelectRelative");
+        if (glfwGetKey('4') == GLFW_PRESS) {
+            appState = select;
+            selectionTechnique = indieSelectHybrid;
+            collisionWorld->removeCollisionObject(coCursor);
+            log("indieCursorHybrid");
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
+
+        if (glfwGetKey('5') == GLFW_PRESS) {
+            appState = select;
+            selectionTechnique = planeSelectRelative;
+            collisionWorld->removeCollisionObject(coCursor);
+            log("planeSelectRelative");
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
+
     }
 }
 
@@ -1018,11 +1153,13 @@ void Engine::initPhysics()
 
     selectMap.insert(std::make_pair(coCursor,&cursor));
 
-    btConvexHullShape* csHeart = new btConvexHullShape();
+    /*btConvexHullShape* csHeart = new btConvexHullShape();
 
     for (int i=0;i<heart.vertices.size();++i) {
         csHeart->addPoint(btVector3(heart.vertices[i].x,heart.vertices[i].y,heart.vertices[i].z));
-    }
+    }*/
+
+    btBoxShape* csHeart = new btBoxShape(btVector3(3.0,3.0,3.0));
     coHeart = new btCollisionObject();
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setCollisionShape(csHeart);
@@ -1040,10 +1177,10 @@ void Engine::initPhysics()
     btAxisSweep3* broadphase = new btAxisSweep3(worldAabbMin,worldAabbMax);
 
     collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
-    //collisionWorld->setDebugDrawer(&debugDrawer);
+    collisionWorld->setDebugDrawer(this);
 
     //btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),1);
-    collisionWorld->addCollisionObject(coCursor);
+    if (selectionTechnique == virtualHand) collisionWorld->addCollisionObject(coCursor);
     collisionWorld->addCollisionObject(coHeart);
 
 
@@ -1053,17 +1190,21 @@ void Engine::initPhysics()
 void Engine::checkPhysics()
 {
     btTransform temp;
-    collisionWorld->debugDrawWorld();
+
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setWorldTransform(temp);
 
-    if ((appState == select) && (selectionTechnique == virtualHand)) {
+    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+    coCursor->setWorldTransform(temp);
+
+
+    /*if ((appState == select) && (selectionTechnique == virtualHand)) {
         temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
         coCursor->setWorldTransform(temp);
-    }
+    }*/
 
 
-    if ((appState == select ) && (selectionTechnique = virtualHand)) {
+    if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
         if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
 
@@ -1077,19 +1218,18 @@ void Engine::checkPhysics()
 
             it = selectMap.find(obB);
             if ( it != selectMap.end()) {
-                it->second->beingIntersected = true;
+                //it->second->beingIntersected = true;
+                heart.beingIntersected = true;
 
-                if (doubleClickPerformed) {
-                    switch (appState) {
-                    case select:
-                        selectedAsset = it->second;
+                if (doubleClickPerformed && (appState == select)) {
+                        //selectedAsset = it->second;
+                        selectedAsset = &heart;
                         grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]);
-                        plane.modelMatrix = it->second->modelMatrix;
+                        //plane.modelMatrix = it->second->modelMatrix;
+                        plane.modelMatrix = heart.modelMatrix;
                         appState = translate;
                         doubleClickPerformed = false;
-                        break;
-                    }
-
+                        collisionWorld->removeCollisionObject(coCursor);
                 }
             }
 
@@ -1110,10 +1250,10 @@ void Engine::checkPhysics()
     }
 }
 
-bool pho::Engine::rayTest(float normalizedX, float normalizedY) {
+bool Engine::rayTest(float normalizedX, float normalizedY) {
 
     //glm::vec4 mouse_clip = glm::vec4((float)cur_mx * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(cur_my) * 2 / float(WINDOW_SIZE_Y),0,1);
-    glm::vec4 mouse_clip = glm::vec4(normalizedX,normalizedY,0,1);
+    /*glm::vec4 mouse_clip = glm::vec4(normalizedX,normalizedY,0,1);
 
     glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
 
@@ -1127,12 +1267,61 @@ bool pho::Engine::rayTest(float normalizedX, float normalizedY) {
         btVector3(rayEnd.x, rayEnd.y, rayEnd.z)
     );
 
-    collisionWorld->rayTest(
-                btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),
-                btVector3(rayEnd.x, rayEnd.y, rayEnd.z),
-        RayCallback
-    );
+    //collisionWorld->rayTestSingle(btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),btVector3(rayEnd.x, rayEnd.y, rayEnd.z),coHeart,coHeart->getCollisionShape(),coHeart->getWorldTransform(),RayCallback);
+    collisionWorld->rayTest(                btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),                btVector3(rayEnd.x, rayEnd.y, rayEnd.z),        RayCallback    );*/
 
-    if(RayCallback.hasHit()) return true;
-    else return false;
+    // The ray Start and End positions, in Normalized Device Coordinates (Have you read Tutorial 4 ?)
+        glm::vec4 lRayStart_NDC(
+            touchPoint.x,
+            touchPoint.y,
+            -1.0, // The near plane maps to Z=-1 in Normalized Device Coordinates
+            1.0f
+        );
+        glm::vec4 lRayEnd_NDC(
+                    touchPoint.x,
+                    touchPoint.y,
+            0.0,
+            1.0f
+        );
+
+
+        // The Projection matrix goes from Camera Space to NDC.
+        // So inverse(ProjectionMatrix) goes from NDC to Camera Space.
+        glm::mat4 InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
+
+        // The View Matrix goes from World Space to Camera Space.
+        // So inverse(ViewMatrix) goes from Camera Space to World Space.
+        glm::mat4 InverseViewMatrix = glm::inverse(sr.viewMatrix);
+
+        glm::vec4 lRayStart_camera = InverseProjectionMatrix * lRayStart_NDC;    lRayStart_camera/=lRayStart_camera.w;
+        glm::vec4 lRayStart_world  = InverseViewMatrix       * lRayStart_camera; lRayStart_world /=lRayStart_world .w;
+        glm::vec4 lRayEnd_camera   = InverseProjectionMatrix * lRayEnd_NDC;      lRayEnd_camera  /=lRayEnd_camera  .w;
+        glm::vec4 lRayEnd_world    = InverseViewMatrix       * lRayEnd_camera;   lRayEnd_world   /=lRayEnd_world   .w;
+
+
+        // Faster way (just one inverse)
+        //glm::mat4 M = glm::inverse(ProjectionMatrix * ViewMatrix);
+        //glm::vec4 lRayStart_world = M * lRayStart_NDC; lRayStart_world/=lRayStart_world.w;
+        //glm::vec4 lRayEnd_world   = M * lRayEnd_NDC  ; lRayEnd_world  /=lRayEnd_world.w;
+
+
+
+
+        glm::vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
+        lRayDir_world = glm::normalize(lRayDir_world);
+
+
+        glm::vec3 out_origin = glm::vec3(lRayStart_world);
+        glm::vec3 out_direction = glm::normalize(lRayDir_world);
+
+        out_direction = out_direction*1000.0f;
+
+        btCollisionWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
+        collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
+        if (selectionTechnique != virtualHand) {
+            static int cnt;
+            std::cout << "Hit " << cnt << std::endl;
+            cnt++;
+        }
+    return RayCallback.hasHit();
 }
