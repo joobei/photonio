@@ -275,6 +275,7 @@ namespace pho {
         btCollisionObject* coCursor = 0;
         btCollisionObject* coHeart = 0;
 
+
         bool switchOnNextFrame=false;
 
         //Indirect Finger

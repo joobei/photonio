@@ -1153,13 +1153,13 @@ void Engine::initPhysics()
 
     selectMap.insert(std::make_pair(coCursor,&cursor));
 
-    /*btConvexHullShape* csHeart = new btConvexHullShape();
+    btConvexHullShape* csHeart = new btConvexHullShape();
 
     for (int i=0;i<heart.vertices.size();++i) {
         csHeart->addPoint(btVector3(heart.vertices[i].x,heart.vertices[i].y,heart.vertices[i].z));
-    }*/
+    }
 
-    btBoxShape* csHeart = new btBoxShape(btVector3(3.0,3.0,3.0));
+    //btBoxShape* csHeart = new btBoxShape(btVector3(3.0,3.0,3.0));
     coHeart = new btCollisionObject();
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setCollisionShape(csHeart);
@@ -1252,24 +1252,6 @@ void Engine::checkPhysics()
 
 bool Engine::rayTest(float normalizedX, float normalizedY) {
 
-    //glm::vec4 mouse_clip = glm::vec4((float)cur_mx * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(cur_my) * 2 / float(WINDOW_SIZE_Y),0,1);
-    /*glm::vec4 mouse_clip = glm::vec4(normalizedX,normalizedY,0,1);
-
-    glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
-
-    rayOrigin = glm::vec3(sr.viewMatrix[3]);
-    rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
-
-    glm::vec3 rayEnd = rayDirection*1000.0f;
-
-    btCollisionWorld::ClosestRayResultCallback RayCallback(
-        btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),
-        btVector3(rayEnd.x, rayEnd.y, rayEnd.z)
-    );
-
-    //collisionWorld->rayTestSingle(btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),btVector3(rayEnd.x, rayEnd.y, rayEnd.z),coHeart,coHeart->getCollisionShape(),coHeart->getWorldTransform(),RayCallback);
-    collisionWorld->rayTest(                btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),                btVector3(rayEnd.x, rayEnd.y, rayEnd.z),        RayCallback    );*/
-
     // The ray Start and End positions, in Normalized Device Coordinates (Have you read Tutorial 4 ?)
         glm::vec4 lRayStart_NDC(
             touchPoint.x,
@@ -1299,14 +1281,6 @@ bool Engine::rayTest(float normalizedX, float normalizedY) {
         glm::vec4 lRayEnd_world    = InverseViewMatrix       * lRayEnd_camera;   lRayEnd_world   /=lRayEnd_world   .w;
 
 
-        // Faster way (just one inverse)
-        //glm::mat4 M = glm::inverse(ProjectionMatrix * ViewMatrix);
-        //glm::vec4 lRayStart_world = M * lRayStart_NDC; lRayStart_world/=lRayStart_world.w;
-        //glm::vec4 lRayEnd_world   = M * lRayEnd_NDC  ; lRayEnd_world  /=lRayEnd_world.w;
-
-
-
-
         glm::vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
         lRayDir_world = glm::normalize(lRayDir_world);
 
@@ -1318,10 +1292,6 @@ bool Engine::rayTest(float normalizedX, float normalizedY) {
 
         btCollisionWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
         collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
-        if (selectionTechnique != virtualHand) {
-            static int cnt;
-            std::cout << "Hit " << cnt << std::endl;
-            cnt++;
-        }
+
     return RayCallback.hasHit();
 }
