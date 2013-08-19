@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "glm/gtc/matrix_transform.hpp"
 #include <cmath>
 #include <algorithm>
-
+#include <glm/gtc/type_ptr.hpp>
 
 using namespace std;
 
@@ -46,6 +46,8 @@ Engine::Engine():
     magnetometerY.set_size(SIZE);
     magnetometerZ.set_size(SIZE);
 
+
+
     errorLog.open("error.log",std::ios_base::app);
 
 
@@ -65,6 +67,23 @@ Engine::Engine():
 
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
+
+    if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
+            fprintf(stderr, "PS Move API init failed (wrong version?)\n");
+            this->shutdown();
+    }
+
+    move = psmove_connect();
+
+
+    if (move == NULL) {
+        printf("Could not connect to default Move controller.\n"
+               "Please connect one via USB or Bluetooth.\n");
+        this->shutdown();
+    }
+
+    char *serial = psmove_get_serial(move);
+    printf("Serial: %s\n", serial);
 
     technique = planeCasting;
     rotTechnique = screenSpace;
@@ -86,6 +105,7 @@ Engine::Engine():
 
     consumed = false;
 
+    pointerOpacity = 1.0f;
 
 #define	SHADOW_MAP_RATIO 8;
 }
@@ -169,8 +189,12 @@ void Engine::initResources() {
     //plane.receiveShadow = true;
 
     heart = pho::Asset("bump-heart.obj",&normalMap,&sr);
+    //heart = pho::Asset("corrected-heart.obj",&normalMap,&sr);
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     //heart.receiveShadow = true;
+
+    box = pho::Asset("box.obj",&normalMap,&sr);
+    box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -208,6 +232,13 @@ void Engine::initResources() {
 void Engine::checkEvents() {
     //std::cout << touchPoint.x << "\t" << touchPoint.y << std::endl;
     checkKeyboard();
+
+    float* matrix;
+    matrix = psmove_fusion_get_modelview_matrix(fusion,move);
+    box.modelMatrix = glm::make_mat4(matrix);
+
+    //std::cout << "x:  " << *x << "\t y: " << *y << "\t z: " << *z << std::endl;
+
 
     if (technique == mouse) {
         float wheel = glfwGetMouseWheel();
@@ -266,14 +297,15 @@ void Engine::checkEvents() {
 void Engine::render() {
     shadowMapRender();
 
-    CALL_GL(glClearColor(1.0f,1.0f,1.0f,1.0f));
+    CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
 
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
-    floor.draw();
+    //floor.draw();
     heart.draw();
+    box.draw();
 
     if (appState == select) {
         if (selectionTechnique == virtualHand) {
@@ -286,14 +318,16 @@ void Engine::render() {
             sr.flatShader["mvp"] = glm::translate(glm::mat4(),glm::vec3(touchPoint.x,touchPoint.y,-1));
             CALL_GL(glBindVertexArray(pointVao));
             CALL_GL(glPointSize(20));
-            sr.flatShader["color"] = glm::vec4(0,0,0,1.0);
+            sr.flatShader["color"] = glm::vec4(0,0,0,pointerOpacity);
             CALL_GL(glDrawArrays(GL_POINTS,0,1));
 
             CALL_GL(glDisable(GL_DEPTH_TEST));
-            sr.flatShader["color"] = glm::vec4(1,1,1,1.0);
+            sr.flatShader["color"] = glm::vec4(1,1,1,pointerOpacity);
             CALL_GL(glPointSize(10));
             CALL_GL(glDrawArrays(GL_POINTS,0,1));
             CALL_GL(glEnable(GL_DEPTH_TEST));
+
+            pointerOpacity-=0.1;
         }
     }
     /*sr.flatShader.use();
@@ -437,44 +471,7 @@ void Engine::go() {
 void Engine::shutdown() {
     ioservice.stop();
     errorLog.close();
-}
-
-void Engine::drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color)
-{
-   /* glm::vec3 temp;
-    temp.x = from.x();
-    temp.y = from.y();
-    temp.z = from.z();
-    linestack.push_back(temp);
-    temp.x = to.x();
-    temp.y = to.y();
-    temp.z = to.z();
-    linestack.push_back(temp);*/
-    glBegin(GL_LINES);
-           glColor3f(color.getX(), color.getY(), color.getZ());
-           glVertex3d(from.getX(), from.getY(), from.getZ());
-           glVertex3d(to.getX(), to.getY(), to.getZ());
-       glEnd();
-}
-
-void Engine::drawContactPoint(const btVector3 &PointOnB, const btVector3 &normalOnB, btScalar distance, int lifeTime, const btVector3 &color)
-{
-}
-
-void Engine::reportErrorWarning(const char *warningString)
-{
-}
-
-void Engine::draw3dText(const btVector3 &location, const char *textString)
-{
-}
-
-void Engine::setDebugMode(int debugMode)
-{
-}
-
-int Engine::getDebugMode() const
-{
+    psmove_disconnect(move);
 }
 
 void Engine::addTuioObject(TuioObject *tobj) {
@@ -529,9 +526,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                 appState = select;
 
                 if (selectionTechnique == virtualHand) {
-                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);
-                    //grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]); //just for reference
-                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector,1);
+                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);                    
                     selectedAsset = &cursor;
                     pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
                     collisionWorld->addCollisionObject(coCursor);
@@ -561,7 +556,16 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
                 doubleClickPerformed = false;
             }
-            else doubleClickPerformed = true;
+
+            if((appState == select) && (selectionTechnique != virtualHand) && rayTest(touchPoint.x,touchPoint.y)) {
+                   selectedAsset = &cursor;
+                   appState = translate;
+            }
+
+            if((appState == select) && (selectionTechnique == virtualHand)) {
+                doubleClickPerformed = true;
+            }
+
 
         }
     }
@@ -1133,6 +1137,23 @@ void Engine::checkSpaceNavigator() {
             selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
             selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));
 
+            /*sr.light.viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*sr.light.viewMatrix;
+            sr.light.viewMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*sr.light.viewMatrix;
+            sr.light.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.light.viewMatrix;
+
+            glm::vec4 tempPosition = sr.light.viewMatrix[3];
+            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.light.viewMatrix;
+            sr.light.viewMatrix[3] = tempPosition;
+
+            tempPosition = sr.light.viewMatrix[3];
+            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,0,1))*sr.light.viewMatrix;
+            sr.light.viewMatrix[3] = tempPosition;
+
+            tempPosition = sr.light.viewMatrix[3];
+            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*sr.light.viewMatrix;
+            sr.light.viewMatrix[3] = tempPosition;*/
+
+
             btTransform objTrans;
             objTrans.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
             coCursor->setWorldTransform(objTrans);
@@ -1177,7 +1198,6 @@ void Engine::initPhysics()
     btAxisSweep3* broadphase = new btAxisSweep3(worldAabbMin,worldAabbMax);
 
     collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
-    collisionWorld->setDebugDrawer(this);
 
     //btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),1);
     if (selectionTechnique == virtualHand) collisionWorld->addCollisionObject(coCursor);
@@ -1221,7 +1241,7 @@ void Engine::checkPhysics()
                 //it->second->beingIntersected = true;
                 heart.beingIntersected = true;
 
-                if (doubleClickPerformed && (appState == select)) {
+                if (doubleClickPerformed) {
                         //selectedAsset = it->second;
                         selectedAsset = &heart;
                         grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]);

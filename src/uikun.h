@@ -49,6 +49,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "TUIO/TuioObject.h"
 #include "TUIO/TuioCursor.h"
 #include "TUIO/TuioPoint.h"
+#include "psmoveapi/psmove.h"
+#include "psmoveapi/psmove_tracker.h"
+#include "psmoveapi/psmove_fusion.h"
 #include <cstdio>
 #include <functional>
 #include "shader.h"
@@ -57,7 +60,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
 #include <btBulletCollisionCommon.h>
-#include <LinearMath/btIDebugDraw.h>
+
 
 using namespace std;
 using namespace TUIO;
@@ -70,7 +73,7 @@ using glm::mat4;
 #define LOGITECH_VENDOR_ID 0x46d
 
 namespace pho {
-    class Engine: public TuioListener, public btIDebugDraw {
+    class Engine: public TuioListener {
 
 	public:
 		Engine();
@@ -81,14 +84,6 @@ namespace pho {
 		void go();
 		bool computeRotationMatrix();
 		void shutdown();
-
-        //bullet debug shit
-        void drawLine(const btVector3 &from, const btVector3 &to, const btVector3 &color);
-        void drawContactPoint(const btVector3 &	PointOnB, const btVector3 & 	normalOnB,  btScalar 	distance,  int 	lifeTime, const btVector3 & 	color )		;
-        void reportErrorWarning	(	const char * 	warningString	);
-        void draw3dText	(	const btVector3 & 	location,      const char * 	textString         );
-        void setDebugMode	(	int 	debugMode	);
-        int getDebugMode() const;
 
 
         static const int TOUCH_SCREEN_SIZE_X = 480;
@@ -207,7 +202,7 @@ namespace pho {
         pho::Plane plane;
         pho::Asset ray;
         pho::Asset floor;
-        pho::Asset head;
+        pho::Asset box;
         pho::Asset* selectedAsset;
 
         std::map<btCollisionObject*,pho::Asset*> selectMap;
@@ -243,6 +238,9 @@ namespace pho {
         boost::timer::cpu_times previousTime;
         boost::timer::cpu_times keyboardPreviousTime;
         bool keyPressOK=true;
+
+        bool pointerOpacity;
+        bool pointerAvailable;
 
         //lighting
         pho::LightSource pointLight;
@@ -281,6 +279,9 @@ namespace pho {
         //Indirect Finger
         glm::vec2 touchPoint;
         GLuint pointVao;
+
+        //PS MOVE
+        PSMove* move;
 	};
 
 }
