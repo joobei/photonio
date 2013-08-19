@@ -10,20 +10,23 @@ using namespace keimote;
 
 namespace pho {
 
-enum App {
-    Steering,
-    Stacking,
-    Docking
-};
-
 class EventQueue {
 public:
+
     EventQueue();
+
     void push(keimote::PhoneEvent event);
+    void push(boost::array<float, 7>);
+
     bool isEmpty();
-    keimote::PhoneEvent pop(); 
+    bool isSerialEmpty();
+
+    keimote::PhoneEvent pop();
+    boost::array<float, 7> serialPop();
+
 private:
     std::deque<keimote::PhoneEvent> queue;
+    std::deque<boost::array<float,7> > serialQueue;
 };
 
 }

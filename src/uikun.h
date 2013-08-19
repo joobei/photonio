@@ -190,9 +190,14 @@ namespace pho {
 
 		//SmartPhone IO
 		boost::asio::io_service ioservice;
+        boost::asio::io_service serialioservice;
 		boost::asio::io_service::work udpwork;
 		boost::thread* netThread;
+        boost::thread* serialThread;
 		udp_server _udpserver;
+        Minicom_client _serialserver;
+
+        void checkPolhemus();
 
 		boost::mutex ioMutex; //locks the message queue for thread access
 

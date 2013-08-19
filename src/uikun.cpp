@@ -32,6 +32,7 @@ Engine::Engine():
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
+    _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
     selectionTechnique(virtualHand),
     inputStarted(false),
@@ -46,11 +47,7 @@ Engine::Engine():
     magnetometerY.set_size(SIZE);
     magnetometerZ.set_size(SIZE);
 
-
-
     errorLog.open("error.log",std::ios_base::app);
-
-
 
     tuioClient = new TuioClient(3333);
     tuioClient->addTuioListener(this);
@@ -67,6 +64,9 @@ Engine::Engine():
 
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
+    //Polhemus
+    serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
+
 
     if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
             fprintf(stderr, "PS Move API init failed (wrong version?)\n");
@@ -74,7 +74,6 @@ Engine::Engine():
     }
 
     move = psmove_connect();
-
 
     if (move == NULL) {
         printf("Could not connect to default Move controller.\n"
@@ -230,15 +229,9 @@ void Engine::initResources() {
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
-    //std::cout << touchPoint.x << "\t" << touchPoint.y << std::endl;
+
     checkKeyboard();
-
-    float* matrix;
-    matrix = psmove_fusion_get_modelview_matrix(fusion,move);
-    box.modelMatrix = glm::make_mat4(matrix);
-
-    //std::cout << "x:  " << *x << "\t y: " << *y << "\t z: " << *z << std::endl;
-
+    checkPolhemus();
 
     if (technique == mouse) {
         float wheel = glfwGetMouseWheel();
@@ -471,6 +464,7 @@ void Engine::go() {
 void Engine::shutdown() {
     ioservice.stop();
     errorLog.close();
+    serialioservice.stop();
     psmove_disconnect(move);
 }
 
@@ -1314,4 +1308,44 @@ bool Engine::rayTest(float normalizedX, float normalizedY) {
         collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
 
     return RayCallback.hasHit();
+}
+
+void Engine::checkPolhemus() {
+
+        boost::mutex::scoped_lock lock(ioMutex);
+        //SERIAL Queue
+        while(!eventQueue.isSerialEmpty()) {
+                boost::array<float,7> temp = eventQueue.serialPop();
+
+                vec3 position;
+                glm::quat orientation;
+                mat4 transform;
+
+                //position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
+                position = vec3(temp[0]/10,temp[1]/10,temp[2]/10);
+                //position += vec3(0,-0.575f,2.1f);
+
+                orientation.w = temp[3];
+                orientation.x = temp[4];
+                orientation.y = temp[5];
+                orientation.z = temp[6];
+
+                //transform=glm::translate(transform,position);
+
+                transform=glm::toMat4(orientation);
+
+                //Rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
+                transform = transform*glm::toMat4(glm::angleAxis(-90.0f,vec3(0,0,1)));  //multiply from the right --- WRONG!!!!!! but works for the time being
+
+                transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
+                transform[3][1] = position.y;
+                transform[3][2] = position.z;
+
+                box.modelMatrix = transform;
+
+                rayOrigin = position;
+                rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
+        }
+
+        lock.unlock();
 }
