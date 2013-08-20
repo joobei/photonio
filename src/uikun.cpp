@@ -195,6 +195,10 @@ void Engine::initResources() {
     box = pho::Asset("box.obj",&normalMap,&sr);
     box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
 
+    ray = pho::Asset("ray.obj",&noTextureShader,&sr);
+    box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
+
+
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
 
@@ -231,7 +235,7 @@ void Engine::initResources() {
 void Engine::checkEvents() {
 
     checkKeyboard();
-    checkPolhemus();
+    checkPolhemus(ray.modelMatrix);
 
     if (technique == mouse) {
         float wheel = glfwGetMouseWheel();
@@ -299,6 +303,8 @@ void Engine::render() {
     //floor.draw();
     heart.draw();
     box.draw();
+
+    ray.draw();
 
     if (appState == select) {
         if (selectionTechnique == virtualHand) {
@@ -1310,7 +1316,7 @@ bool Engine::rayTest(float normalizedX, float normalizedY) {
     return RayCallback.hasHit();
 }
 
-void Engine::checkPolhemus() {
+bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
 
         boost::mutex::scoped_lock lock(ioMutex);
         //SERIAL Queue
@@ -1322,8 +1328,8 @@ void Engine::checkPolhemus() {
                 mat4 transform;
 
                 //position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
-                position = vec3(temp[0]/10,temp[1]/10,temp[2]/10);
-                //position += vec3(0,-0.575f,2.1f);
+                position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
+                position += vec3(-0.32,-0.25f,-0.5f);
 
                 orientation.w = temp[3];
                 orientation.x = temp[4];
@@ -1341,11 +1347,14 @@ void Engine::checkPolhemus() {
                 transform[3][1] = position.y;
                 transform[3][2] = position.z;
 
-                box.modelMatrix = transform;
+                modelMatrix = transform;
 
                 rayOrigin = position;
                 rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
+
+                return true;
         }
 
         lock.unlock();
+        return false;
 }

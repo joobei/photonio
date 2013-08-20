@@ -197,7 +197,7 @@ namespace pho {
 		udp_server _udpserver;
         Minicom_client _serialserver;
 
-        void checkPolhemus();
+        bool checkPolhemus(glm::mat4 &modelMatrix);
 
 		boost::mutex ioMutex; //locks the message queue for thread access
 

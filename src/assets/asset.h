@@ -68,6 +68,7 @@ class Asset {
 
 public:
     Asset();
+    Asset(std::vector<glm::vec3> nvertices);
     Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared);
     void draw();
     void drawFlat();
@@ -91,6 +92,7 @@ protected:
     std::vector<MyMesh> mMeshes;
     const aiScene* scene;
     pho::Shader* shader;
+    GLuint simpleVAO;
 };
 }
 
