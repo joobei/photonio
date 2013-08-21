@@ -76,7 +76,8 @@ enum SelectionTechnique {
     indieSelectAbsolute,
     indieSelectRelative,
     indieSelectHybrid,
-    planeSelectRelative
+    planeSelectRelative,
+    raySelect
 };
 
 enum Technique {  //appmode

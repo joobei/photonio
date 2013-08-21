@@ -34,10 +34,12 @@ Engine::Engine():
     _udpserver(ioservice,&eventQueue,&ioMutex),
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(virtualHand),
+    selectionTechnique(raySelect),
     inputStarted(false),
     mouseMove(false),
-    plane(&sr)
+    plane(&sr),
+    rotTechnique(screenSpace),
+    technique(rayCasting)
 {
 #define SIZE 30                     //Size of the moving average filter
     accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -83,9 +85,6 @@ Engine::Engine():
 
     char *serial = psmove_get_serial(move);
     printf("Serial: %s\n", serial);
-
-    technique = planeCasting;
-    rotTechnique = screenSpace;
 
     prevMouseWheel = 0;
     gyroData = false;
@@ -198,7 +197,6 @@ void Engine::initResources() {
     ray = pho::Asset("ray.obj",&noTextureShader,&sr);
     box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
 
-
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
 
@@ -235,7 +233,12 @@ void Engine::initResources() {
 void Engine::checkEvents() {
 
     checkKeyboard();
-    checkPolhemus(ray.modelMatrix);
+    if (technique == rayCasting ) {
+        checkPolhemus(ray.modelMatrix);
+        if (rayTest(rayOrigin,rayDirection)) {
+            heart.beingIntersected = true;
+        }
+    }
 
     if (technique == mouse) {
         float wheel = glfwGetMouseWheel();
@@ -272,7 +275,8 @@ void Engine::checkEvents() {
 
     //Joystick
     checkSpaceNavigator();
-    if ((appState == select) && (selectionTechnique != virtualHand)) {
+
+    if ((appState == select) && (selectionTechnique == indieSelectRelative)) {
         if (rayTest(touchPoint.x,touchPoint.y)) heart.beingIntersected = true;
     }
 
@@ -289,9 +293,11 @@ void Engine::checkEvents() {
     touchPoint.y = newtp.y;
     switchOnNextFrame = false;
     }
+
 }
 
 void Engine::render() {
+
     shadowMapRender();
 
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
@@ -300,15 +306,17 @@ void Engine::render() {
 
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
-    //floor.draw();
+    floor.draw();
     heart.draw();
-    box.draw();
+    //box.draw();
 
-    ray.draw();
 
     if (appState == select) {
         if (selectionTechnique == virtualHand) {
             cursor.draw();
+        }
+        else if (selectionTechnique == raySelect) {
+            ray.draw();
         }
         else {
             sr.flatShader.use();
@@ -993,7 +1001,9 @@ void Engine::checkKeyboard() {
             locationMatch(plane.modelMatrix,cursor.modelMatrix);
             selectedAsset = &cursor;
             appState = select;
+            technique = planeCasting;
             selectionTechnique = virtualHand;
+            rotTechnique = screenSpace;
             log("virtualHand");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
@@ -1002,8 +1012,9 @@ void Engine::checkKeyboard() {
         if (glfwGetKey('2') == GLFW_PRESS) {
 
             appState = select;
-            selectionTechnique = indieSelectAbsolute;
-            log("indieSelectAbsolute");
+            selectionTechnique = raySelect;
+            technique = rayCasting;
+            log("RayCasting");
             collisionWorld->removeCollisionObject(coCursor);
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
@@ -1315,6 +1326,20 @@ bool Engine::rayTest(float normalizedX, float normalizedY) {
 
     return RayCallback.hasHit();
 }
+
+bool Engine::rayTest(glm::vec3 origin, glm::vec3 direction) {
+
+        glm::vec3 out_origin = origin;
+        glm::vec3 out_direction = direction;
+
+        out_direction = out_direction*1000.0f;
+
+        btCollisionWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
+        collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
+
+    return RayCallback.hasHit();
+}
+
 
 bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
 

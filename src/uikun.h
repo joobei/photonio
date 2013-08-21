@@ -125,6 +125,7 @@ namespace pho {
         void initPhysics();
         void checkPhysics();
         bool rayTest(float normalizedX, float normalizedY);
+        bool rayTest(glm::vec3 origin, glm::vec3 direction);
 
 		// map image filenames to textureIds
 		// pointer to texture Array
