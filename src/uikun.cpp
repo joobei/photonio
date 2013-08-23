@@ -191,8 +191,10 @@ void Engine::initResources() {
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     //heart.receiveShadow = true;
 
-    box = pho::Asset("box.obj",&normalMap,&sr);
-    box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
+    for (int i=0;i<6;++i) {
+        boxes.push_back(pho::Asset("box.obj",&normalMap,&sr));
+        boxes[i].modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+    }
 
     ray = pho::Asset("ray.obj",&noTextureShader,&sr);
     box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
@@ -224,7 +226,6 @@ void Engine::initResources() {
     InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
     InverseViewMatrix = glm::inverse(sr.viewMatrix);
 
-
     initPhysics();
 }
 
@@ -235,8 +236,8 @@ void Engine::checkEvents() {
     checkKeyboard();
     if (technique == rayCasting ) {
         checkPolhemus(ray.modelMatrix);
-        if (rayTest(rayOrigin,rayDirection)) {
-            heart.beingIntersected = true;
+        if (rayTestWorld(rayOrigin,rayDirection,intersectedAsset)) {
+            intersectedAsset->beingIntersected = true;
         }
     }
 
@@ -277,7 +278,10 @@ void Engine::checkEvents() {
     checkSpaceNavigator();
 
     if ((appState == select) && (selectionTechnique == indieSelectRelative)) {
-        if (rayTest(touchPoint.x,touchPoint.y)) heart.beingIntersected = true;
+        if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
+        {
+            intersectedAsset->beingIntersected = true;
+        }
     }
 
     checkPhysics();
@@ -293,7 +297,6 @@ void Engine::checkEvents() {
     touchPoint.y = newtp.y;
     switchOnNextFrame = false;
     }
-
 }
 
 void Engine::render() {
@@ -303,13 +306,10 @@ void Engine::render() {
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-
-
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
     floor.draw();
     heart.draw();
     //box.draw();
-
 
     if (appState == select) {
         if (selectionTechnique == virtualHand) {
@@ -337,13 +337,6 @@ void Engine::render() {
             pointerOpacity-=0.1;
         }
     }
-    /*sr.flatShader.use();
-    sr.flatShader["color"] = glm::vec4(0,0,0,1.0);
-    sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix;
-    //sr.flatShader["mvp"] = glm::mat4();
-    //glMatrixMode(GL_MODELVIEW);
-    //glLoadIdentity();
-    collisionWorld->debugDrawWorld();*/
 
     if (technique == planeCasting) {
         if ((appState == translate) || ((appState == select ) && (selectionTechnique == virtualHand))) {
@@ -528,10 +521,11 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     if (numberOfCursors == 1 ) {
         if (difference < 150000000) {  //if doubleClick
+            if((appState == select) && (selectionTechnique == virtualHand)) {
+                doubleClickPerformed = true;
+            }  //<--- this had to be moved before the next one because appstate select was the same and doubleClickPerformed was done twice
 
             if ((appState == translate) || (appState == rotate)) {
-
-                appState = select;
 
                 if (selectionTechnique == virtualHand) {
                     cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);                    
@@ -545,12 +539,11 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                     locationMatch(plane.modelMatrix,cursor.modelMatrix);
                     selectedAsset = &cursor;
                     appState = select;
-                    //selectionTechnique = virtualHand;
 
-                    //switchOnNextFrame = true;
                     collisionWorld->performDiscreteCollisionDetection();
 
                     pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+
                     //Put 2d cursor where object was dropped:
                     //1st. calculate clip space coordinates
                     glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*heart.modelMatrix*glm::vec4(0,0,0,1);
@@ -560,21 +553,14 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                     touchPoint.y = newtp.y;
 
                 }
-
-
                 doubleClickPerformed = false;
+                appState = select;
             }
 
-            if((appState == select) && (selectionTechnique != virtualHand) && rayTest(touchPoint.x,touchPoint.y)) {
-                   selectedAsset = &cursor;
+            if((appState == select) && (selectionTechnique != virtualHand) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset)) {
+                   selectedAsset = intersectedAsset;
                    appState = translate;
             }
-
-            if((appState == select) && (selectionTechnique == virtualHand)) {
-                doubleClickPerformed = true;
-            }
-
-
         }
     }
     previousTime = elapsed_times;
@@ -582,10 +568,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if ((numberOfCursors == 2) && rayTest(touchPoint.x,touchPoint.y) && (selectionTechnique !=virtualHand)) {
+        if ((numberOfCursors == 2) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset) && (selectionTechnique !=virtualHand)) {
             appState = translate;
-            selectedAsset = &heart;
-            pho::locationMatch(plane.modelMatrix,heart.modelMatrix);
+            selectedAsset = intersectedAsset;
+            pho::locationMatch(plane.modelMatrix,intersectedAsset->modelMatrix);
             break;
         }
         if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
@@ -1022,6 +1008,7 @@ void Engine::checkKeyboard() {
 
         if (glfwGetKey('3') == GLFW_PRESS) {
             appState = select;
+            intersectedAsset = NULL;
             selectionTechnique = indieSelectRelative;
             collisionWorld->removeCollisionObject(coCursor);
             log("indieSelectRelative");
@@ -1049,10 +1036,6 @@ void Engine::checkKeyboard() {
 
     }
 }
-
-
-
-
 
 void Engine::generateShadowFBO()
 {
@@ -1118,7 +1101,6 @@ void Engine::shadowMapRender() {
 
 }
 
-
 void Engine::checkSpaceNavigator() { 
 
 #define TRSCALE 2.0f
@@ -1182,8 +1164,7 @@ void Engine::initPhysics()
     temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
     coCursor->setCollisionShape(csSphere);
     coCursor->setWorldTransform(temp);
-
-    selectMap.insert(std::make_pair(coCursor,&cursor));
+    coCursor->setUserPointer(&cursor);
 
     btConvexHullShape* csHeart = new btConvexHullShape();
 
@@ -1191,14 +1172,11 @@ void Engine::initPhysics()
         csHeart->addPoint(btVector3(heart.vertices[i].x,heart.vertices[i].y,heart.vertices[i].z));
     }
 
-    //btBoxShape* csHeart = new btBoxShape(btVector3(3.0,3.0,3.0));
     coHeart = new btCollisionObject();
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setCollisionShape(csHeart);
     coHeart->setWorldTransform(temp);
     coHeart->setUserPointer(&heart);
-
-    selectMap.insert(std::make_pair(coHeart,&heart));
 
     btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
@@ -1209,10 +1187,16 @@ void Engine::initPhysics()
     btAxisSweep3* broadphase = new btAxisSweep3(worldAabbMin,worldAabbMax);
 
     collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
-
+    //dynamicsWorld = new btDynamicsWorld(dispatcher,broadphase,collisionConfiguration)
     //btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),1);
     if (selectionTechnique == virtualHand) collisionWorld->addCollisionObject(coCursor);
     collisionWorld->addCollisionObject(coHeart);
+
+    /*for (int i=0;i<6;++i) {
+        btRigidBody
+        boxes.push_back(pho::Asset("box.obj",&normalMap,&sr));
+        boxes[i].modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+    }*/
 
 
 
@@ -1237,7 +1221,10 @@ void Engine::checkPhysics()
 
     if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
-        if (collisionWorld) { collisionWorld->performDiscreteCollisionDetection(); }
+        if (collisionWorld)
+        {
+            collisionWorld->performDiscreteCollisionDetection();
+        }
 
         std::map<btCollisionObject*,pho::Asset*>::iterator it;
         int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
@@ -1247,52 +1234,47 @@ void Engine::checkPhysics()
             btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
             btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
 
-            it = selectMap.find(obB);
-            if ( it != selectMap.end()) {
-                //it->second->beingIntersected = true;
-                heart.beingIntersected = true;
-
-                if (doubleClickPerformed) {
-                        //selectedAsset = it->second;
-                        selectedAsset = &heart;
-                        grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(it->second->modelMatrix[3]);
-                        //plane.modelMatrix = it->second->modelMatrix;
-                        plane.modelMatrix = heart.modelMatrix;
-                        appState = translate;
-                        doubleClickPerformed = false;
-                        collisionWorld->removeCollisionObject(coCursor);
-                }
+            pho::Asset* a = static_cast<pho::Asset*>(obA->getUserPointer());
+            if (a!=(&cursor))
+            {   //if A is NOT the cursor we want to highlight it
+                a->beingIntersected = true;
+                intersectedAsset = a;
+            }
+            else
+            {   //if A was the cursor then it's B that we want
+                a = static_cast<pho::Asset*>(obB->getUserPointer());
+                a->beingIntersected = true;
+                intersectedAsset = a;
             }
 
 
-            /*int numContacts = contactManifold->getNumContacts();
-            for (int j=0;j<numContacts;j++)
+            if (doubleClickPerformed)
             {
-                btManifoldPoint& pt = contactManifold->getContactPoint(j);
-                if (pt.getDistance()<0.f)
-                {
-                    const btVector3& ptA = pt.getPositionWorldOnA();
-                    const btVector3& ptB = pt.getPositionWorldOnB();
-                    const btVector3& normalOnB = pt.m_normalWorldOnB;
-                }
-            }*/
+                //selectedAsset = it->second;
+                selectedAsset = intersectedAsset;
+                grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
+                plane.modelMatrix = selectedAsset->modelMatrix;
+                appState = translate;
+                doubleClickPerformed = false;
+                collisionWorld->removeCollisionObject(coCursor);
+                break;
+            }
         }
-
     }
 }
 
-bool Engine::rayTest(float normalizedX, float normalizedY) {
+bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset* intersected) {
 
     // The ray Start and End positions, in Normalized Device Coordinates (Have you read Tutorial 4 ?)
         glm::vec4 lRayStart_NDC(
-            touchPoint.x,
-            touchPoint.y,
+            normalizedX,
+            normalizedY,
             -1.0, // The near plane maps to Z=-1 in Normalized Device Coordinates
             1.0f
         );
         glm::vec4 lRayEnd_NDC(
-                    touchPoint.x,
-                    touchPoint.y,
+                    normalizedX,
+                    normalizedY,
             0.0,
             1.0f
         );
@@ -1315,19 +1297,11 @@ bool Engine::rayTest(float normalizedX, float normalizedY) {
         glm::vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
         lRayDir_world = glm::normalize(lRayDir_world);
 
+        return rayTestWorld(glm::vec3(lRayStart_world),lRayDir_world,intersected);
 
-        glm::vec3 out_origin = glm::vec3(lRayStart_world);
-        glm::vec3 out_direction = glm::normalize(lRayDir_world);
-
-        out_direction = out_direction*1000.0f;
-
-        btCollisionWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
-        collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
-
-    return RayCallback.hasHit();
 }
 
-bool Engine::rayTest(glm::vec3 origin, glm::vec3 direction) {
+bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersectedw) {
 
         glm::vec3 out_origin = origin;
         glm::vec3 out_direction = direction;
@@ -1337,7 +1311,12 @@ bool Engine::rayTest(glm::vec3 origin, glm::vec3 direction) {
         btCollisionWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
         collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
 
-    return RayCallback.hasHit();
+        if (RayCallback.hasHit()) {
+            // !!!!!!!!!!!!!!!!!following line does not give pointer !!!!!!!!!!!!!!!!!
+            intersectedw = static_cast<pho::Asset*>(RayCallback.m_collisionObject->getUserPointer());
+            return true;
+        }
+        else {return false;}
 }
 
 
