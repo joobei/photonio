@@ -34,12 +34,12 @@ Engine::Engine():
     _udpserver(ioservice,&eventQueue,&ioMutex),
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(raySelect),
+    selectionTechnique(indieSelectRelative),
     inputStarted(false),
     mouseMove(false),
     plane(&sr),
     rotTechnique(screenSpace),
-    technique(rayCasting)
+    technique(planeCasting)
 {
 #define SIZE 30                     //Size of the moving average filter
     accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
