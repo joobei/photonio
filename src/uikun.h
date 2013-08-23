@@ -108,24 +108,17 @@ namespace pho {
         btVector3 getRayTo(glm::vec2 xy);
 		TuioClient* tuioClient;
         std::vector<glm::vec3> linestack;
+
+        //util
+        glm::mat4 convertBulletTransformToGLM(const btTransform& transform);
 	private:
-
-        void ScreenPosToWorldRay(
-            int mouseX, int mouseY,             // Mouse position, in pixels, from bottom-left corner of the window
-            int screenWidth, int screenHeight,  // Window size, in pixels
-            glm::mat4 ViewMatrix,               // Camera position and orientation
-            glm::mat4 ProjectionMatrix,         // Camera parameters (ratio, field of view, near and far planes)
-            glm::vec3& out_origin,              // Ouput : Origin of the ray. /!\ Starts at the near plane, so if you want the ray to start at the camera's position instead, ignore this.
-            glm::vec3& out_direction            // Ouput : Direction, in world space, of the ray that goes "through" the mouse.
-        );
-
 		void checkUDP();
 		void checkKeyboard();
 		void checkSpaceNavigator();
         void initPhysics();
         void checkPhysics();
         bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset* intersected);
-        bool rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersectedw);
+        bool rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersected);
 
 		// map image filenames to textureIds
 		// pointer to texture Array
@@ -279,6 +272,9 @@ namespace pho {
         btCollisionObject* coCursor = 0;
         btCollisionObject* coHeart = 0;
         //btDynamicsWorld* dynamicsWorld =0;
+
+        //btDiscreteDynamicsWorld* dynamicsWorld =0;
+        //btRigidBody* rbBox;
 
         bool switchOnNextFrame=false;
 

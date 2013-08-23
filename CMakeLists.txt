@@ -43,8 +43,10 @@ configure_file("${PROJECT_SOURCE_DIR}/assetpath" "${PROJECT_BINARY_DIR}/assetpat
 
 
 add_executable(${PROJECTNAME} ${cpp_sources} ${shaders} ${PROTO_SRCS} ${PROTO_HDRS})
-
-link_directories("/usr/local/lib64")
-##For some reason ${Boost_LIBRARIES} doesn't work on Ubuntu 12.10
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} IL ILU glfw GLEW assimp protobuf tuio posix ip osc GL pthread BulletCollision LinearMath /usr/local/lib64/libpsmoveapi.so /usr/local/lib64/libpsmoveapi_tracker.so)
+find_library(bulletsb libBulletSoftBody.so)
+find_library(bulletd libBulletDynamics.so)
+find_library(bulletc libBulletCollision.so)
+find_library(lmath libLinearMath.so)
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} glfw GLEW assimp protobuf tuio posix ip osc GL pthread ${bulletsb} ${bulletd} ${bulletc} ${lmath} /usr/local/lib64/libpsmoveapi.so /usr/local/lib64/libpsmoveapi_tracker.so)
+##target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} glfw GLEW assimp protobuf tuio posix ip osc GL pthread BulletSoftBody BulletDynamics BulletCollision LinearMath /usr/local/lib64/libpsmoveapi.so /usr/local/lib64/libpsmoveapi_tracker.so)
 

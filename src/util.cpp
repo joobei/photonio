@@ -19,36 +19,6 @@ void pho::locationMatch(glm::mat4 &target, const glm::mat4 &source) {
     //target[3][0] = source[3][0];
 }
 
-pho::WiiButtonState::WiiButtonState() {
-	a = false;
-	b = false;
-	power = false;
-	plus = false;
-	minus = false;
-    home= false;
-    one = false;
-	two = false;
-	down = false;
-	up = false;
-	left = false;
-	right = false;
-}
-
-void pho::WiiButtonState::reset() {
-	a = false;
-	b = false;
-	power = false;
-	plus = false;
-	minus = false;
-	home= false;
-	one = false;
-	two = false;
-	down = false;
-	up = false;
-	left = false;
-	right = false;
-}
-
 pho::flickManager::flickManager() {
     transform = glm::mat4();
     currentlyInTranslateFlick = false;

@@ -37,20 +37,6 @@
 namespace pho {
     void log(const char *message);
 
-	class WiiButtonState {
-public:
-    WiiButtonState();
-    bool a,b,power,plus,minus,home,one,two,down,up,left,right;
-    void reset();
-};
-
-    struct Buttons {
-        WiiButtonState wiimote;
-        bool mouse1, mouse2;
-        bool snButton1,snButton2;
-        bool phoneVolumeUp,phoneVolumeDown,phoneButtonTouch;
-    };
-
 enum AppState {
     select,
     intersect,
@@ -138,6 +124,7 @@ private:
     int pinchTimes;
     float decay;
 };
+
 
 }
 

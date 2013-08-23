@@ -191,6 +191,9 @@ void Engine::initResources() {
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     //heart.receiveShadow = true;
 
+    box = pho::Asset("box.obj",&normalMap,&sr);
+    box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,10,-15));
+
     for (int i=0;i<6;++i) {
         boxes.push_back(pho::Asset("box.obj",&normalMap,&sr));
         boxes[i].modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
@@ -282,7 +285,7 @@ void Engine::checkEvents() {
         {
             intersectedAsset->beingIntersected = true;
         }
-    }
+     }
 
     checkPhysics();
 
@@ -308,8 +311,8 @@ void Engine::render() {
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
     floor.draw();
-    heart.draw();
-    //box.draw();
+    //heart.draw();
+    box.draw();
 
     if (appState == select) {
         if (selectionTechnique == virtualHand) {
@@ -1094,6 +1097,8 @@ void Engine::shadowMapRender() {
     if ((appState == select) && (selectionTechnique == virtualHand)) cursor.drawFromLight();
     heart.drawFromLight();
 
+    box.drawFromLight();
+
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     CALL_GL(glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
@@ -1157,7 +1162,46 @@ void Engine::checkSpaceNavigator() {
 
 void Engine::initPhysics()
 {
-    btTransform temp;
+    // Build the broadphase
+    btBroadphaseInterface* broadphase = new btDbvtBroadphase();
+
+    // Set up the collision configuration and dispatcher
+    btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
+    btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
+
+    // The actual physics solver
+    btSequentialImpulseConstraintSolver* solver = new btSequentialImpulseConstraintSolver;
+
+    // The world.
+    dynamicsWorld = new btDiscreteDynamicsWorld(dispatcher,broadphase,solver,collisionConfiguration);
+    dynamicsWorld->setGravity(btVector3(0,-10,0));
+
+    btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),-10);
+    btDefaultMotionState* groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,-10,0)));
+
+    btRigidBody::btRigidBodyConstructionInfo
+                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,0,0));
+    btRigidBody* groundRigidBody = new btRigidBody(groundRigidBodyCI);
+
+    dynamicsWorld->addRigidBody(groundRigidBody);
+
+
+
+    btCollisionShape* fallShape = new btBoxShape(btVector3(1,1,1));
+
+    btDefaultMotionState* fallMotionState =
+                    new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,30,-35)));
+
+    btScalar mass = 1;
+    btVector3 fallInertia(0,0,0);
+    fallShape->calculateLocalInertia(mass,fallInertia);
+
+    btRigidBody::btRigidBodyConstructionInfo fallRigidBodyCI(mass,fallMotionState,fallShape,fallInertia);
+    rbBox = new btRigidBody(fallRigidBodyCI);
+    rbBox->setUserPointer(&box);
+    dynamicsWorld->addRigidBody(rbBox);
+
+    /*btTransform temp;
 
     btSphereShape* csSphere = new btSphereShape(1.0f);
     coCursor = new btCollisionObject();
@@ -1202,9 +1246,23 @@ void Engine::initPhysics()
 
 }
 
+glm::mat4 Engine::convertBulletTransformToGLM(const btTransform& transform)
+{
+        float data[16];
+        transform.getOpenGLMatrix(data);
+        return glm::make_mat4(data);
+}
+
 void Engine::checkPhysics()
 {
-    btTransform temp;
+
+    dynamicsWorld->stepSimulation(1/30.f,10);
+
+    btTransform trans;
+    rbBox->getMotionState()->getWorldTransform(trans);
+
+    box.modelMatrix = convertBulletTransformToGLM(trans);
+    /*btTransform temp;
 
     temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
     coHeart->setWorldTransform(temp);
@@ -1219,7 +1277,7 @@ void Engine::checkPhysics()
     }*/
 
 
-    if ((appState == select ) && (selectionTechnique == virtualHand)) {
+    /*if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
         if (collisionWorld)
         {
@@ -1260,7 +1318,7 @@ void Engine::checkPhysics()
                 break;
             }
         }
-    }
+    }*/
 }
 
 bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset* intersected) {
@@ -1301,19 +1359,19 @@ bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::As
 
 }
 
-bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersectedw) {
+bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersected) {
 
         glm::vec3 out_origin = origin;
         glm::vec3 out_direction = direction;
 
         out_direction = out_direction*1000.0f;
 
-        btCollisionWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
-        collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
+        btDynamicsWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
+        dynamicsWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
 
         if (RayCallback.hasHit()) {
             // !!!!!!!!!!!!!!!!!following line does not give pointer !!!!!!!!!!!!!!!!!
-            intersectedw = static_cast<pho::Asset*>(RayCallback.m_collisionObject->getUserPointer());
+            intersected = static_cast<pho::Asset*>(RayCallback.m_collisionObject->getUserPointer());
             return true;
         }
         else {return false;}
