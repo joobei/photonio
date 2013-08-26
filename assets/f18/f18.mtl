@@ -1,0 +1,182 @@
+# Blender MTL File: 'F-18_BlendSwap_Final.blend'
+# Material Count: 18
+
+newmtl BlackMaterial
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/VariousMetals/Blackbase.png
+
+newmtl BlackMaterial_MetalBase.png
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /home/jubei/coding/uikun/assets/F18Comp/MetalBase.png
+
+newmtl CockpitGlass
+Ns 109.803922
+Ka 0.000000 0.000000 0.000000
+Kd 0.231981 0.347072 0.447671
+Ks 0.655172 0.655172 0.655172
+Ni 1.000000
+d 0.309030
+illum 2
+map_Kd /home/jubei/coding/uikun/assets/F18Comp/MetalBase.png
+
+newmtl CockpitGlass_untitled
+Ns 109.803922
+Ka 0.000000 0.000000 0.000000
+Kd 0.231981 0.347072 0.447671
+Ks 0.655172 0.655172 0.655172
+Ni 1.000000
+d 0.309030
+illum 2
+map_Kd F-18_Fuselage_Test.png
+
+newmtl Engine_Material
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.019608 0.019608 0.019608
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/Engine_TexturesTest.png
+
+newmtl Fuselage_Material
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd F-18_Fuselage_Test.png
+
+newmtl GreyMaterial
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/VariousMetals/Blackbase.png
+
+newmtl LampGlass
+Ns 109.803922
+Ka 0.000000 0.000000 0.000000
+Kd 0.447671 0.267778 0.198401
+Ks 0.655172 0.655172 0.655172
+Ni 1.000000
+d 0.309030
+illum 2
+map_Kd FinalTextures/Stabilzer_Textures.png
+
+newmtl LampGlass_untitled
+Ns 109.803922
+Ka 0.000000 0.000000 0.000000
+Kd 0.447671 0.267778 0.198401
+Ks 0.655172 0.655172 0.655172
+Ni 1.000000
+d 0.309030
+illum 2
+map_Kd F-18_Fuselage_Test.png
+
+newmtl MainBodyMat
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /home/jubei/coding/uikun/assets/F18Comp/MetalBase.png
+
+newmtl MainBodyMat_MetalBase.png
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /home/jubei/coding/uikun/assets/F18Comp/MetalBase.png
+
+newmtl SivlerMaterial
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/VariousMetals/SilverBase.png
+
+newmtl SivlerMaterial_NONE
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/VariousMetals/SilverBase.png
+
+newmtl StabilerMat
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/Stabilzer_Textures.png
+
+newmtl White_Material
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/VariousMetals/WhiteBase.png
+
+newmtl White_Material_MetalBase.png
+Ns 37.254902
+Ka 0.000000 0.000000 0.000000
+Kd 0.425397 0.413420 0.426124
+Ks 0.130000 0.130000 0.130000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd /home/jubei/coding/uikun/assets/F18Comp/MetalBase.png
+
+newmtl Wing_Material
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/WingTextures.png
+
+newmtl Wing_Material_NONE
+Ns 96.078431
+Ka 0.000000 0.000000 0.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.500000 0.500000 0.500000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd FinalTextures/WingTextures.png

@@ -13,7 +13,7 @@
 #include "shader.h"
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
-#include <btBulletCollisionCommon.h>
+#include <btBulletDynamicsCommon.h>
 
 namespace pho {
 
@@ -43,6 +43,8 @@ struct sharedResources {
     pho::Shader flatShader;
     GLuint shadowTexture;
     GLuint t1Location,t2Location,t3Location;
+    //Physics
+    btDynamicsWorld* dynamicsWorld =0;
 };
 
 struct myMaterial {
@@ -69,7 +71,7 @@ class Asset {
 public:
     Asset();
     Asset(std::vector<glm::vec3> nvertices);
-    Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared);
+    Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared, bool rigid);
     void draw();
     void drawFlat();
     void drawFromLight();
@@ -85,11 +87,12 @@ public:
     bool receiveShadow;
     glm::mat4* viewMatrix; //public because shadow map render function updates it to the pointlight matrix temporarily
     sharedResources* res;
+    btRigidBody* rigidBody;
 protected:
     void upload();
     glm::mat4* projectionMatrix;
     glm::mat4* biasMatrix;
-    std::vector<MyMesh> mMeshes;
+    std::vector<MyMesh> meshes;
     const aiScene* scene;
     pho::Shader* shader;
     GLuint simpleVAO;

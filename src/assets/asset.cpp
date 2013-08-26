@@ -22,7 +22,7 @@ pho::Asset::Asset(std::vector<glm::vec3> nvertices):receiveShadow(false)
 
 }
 
-pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedResources* shared) :receiveShadow(false), beingIntersected(false)
+pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedResources* shared, bool rigid) :receiveShadow(false), beingIntersected(false)
 {
     res = shared;
     this->shader = tehShader;
@@ -54,6 +54,30 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
     }
 
     upload();
+
+    if (rigid) {
+        btScalar mass = 1;
+        btVector3 fallInertia(0,0,0);
+        btConvexHullShape* collisionShape = new btConvexHullShape();
+
+        for (int i=0;i<vertices.size();++i) {
+            collisionShape->addPoint(btVector3(vertices[i].x,vertices[i].y,vertices[i].z));
+        }
+
+        float randomx = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
+
+        btDefaultMotionState* motionState =
+                new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(randomx,30,-25)));
+
+
+
+        collisionShape->calculateLocalInertia(mass,fallInertia);
+        btRigidBody::btRigidBodyConstructionInfo RigidBodyCI(mass,motionState,collisionShape,fallInertia);
+        rigidBody = new btRigidBody(RigidBodyCI);
+        rigidBody->setUserPointer(this);
+        res->dynamicsWorld->addRigidBody(rigidBody);
+    }
+
 }
 
 void pho::Asset::upload()
@@ -181,7 +205,7 @@ void pho::Asset::upload()
         }
 
 
-        mMeshes.push_back(tempMesh);
+        meshes.push_back(tempMesh);
     }
 }
 
@@ -197,10 +221,10 @@ void pho::Asset::draw() {
         res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
         res->flatShader["color"] = glm::vec4(1,0,0,1);
 
-        for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
+        for (std::vector<pho::MyMesh>::size_type i = 0; i != meshes.size(); i++)
         {
-            CALL_GL(glBindVertexArray(mMeshes[i].vao));
-            CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+            CALL_GL(glBindVertexArray(meshes[i].vao));
+            CALL_GL(glDrawElements(GL_TRIANGLES,meshes[i].numFaces*3,GL_UNSIGNED_INT,0));
         }
 
         CALL_GL(glEnable(GL_DEPTH_TEST));
@@ -221,13 +245,13 @@ void pho::Asset::draw() {
     CALL_GL(glActiveTexture(GL_TEXTURE2));
     CALL_GL(glBindTexture(GL_TEXTURE_2D, res->shadowTexture));
 
-    for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
+    for (std::vector<pho::MyMesh>::size_type i = 0; i != meshes.size(); i++)
     {
 
         //if there's a bump map bind it
-        if (mMeshes[i].material.hasBumpMap) {
+        if (meshes[i].material.hasBumpMap) {
             CALL_GL(glActiveTexture(GL_TEXTURE1));
-            CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.normalTexture));
+            CALL_GL(glBindTexture(GL_TEXTURE_2D,meshes[i].material.normalTexture));
         }
         else {
             CALL_GL(glActiveTexture(GL_TEXTURE1));
@@ -235,15 +259,15 @@ void pho::Asset::draw() {
         }
 
         CALL_GL(glActiveTexture(GL_TEXTURE0));
-        CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
+        CALL_GL(glBindTexture(GL_TEXTURE_2D,meshes[i].material.diffuseTexture));
 
-        shader[0]["material_diffuse"] = mMeshes[i].material.diffuseColor;
-        shader[0]["material_specular"] = glm::vec4(mMeshes[i].material.specularColor,1);
-        shader[0]["material_shininess"] = mMeshes[i].material.shininess;
+        shader[0]["material_diffuse"] = meshes[i].material.diffuseColor;
+        shader[0]["material_specular"] = glm::vec4(meshes[i].material.specularColor,1);
+        shader[0]["material_shininess"] = meshes[i].material.shininess;
 
 
-        CALL_GL(glBindVertexArray(mMeshes[i].vao));
-        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+        CALL_GL(glBindVertexArray(meshes[i].vao));
+        CALL_GL(glDrawElements(GL_TRIANGLES,meshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
 }
 
@@ -254,10 +278,10 @@ void pho::Asset::drawFlat()
     res->flatShader["color"] = glm::vec4(1,1,1,1);
 
 
-    for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
+    for (std::vector<pho::MyMesh>::size_type i = 0; i != meshes.size(); i++)
     {
-        CALL_GL(glBindVertexArray(mMeshes[i].vao));
-        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+        CALL_GL(glBindVertexArray(meshes[i].vao));
+        CALL_GL(glDrawElements(GL_TRIANGLES,meshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
 
 
@@ -269,10 +293,10 @@ void pho::Asset::drawFromLight()
     res->flatShader["mvp"] = res->projectionMatrix*res->light.viewMatrix*modelMatrix;
     res->flatShader["color"] = glm::vec4(1,1,1,1);
 
-    for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
+    for (std::vector<pho::MyMesh>::size_type i = 0; i != meshes.size(); i++)
     {
-        CALL_GL(glBindVertexArray(mMeshes[i].vao));
-        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+        CALL_GL(glBindVertexArray(meshes[i].vao));
+        CALL_GL(glDrawElements(GL_TRIANGLES,meshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
 }
 

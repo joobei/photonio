@@ -60,7 +60,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "gli/gli.hpp"
 #include "gli/gtx/gl_texture2d.hpp"
 #include <btBulletCollisionCommon.h>
-//#include <btBulletDynamicsCommon.h>
+#include <btBulletDynamicsCommon.h>
 
 using namespace std;
 using namespace TUIO;
@@ -89,10 +89,10 @@ namespace pho {
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        //static const int WINDOW_SIZE_X = 1920;
-        //static const int WINDOW_SIZE_Y = 1080;
-        static const int WINDOW_SIZE_X = 800;
-        static const int WINDOW_SIZE_Y = 600;
+        static const int WINDOW_SIZE_X = 1920;
+        static const int WINDOW_SIZE_Y = 1080;
+        //static const int WINDOW_SIZE_X = 800;
+        //static const int WINDOW_SIZE_Y = 600;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -117,8 +117,8 @@ namespace pho {
 		void checkSpaceNavigator();
         void initPhysics();
         void checkPhysics();
-        bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset* intersected);
-        bool rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersected);
+        bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset*& intersected);
+        bool rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset*& intersected);
 
 		// map image filenames to textureIds
 		// pointer to texture Array
@@ -189,7 +189,7 @@ namespace pho {
 		boost::thread* netThread;
         boost::thread* serialThread;
 		udp_server _udpserver;
-        Minicom_client _serialserver;
+        //Minicom_client _serialserver;
 
         bool checkPolhemus(glm::mat4 &modelMatrix);
 
@@ -267,14 +267,6 @@ namespace pho {
         GLuint baseImageLoc;
 
 
-        //Physics
-        btCollisionWorld* collisionWorld = 0;
-        btCollisionObject* coCursor = 0;
-        btCollisionObject* coHeart = 0;
-        //btDynamicsWorld* dynamicsWorld =0;
-
-        //btDiscreteDynamicsWorld* dynamicsWorld =0;
-        //btRigidBody* rbBox;
 
         bool switchOnNextFrame=false;
 
