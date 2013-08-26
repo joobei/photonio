@@ -124,8 +124,8 @@ namespace pho {
 		void checkSpaceNavigator();
         void initPhysics();
         void checkPhysics();
-        bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset* intersected);
-        bool rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersectedw);
+        bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset*& intersected);
+        bool rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset*& intersectedw);
 
 		// map image filenames to textureIds
 		// pointer to texture Array

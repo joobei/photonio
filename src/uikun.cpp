@@ -34,7 +34,7 @@ Engine::Engine():
     _udpserver(ioservice,&eventQueue,&ioMutex),
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(indieSelectRelative),
+    selectionTechnique(virtualHand),
     inputStarted(false),
     mouseMove(false),
     plane(&sr),
@@ -175,8 +175,6 @@ void Engine::initResources() {
     selectedAsset = &cursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
-    //floor = pho::Asset("floor.obj", &textureShader,&sr);
-    //floor = pho::Asset("floor.obj", &singleTexture,&sr);
     floor = pho::Asset("floor.obj", &singleTexture,&sr);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
@@ -187,9 +185,10 @@ void Engine::initResources() {
     //plane.receiveShadow = true;
 
     heart = pho::Asset("bump-heart.obj",&normalMap,&sr);
-    //heart = pho::Asset("corrected-heart.obj",&normalMap,&sr);
-    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
-    //heart.receiveShadow = true;
+    //heart = pho::Asset("newchair.obj",&normalMap,&sr);
+    //heart = pho::Asset("f18.obj",&normalMap,&sr);
+    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+
 
     for (int i=0;i<6;++i) {
         boxes.push_back(pho::Asset("box.obj",&normalMap,&sr));
@@ -1167,6 +1166,7 @@ void Engine::initPhysics()
     coCursor->setUserPointer(&cursor);
 
     btConvexHullShape* csHeart = new btConvexHullShape();
+    //btBoxShape* csHeart = new btBoxShape(btVector3(1.0f,2.0f,1.0f));
 
     for (int i=0;i<heart.vertices.size();++i) {
         csHeart->addPoint(btVector3(heart.vertices[i].x,heart.vertices[i].y,heart.vertices[i].z));
@@ -1189,7 +1189,10 @@ void Engine::initPhysics()
     collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
     //dynamicsWorld = new btDynamicsWorld(dispatcher,broadphase,collisionConfiguration)
     //btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),1);
-    if (selectionTechnique == virtualHand) collisionWorld->addCollisionObject(coCursor);
+    if (selectionTechnique == virtualHand)
+    {
+        collisionWorld->addCollisionObject(coCursor);
+    }
     collisionWorld->addCollisionObject(coHeart);
 
     /*for (int i=0;i<6;++i) {
@@ -1263,7 +1266,7 @@ void Engine::checkPhysics()
     }
 }
 
-bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset* intersected) {
+bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset*& intersected) {
 
     // The ray Start and End positions, in Normalized Device Coordinates (Have you read Tutorial 4 ?)
         glm::vec4 lRayStart_NDC(
@@ -1301,7 +1304,7 @@ bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::As
 
 }
 
-bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset* intersectedw) {
+bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset*& intersected) {
 
         glm::vec3 out_origin = origin;
         glm::vec3 out_direction = direction;
@@ -1312,8 +1315,8 @@ bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, ph
         collisionWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
 
         if (RayCallback.hasHit()) {
-            // !!!!!!!!!!!!!!!!!following line does not give pointer !!!!!!!!!!!!!!!!!
-            intersectedw = static_cast<pho::Asset*>(RayCallback.m_collisionObject->getUserPointer());
+            //get our asset from the collisionObject
+            intersected = static_cast<pho::Asset*>(RayCallback.m_collisionObject[0].getUserPointer());
             return true;
         }
         else {return false;}
