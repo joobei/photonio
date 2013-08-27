@@ -163,6 +163,7 @@ void pho::flickManager::stopFlick(flickState flickstate) {
         pinchTimes = 0;
         break;
     }
+    touchHistory.clear();
 
 }
 
@@ -170,7 +171,7 @@ void pho::flickManager::stopFlick(flickState flickstate) {
 //dampen the saved matrix and feed us the dampened value
 glm::mat4 pho::flickManager::dampenAndGiveMatrix(glm::mat3 planeRotationMat){
     translateTimes--;
-    if (translateTimes == 0) { stopFlick(translation); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
+    if (translateTimes < 0) { stopFlick(translation); return glm::mat4();  //if the flick counter has come to zero just return an identity matrix
     }
     else {
         glm::mat4 newLocationMatrix;

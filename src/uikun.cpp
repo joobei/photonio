@@ -254,7 +254,7 @@ void Engine::checkEvents() {
         checkUDP();
     }
 
-    if (flicker.inFlick(flickState::translation)) {
+    if (flicker.inFlick(translation)) {
         glm::mat4 flickTransform = flicker.dampenAndGiveMatrix(glm::mat3(plane.modelMatrix));
         plane.modelMatrix = flickTransform*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
@@ -512,12 +512,14 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     //std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
-    if (numberOfCursors == 1 && ( appState == translate || appState == select)) {
+    if ((numberOfCursors == 1) && ( appState == translate || appState == select)) {
         flicker.newFlick(flickState::translation);
+        flicker.stopFlick(flickState::translation); // remove this for flick continue "feature"
         flicker.stopFlick(flickState::pinchy);
     }
-    if (numberOfCursors == 1 && ( appState == rotate)) {
+    if ((numberOfCursors == 1) && ( appState == rotate)) {
         flicker.stopFlick(flickState::rotation);
+        flicker.newFlick(flickState::rotation);
     }
 
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
@@ -778,19 +780,28 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if (selectionTechnique != virtualHand) break;
+        if (selectionTechnique != virtualHand && (!flicker.inFlick(translation))) {
+            flicker.endFlick(glm::mat3(orientation),translation);
+            break;
+        }
     case translate:
+        if (!flicker.inFlick(translation)) {
         flicker.endFlick(glm::mat3(orientation),translation);
+        }
         break;
     case rotate:
         switch (rotTechnique) {
         case screenSpace:
+            if (!flicker.inFlick(rotation)) {
             flicker.endFlick(glm::mat3(orientation),rotation);
+            }
             break;
         case pinch:
             rotTechnique = screenSpace;
             //std::cout << "screenSpace" << std::endl;
-            flicker.endFlick(glm::mat3(orientation),pinchy);
+            if (!flicker.inFlick(pinchy)) {
+                flicker.endFlick(glm::mat3(orientation),pinchy);
+            }
             break;
         }
         break;
@@ -965,9 +976,14 @@ void Engine::checkKeyboard() {
 
         }
         if (glfwGetKey(GLFW_KEY_SPACE)) {
-            selectedAsset->modelMatrix = glm::translate(0,0,-15);
+            btTransform temp;
             cursor.modelMatrix = glm::translate(0,0,-5);
-            heart.modelMatrix = glm::translate(-5,10,-15);
+            selectedAsset = &cursor;
+            temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+            coCursor->setWorldTransform(temp);
+            heart.modelMatrix = glm::translate(0,0,-15);
+            temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
+            coHeart->setWorldTransform(temp);
             plane.modelMatrix = cursor.modelMatrix;
             flicker.stopFlick(translation);
             flicker.stopFlick(rotation);
@@ -978,6 +994,7 @@ void Engine::checkKeyboard() {
             touchPoint.y=0.0f;
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+
         }
         if (glfwGetKey(GLFW_KEY_END)) {
             perspective -=1.0;
