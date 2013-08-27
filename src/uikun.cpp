@@ -296,6 +296,11 @@ void Engine::checkEvents() {
     touchPoint.y = newtp.y;
     switchOnNextFrame = false;
     }
+
+    if(touchPoint.x < -1.0f) { touchPoint.x = -1.0; }
+    if(touchPoint.x > 1.0f) { touchPoint.x = 1; }
+    if(touchPoint.y < -1.0f) { touchPoint.y = -1.0; }
+    if(touchPoint.y > 1.0f) { touchPoint.y = 1; }
 }
 
 void Engine::render() {
@@ -1200,9 +1205,6 @@ void Engine::initPhysics()
         boxes.push_back(pho::Asset("box.obj",&normalMap,&sr));
         boxes[i].modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
     }*/
-
-
-
 }
 
 void Engine::checkPhysics()
