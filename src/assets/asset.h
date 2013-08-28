@@ -41,6 +41,9 @@ struct sharedResources {
     glm::mat4 biasMatrix;
     glm::mat4 shadowMatrix;
     pho::Shader flatShader;
+    pho::Shader colorShader;
+    pho::Shader lineShader;
+    btCollisionWorld*  collisionWorld;
     GLuint shadowTexture;
     GLuint t1Location,t2Location,t3Location;
 };
@@ -85,6 +88,7 @@ public:
     bool receiveShadow;
     glm::mat4* viewMatrix; //public because shadow map render function updates it to the pointlight matrix temporarily
     sharedResources* res;
+    btCollisionObject collisionObject;
 protected:
     void upload();
     glm::mat4* projectionMatrix;

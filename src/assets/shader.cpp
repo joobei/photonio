@@ -17,15 +17,17 @@ pho::Shader::Shader() {
 }
 
 pho::Shader::Shader(const std::string filename) {
+
     vertex = CreateShader(GL_VERTEX_SHADER,pho::readTextFile(filename+".vert"),filename);
     fragment = CreateShader(GL_FRAGMENT_SHADER,pho::readTextFile(filename+".frag"),filename);
-	if (exists(filename+".geom")) {
-    geometry = CreateShader(GL_GEOMETRY_SHADER,pho::readTextFile(filename+".geom"),filename);
-	program = CreateProgram(vertex, fragment, geometry);
-	}
-	else {
-		program = CreateProgram(vertex, fragment);
-	}
+
+    if (exists(filename+".geom")) {
+        geometry = CreateShader(GL_GEOMETRY_SHADER,pho::readTextFile(filename+".geom"),filename);
+        program = CreateProgram(vertex, fragment, geometry);
+    }
+    else {
+        program = CreateProgram(vertex, fragment);
+    }
 }
 
 GLuint pho::Shader::CreateShader(GLenum eShaderType, const std::string &strShaderFile, const std::string &filename) {

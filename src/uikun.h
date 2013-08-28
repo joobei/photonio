@@ -44,6 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "spuc/generic/running_average.h"
 //#include "arcball.h"
 #include "asset.h"
+#include "cursor.h"
 #include "TUIO/TuioClient.h"
 #include "TUIO/TuioListener.h"
 #include "TUIO/TuioObject.h"
@@ -169,11 +170,6 @@ namespace pho {
 		float grabbedDistance;
 		glm::vec3 grabbedVector;
 
-		vec3 objectIntersectionPoint;	
-		vec3 sphereIntersectionPoint;
-		vec3 sphereIntersectionNormal;
-		float sphereIntersectionDistance; //not really needed
-
 		//arcball stuff
 		int last_mx,last_my,cur_mx,cur_my;
 		bool mouseMove;
@@ -203,15 +199,15 @@ namespace pho {
 		boost::mutex ioMutex; //locks the message queue for thread access
 
         //assets
-        pho::Asset cursor;
-        pho::Asset heart;
+        pho::Asset cursor;     
         pho::Plane plane;
+        pho::Cursor pyramidCursor;
+        pho::Cursor target;
         pho::Asset ray;
-        pho::Asset floor;
-        pho::Asset box;
+        pho::Asset floor;      
         pho::Asset* selectedAsset;
         pho::Asset* intersectedAsset;
-        std::vector<pho::Asset> boxes;
+
 
         //input
         bool inputStarted;
@@ -245,7 +241,7 @@ namespace pho {
         boost::timer::cpu_times keyboardPreviousTime;
         bool keyPressOK=true;
 
-        bool pointerOpacity;
+        float pointerOpacity;
         bool pointerAvailable;
 
         //lighting
@@ -275,10 +271,7 @@ namespace pho {
 
 
         //Physics
-        btCollisionWorld* collisionWorld = 0;
-        btCollisionObject* coCursor = 0;
-        btCollisionObject* coHeart = 0;
-        //btDynamicsWorld* dynamicsWorld =0;
+        btCollisionObject* coCursor =0;
 
         bool switchOnNextFrame=false;
 
@@ -287,7 +280,7 @@ namespace pho {
         GLuint pointVao;
 
         //PS MOVE
-        PSMove* move;
+        //PSMove* move;
 	};
 
 }

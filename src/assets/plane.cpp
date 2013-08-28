@@ -7,7 +7,8 @@ pho::Plane::Plane(sharedResources* sr)
     vertices.push_back(glm::vec3(0.3,0,0.5));
     vertices.push_back(glm::vec3(-0.3,0,0.5));
     vertices.push_back(glm::vec3(-0.3,0,-0.5));
-    upload();
+
+    upload();    
 }
 
 
