@@ -186,7 +186,7 @@ void Engine::initResources() {
 
     plane.setShader(&sr.flatShader);
     plane.modelMatrix = cursor.modelMatrix;
-    plane.setScale(15.0f);
+    plane.setScale(3.0f);
     //plane.receiveShadow = true;
 
     pyramidCursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
@@ -223,6 +223,7 @@ void Engine::initResources() {
     InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
     InverseViewMatrix = glm::inverse(sr.viewMatrix);
 
+    CALL_GL(glEnable(GL_PROGRAM_POINT_SIZE_EXT));
 
 }
 
