@@ -139,12 +139,12 @@ void Engine::initResources() {
     //*************************************************************
     sr.flatShader = pho::Shader(shaderpath+"flat");
 
-    noTextureShader = pho::Shader(shaderpath+"notexture");
-    noTextureShader.use();
-    noTextureShader["view"] = sr.viewMatrix;
-    noTextureShader["light_position"] = glm::vec4(pointLight.position,1);
-    noTextureShader["light_diffuse"] = pointLight.color;
-    noTextureShader["light_specular"] = vec4(1,1,1,1);
+    sr.noTextureShader = pho::Shader(shaderpath+"notexture");
+    sr.noTextureShader.use();
+    sr.noTextureShader["view"] = sr.viewMatrix;
+    sr.noTextureShader["light_position"] = glm::vec4(pointLight.position,1);
+    sr.noTextureShader["light_diffuse"] = pointLight.color;
+    sr.noTextureShader["light_specular"] = vec4(1,1,1,1);
 
     normalMap = pho::Shader(shaderpath+"texture");
     normalMap.use();
@@ -180,14 +180,24 @@ void Engine::initResources() {
     sr.tubeShader["Shininess"] = 50.0f;
 
     sr.cylinderShader = pho::Shader(shaderpath+"cylinder");
+    sr.flatLitShader = pho::Shader(shaderpath+"flatLit");
 
     //*************************************************************
     //********************  Load Assets ***************************
     //*************************************************************
-    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr);
+    cursor = pho::Asset("cursor.obj", &sr.noTextureShader,&sr);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
+
+    s0 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
+    s0.setScale(0.1f);
+    s1 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
+    s1.setScale(0.1f);
+    s2 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
+    s2.setScale(0.1f);
+    s3 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
+    s3.setScale(0.1f);
 
     floor = pho::Asset("floor.obj", &singleTexture,&sr);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-5,-60));
@@ -320,6 +330,22 @@ void Engine::render() {
 
     floor.draw();
     pyramidCursor.draw();
+    glm::vec3 temp = pyramidCursor.getPosition();
+    s0.setPosition(temp+pyramidCursor.v0);
+    s0.rotateAboutAsset(pyramidCursor.modelMatrix);
+    s0.drawPlain(red);
+    s1.setPosition(temp+pyramidCursor.v1);
+    s1.rotateAboutAsset(pyramidCursor.modelMatrix);
+    s1.drawPlain(green);
+    s2.setPosition(temp+pyramidCursor.v2);
+    s2.rotateAboutAsset(pyramidCursor.modelMatrix);
+    s2.drawPlain(blue);
+    s3.setPosition(temp+pyramidCursor.v3);
+    s3.rotateAboutAsset(pyramidCursor.modelMatrix);
+    s3.drawPlain(yellow);
+
+
+
 
     if (appState == select) {
         if (selectionTechnique == virtualHand) {

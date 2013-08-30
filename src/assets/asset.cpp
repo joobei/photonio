@@ -34,6 +34,8 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
         assetpath.append("/"); //at the end of the string
     }
 
+    tempscaleMatrix = glm::scale(glm::mat4(),glm::vec3(1.05,1.05,1.05));
+
     Assimp::Importer importer;
 
     scene = importer.ReadFile( assetpath+filename,
@@ -192,9 +194,9 @@ void pho::Asset::draw() {
 
         CALL_GL(glDisable(GL_DEPTH_TEST));
 
-        scaleMatrix = glm::scale(glm::mat4(),glm::vec3(1.05,1.05,1.05));
+
         res->flatShader.use();
-        res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
+        res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix*tempscaleMatrix;
         res->flatShader["color"] = glm::vec4(1,0,0,1);
 
         for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
@@ -210,8 +212,8 @@ void pho::Asset::draw() {
 
     shader->use();
     shader[0]["model"] = modelMatrix;
-    shader[0]["modelview"] = res->viewMatrix*modelMatrix;
-    shader[0]["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+    shader[0]["modelview"] = res->viewMatrix*modelMatrix*scaleMatrix;
+    shader[0]["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
     shader[0]["shadowMatrix"] = res->biasMatrix*res->projectionMatrix*res->light.viewMatrix*modelMatrix;
     shader[0]["receiveShadow"] = receiveShadow;
     shader[0]["light_position"] = glm::vec4(res->light.position,1);
@@ -250,7 +252,7 @@ void pho::Asset::draw() {
 void pho::Asset::drawFlat()
 {
     res->flatShader.use();
-    res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+    res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
     res->flatShader["color"] = glm::vec4(1,1,1,1);
 
 
@@ -260,6 +262,24 @@ void pho::Asset::drawFlat()
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
 
+
+}
+
+void pho::Asset::drawPlain(glm::vec3 color)
+{
+    res->flatLitShader.use();
+    res->flatLitShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
+    res->flatLitShader["modelview"] = res->viewMatrix*modelMatrix;
+    res->flatLitShader["material_diffuse"] = glm::vec4(color,1);
+    res->flatLitShader["material_specular"] = glm::vec4(1,1,1,1);
+    res->flatLitShader["material_shininess"] = 200.0f;
+    res->flatLitShader["light_position"] = glm::vec4(res->light.position,1.f);
+
+    for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
+    {
+        CALL_GL(glBindVertexArray(mMeshes[i].vao));
+        CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+    }
 
 }
 
@@ -300,6 +320,21 @@ void pho::Asset::setPosition(glm::vec3 position)
 void pho::Asset::setScale(float scaleFactor)
 {
     scaleMatrix = glm::scale(glm::mat4(1),glm::vec3(scaleFactor,scaleFactor,scaleFactor));
+}
+
+glm::vec3 pho::Asset::getPosition()
+{
+    return glm::vec3(modelMatrix[3]);
+}
+
+void pho::Asset::rotateAboutAsset(glm::mat4 &matrix)
+{
+    //glm::vec4 temp = modelMatrix[3];
+    modelMatrix[3] -= matrix[3];
+    glm::vec3 temp = glm::vec3(modelMatrix[3]);
+    temp = glm::mat3(matrix)*temp;
+    modelMatrix[3] = glm::vec4(temp,1)+matrix[3];
+
 }
 
 

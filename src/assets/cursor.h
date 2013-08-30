@@ -33,8 +33,9 @@ public:
     void drawFromLight();
     GLuint gradientTexture;
 private:
+    int vertexCount;
     std::vector<glm::vec3> vertices;
-    std::vector<glm::vec3> colors;
+    std::vector<glm::vec3> normals;
     GLuint vao;
     GLuint spherevao;
 };

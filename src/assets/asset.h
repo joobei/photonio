@@ -44,7 +44,9 @@ struct sharedResources {
     pho::Shader colorShader;
     pho::Shader lineShader;
     pho::Shader tubeShader;
+    pho::Shader noTextureShader;
     pho::Shader cylinderShader;
+    pho::Shader flatLitShader;
     btCollisionWorld*  collisionWorld;
     GLuint shadowTexture;
     GLuint t1Location,t2Location,t3Location;
@@ -77,6 +79,7 @@ public:
     Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared);
     void draw();
     void drawFlat();
+    void drawPlain(glm::vec3 color);
     void drawFromLight();
     void scale();
     glm::mat4 modelMatrix;
@@ -91,7 +94,10 @@ public:
     glm::mat4* viewMatrix; //public because shadow map render function updates it to the pointlight matrix temporarily
     sharedResources* res;
     btCollisionObject collisionObject;
+    glm::vec3 getPosition();
+    void rotateAboutAsset(glm::mat4 &matrix);
 protected:
+    glm::mat4 tempscaleMatrix;
     void upload();
     glm::mat4* projectionMatrix;
     glm::mat4* biasMatrix;

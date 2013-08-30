@@ -199,7 +199,11 @@ namespace pho {
 		boost::mutex ioMutex; //locks the message queue for thread access
 
         //assets
-        pho::Asset cursor;     
+        pho::Asset cursor;
+        pho::Asset s0;
+        pho::Asset s1;
+        pho::Asset s2;
+        pho::Asset s3;
         pho::Plane plane;
         pho::Cursor pyramidCursor;
         pho::Cursor target;
@@ -207,6 +211,11 @@ namespace pho {
         pho::Asset floor;      
         pho::Asset* selectedAsset;
         pho::Asset* intersectedAsset;
+
+        glm::vec3 red = glm::vec3(1,0,0);
+        glm::vec3 green = glm::vec3(0,1,0);
+        glm::vec3 blue = glm::vec3(0,0,1);
+        glm::vec3 yellow = glm::vec3(1,1,0);
 
 
         //input
