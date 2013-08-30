@@ -43,6 +43,8 @@ struct sharedResources {
     pho::Shader flatShader;
     pho::Shader colorShader;
     pho::Shader lineShader;
+    pho::Shader tubeShader;
+    pho::Shader cylinderShader;
     btCollisionWorld*  collisionWorld;
     GLuint shadowTexture;
     GLuint t1Location,t2Location,t3Location;

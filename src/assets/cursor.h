@@ -14,6 +14,21 @@ public:
     glm::vec3 v1;
     glm::vec3 v2;
     glm::vec3 v3;
+
+    glm::vec3 m0;
+    glm::vec3 m1;
+    glm::vec3 m2;
+    glm::vec3 m3;
+    glm::vec3 m4;
+    glm::vec3 m5;
+
+    glm::vec3 d0;
+    glm::vec3 d1;
+    glm::vec3 d2;
+    glm::vec3 d3;
+    glm::vec3 d4;
+    glm::vec3 d5;
+
     btCollisionObject* collisionObject;
     void drawFromLight();
     GLuint gradientTexture;
@@ -21,6 +36,7 @@ private:
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> colors;
     GLuint vao;
+    GLuint spherevao;
 };
 
 }

@@ -172,6 +172,15 @@ void Engine::initResources() {
     glUniform1i(baseImageLoc, 0);
     glUniform1i(shadowMapLoc, 2);
 
+    sr.tubeShader = pho::Shader(shaderpath+"prlines");
+    sr.tubeShader.use();
+    sr.tubeShader["DiffuseMaterial"] = glm::vec3(1.0f, 0.5f, 0.125f);
+    sr.tubeShader["AmbientMaterial"] = glm::vec3(0.125f, 0.125f, 0.0f);
+    sr.tubeShader["SpecularMaterial"] = glm::vec3(0.5f, 0.5f, 0.5f);
+    sr.tubeShader["Shininess"] = 50.0f;
+
+    sr.cylinderShader = pho::Shader(shaderpath+"cylinder");
+
     //*************************************************************
     //********************  Load Assets ***************************
     //*************************************************************
@@ -181,7 +190,7 @@ void Engine::initResources() {
     //cursor.receiveShadow = true;
 
     floor = pho::Asset("floor.obj", &singleTexture,&sr);
-    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
+    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-5,-60));
     floor.receiveShadow = true;
 
     plane.setShader(&sr.flatShader);
@@ -391,7 +400,8 @@ void Engine::mouseButtonCallback(int button, int state) {
     double difference = elapsed_times.wall-previousTime.wall;
 
     if (difference > 150000000) {
-        doubleClickPerformed = true;
+        //doubleClickPerformed = true;
+        selectedAsset = &pyramidCursor;
     }
 
     previousTime = elapsed_times;
@@ -1141,12 +1151,12 @@ void Engine::checkSpaceNavigator() {
             sr.viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
         }
         else {
-            /*selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
+            selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
             selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*selectedAsset->modelMatrix;
             selectedAsset->modelMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*selectedAsset->modelMatrix;
             selectedAsset->rotate(glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0)));
             selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
-            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));*/
+            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));
 
             /*sr.light.viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*sr.light.viewMatrix;
             sr.light.viewMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*sr.light.viewMatrix;
