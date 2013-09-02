@@ -49,9 +49,11 @@ public:
     void draw();
     GLuint texture;
     void setAlpha(float var);
+    GLuint vbo;
 protected:
     float alpha;
     GLuint vao;
+
 
 };
 

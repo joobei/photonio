@@ -174,6 +174,7 @@ namespace pho {
 		glm::vec3 grabOffset;
 		float grabbedDistance;
 		glm::vec3 grabbedVector;
+        glm::vec3 intersectionPoint;
 
 		//arcball stuff
 		int last_mx,last_my,cur_mx,cur_my;

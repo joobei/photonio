@@ -223,10 +223,10 @@ pho::Ray::Ray(sharedResources *sr)
     glGenVertexArrays(1,&vao);
     glBindVertexArray(vao);
 
-    GLuint buffer;
+
     res = sr;
-    CALL_GL(glGenBuffers(1, &buffer));
-    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, buffer));
+    CALL_GL(glGenBuffers(1, &vbo));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, vbo));
     CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*vertices.size(), vertices.data(), GL_STATIC_DRAW));
     CALL_GL(glEnableVertexAttribArray(vertexLoc));
     CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
@@ -237,8 +237,8 @@ void pho::Ray::draw() {
     res->lineShader.use();
     res->lineShader["mvMat"] = res->viewMatrix*modelMatrix;
     res->lineShader["pMat"] = res->projectionMatrix;
-    res->lineShader["radius"] = 0.01f;
-    res->lineShader["alpha"] = alpha;
+    res->lineShader["radius"] = 0.02f;
+    //res->lineShader["alpha"] = alpha;
 
     CALL_GL(glActiveTexture(GL_TEXTURE0));
     CALL_GL(glBindTexture(GL_TEXTURE_2D,texture));

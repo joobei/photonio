@@ -198,7 +198,7 @@ void Engine::initResources() {
     target.setPosition(glm::vec3(4,0,-8));
 
     //load texture
-    ray.texture = gli::createTexture2D(assetpath+"grad0.dds");
+    ray.texture = gli::createTexture2D(assetpath+"grad2.dds");
     ray.setAlpha(1.0f);
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
@@ -237,12 +237,7 @@ void Engine::initResources() {
 void Engine::checkEvents() {
 
     checkKeyboard();
-    if (technique == rayCasting ) {
-        checkPolhemus(ray.modelMatrix);
-        if (rayTestWorld(rayOrigin,rayDirection,intersectedAsset)) {
-            intersectedAsset->beingIntersected = true;
-        }
-    }
+    if (technique == rayCasting ) { checkPolhemus(ray.modelMatrix); }
 
     if (technique == mouse) {
         float wheel = glfwGetMouseWheel();
@@ -279,7 +274,9 @@ void Engine::checkEvents() {
 
     //Joystick
     checkSpaceNavigator();
-    checkMove();
+    //checkMove();
+
+    unsigned char buttons[19];
 
     if ((appState == select)) {
         if (selectionTechnique == indieSelectRelative) {
@@ -294,8 +291,29 @@ void Engine::checkEvents() {
             if (rayTestWorld(ray.getPosition(),direction,intersectedAsset))
             {
                 intersectedAsset->beingIntersected = true;
+                glm::vec3 length = intersectionPoint-ray.getPosition();
+                CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
+                CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(length)));
+            }
+            else
+            {
+                CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
+                CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(glm::vec3(0,0,-1000))));
+            }
+
+            glfwGetJoystickButtons(moveController,buttons,19);
+
+            if (buttons[11] == GLFW_PRESS)
+            {
+                appState = translate;
+                selectedAsset = intersectedAsset;
             }
         }
+    }
+
+    if ((appState == translate) && (technique == rayCasting))
+    {
+      selectedAsset->modelMatrix = ray.modelMatrix;
     }
 
     checkPhysics();
@@ -1327,6 +1345,7 @@ bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, ph
 
         glm::vec3 out_origin = origin;
         glm::vec3 out_direction = direction;
+        btVector3 temp;
 
         out_direction = out_direction*1000.0f;
 
@@ -1336,6 +1355,11 @@ bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, ph
         if (RayCallback.hasHit()) {
             //get our asset from the collisionObject
             intersected = static_cast<pho::Asset*>(RayCallback.m_collisionObject[0].getUserPointer());
+
+            temp = RayCallback.m_hitPointWorld;
+            intersectionPoint.x = temp.x();
+            intersectionPoint.y = temp.y();
+            intersectionPoint.z = temp.z();
             return true;
         }
         else {return false;}
@@ -1354,7 +1378,11 @@ bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
                 mat4 transform;
 
                 //position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
-                position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
+                if (appState == select)
+                {
+                    position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
+                }
+
                 position += vec3(-0.32,-0.25f,-0.5f);
 
                 orientation.w = temp[3];
@@ -1362,12 +1390,10 @@ bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
                 orientation.y = temp[5];
                 orientation.z = temp[6];
 
-                //transform=glm::translate(transform,position);
-
                 transform=glm::toMat4(orientation);
 
                 //Rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
-                transform = transform*glm::toMat4(glm::angleAxis(-90.0f,vec3(0,0,1)));  //multiply from the right --- WRONG!!!!!! but works for the time being
+                //transform = transform*glm::toMat4(glm::angleAxis(-90.0f,vec3(0,0,1)));  //multiply from the right --- WRONG!!!!!! but works for the time being
 
                 transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
                 transform[3][1] = position.y;

@@ -146,7 +146,6 @@ void pho::Asset::upload()
         {
             tempMesh.material.diffuseTexture = gli::createTexture2D(assetpath+path.C_Str());
             glBindTexture(GL_TEXTURE_2D,tempMesh.material.diffuseTexture);
-            CALL_GL(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST));
             CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, res->fLargest));
             glBindTexture(GL_TEXTURE_2D, 0);
 
