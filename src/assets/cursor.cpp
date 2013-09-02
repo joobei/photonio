@@ -234,9 +234,9 @@ pho::Ray::Ray(sharedResources *sr)
 
 void pho::Ray::draw() {
     res->lineShader.use();
-    res->lineShader["mvMat"] = res->viewMatrix*modelMatrix*glm::mat4(2);
+    res->lineShader["mvMat"] = res->viewMatrix*modelMatrix;
     res->lineShader["pMat"] = res->projectionMatrix;
-    res->lineShader["radius"] = 0.1f;
+    res->lineShader["radius"] = 0.05f;
     res->lineShader["alpha"] = alpha;
 
     CALL_GL(glActiveTexture(GL_TEXTURE0));

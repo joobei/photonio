@@ -34,12 +34,12 @@ Engine::Engine():
     _udpserver(ioservice,&eventQueue,&ioMutex),
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(indieSelectRelative),
+    selectionTechnique(raySelect),
     inputStarted(false),
     mouseMove(false),
     plane(&sr),
     rotTechnique(screenSpace),
-    technique(planeCasting),
+    technique(rayCasting),
     pyramidCursor(&sr),
     target(&sr),
     ray(&sr)
@@ -71,25 +71,6 @@ Engine::Engine():
 
     //Polhemus
     serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
-
-
-    /*if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
-            fprintf(stderr, "PS Move API init failed (wrong version?)\n");
-            this->shutdown();
-    }
-
-    move = psmove_connect();
-
-    if (move == NULL) {
-        printf("Could not connect to default Move controller.\n"
-               "Please connect one via USB or Bluetooth.\n");
-        this->shutdown();
-    }
-
-    char *serial = psmove_get_serial(move);
-    printf("Serial: %s\n", serial);
-
-    psmove_set_leds(move, 0, 1, psmove_get_trigger(move));*/
 
     prevMouseWheel = 0;
     gyroData = false;
@@ -136,11 +117,11 @@ void Engine::initResources() {
     initPhysics();
 
     //sr.light.position = glm::vec3(0,160,-60);
-    sr.light.position = glm::vec3(0,60,0);
+    sr.light.position = glm::vec3(0,40,0);
 
     sr.light.direction = glm::vec3(0,-1,0);
     sr.light.color = glm::vec4(1,1,1,1);
-    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
+    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-10),glm::vec3(0,0,-1));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -213,13 +194,12 @@ void Engine::initResources() {
     //plane.receiveShadow = true;
 
     pyramidCursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
-    //load texture
-    pyramidCursor.gradientTexture = gli::createTexture2D(assetpath+"grad2.dds");
 
     target.setPosition(glm::vec3(4,0,-8));
 
     //load texture
-    ray.texture = gli::createTexture2D(assetpath+"grad2.dds");
+    ray.texture = gli::createTexture2D(assetpath+"grad0.dds");
+    ray.setAlpha(1.0f);
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -317,11 +297,6 @@ void Engine::checkEvents() {
             }
         }
     }
-
-     /*if (psmove_get_buttons(move) & Btn_TRIANGLE) {
-
-         std::cout << "Triangle" << std::endl;
-     }*/
 
     checkPhysics();
 
@@ -1163,7 +1138,8 @@ void Engine::checkSpaceNavigator() {
         else {
 
             //when used as footswitch
-            if((position[2] > 0.6) || (position[1] > 0.4)) {
+            if((position[2] > 0.6) || (position[1] > 0.4))
+            {
                 target.setPosition(experiment.advance());
             }
 
