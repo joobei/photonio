@@ -34,7 +34,7 @@ public:
     GLuint gradientTexture;
     void setAlpha(float var);
 protected:
-    int vertexCount;
+    int vertexCount = 122;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
     float alpha;

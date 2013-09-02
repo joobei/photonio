@@ -50,9 +50,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "TUIO/TuioObject.h"
 #include "TUIO/TuioCursor.h"
 #include "TUIO/TuioPoint.h"
-#include "psmoveapi/psmove.h"
-#include "psmoveapi/psmove_tracker.h"
-#include "psmoveapi/psmove_fusion.h"
+//#include "psmoveapi/psmove.h"
+//#include "psmoveapi/psmove_tracker.h"
+//#include "psmoveapi/psmove_fusion.h"
 #include <cstdio>
 #include <functional>
 #include "shader.h"
@@ -62,6 +62,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "gli/gtx/gl_texture2d.hpp"
 #include <btBulletCollisionCommon.h>
 //#include <btBulletDynamicsCommon.h>
+#include "experimentManager.h"
 
 using namespace std;
 using namespace TUIO;
@@ -112,10 +113,10 @@ namespace pho {
 		void updateTuioCursor(TuioCursor *tcur);
 		void removeTuioCursor(TuioCursor *tcur);
 
-        btVector3 getRayTo(glm::vec2 xy);
 		TuioClient* tuioClient;
         std::vector<glm::vec3> linestack;
-        int joystick;
+        int spaceNavigator;
+        int moveController;
 	private:
 
         void ScreenPosToWorldRay(
@@ -130,6 +131,7 @@ namespace pho {
 		void checkUDP();
 		void checkKeyboard();
 		void checkSpaceNavigator();
+        void checkMove();
         void initPhysics();
         void checkPhysics();
         bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset*& intersected);
@@ -256,6 +258,7 @@ namespace pho {
         boost::timer::cpu_times previousTime;
         boost::timer::cpu_times keyboardPreviousTime;
         bool keyPressOK=true;
+        bool footPressOK=true;
 
         float pointerOpacity;
         bool pointerAvailable;
@@ -296,7 +299,11 @@ namespace pho {
         GLuint pointVao;
 
         //PS MOVE
-        PSMove* move;
+        //PSMove* move;
+
+
+        //EXPERIMENT:
+        ExpManager experiment;
 	};
 
 }

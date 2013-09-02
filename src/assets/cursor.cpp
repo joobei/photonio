@@ -71,10 +71,8 @@ pho::Cursor::Cursor(sharedResources *sr)
     //rotate vertical vector around d0 to get points on the base of the cylinder
     for (int i = 0;i < divisions+1;++i) {
         vertices.push_back(v0+radius*rotater);
-        vertexCount++;
         normals.push_back(rotater);
         vertices.push_back(v0+d0+radius*rotater);
-        vertexCount++;
         normals.push_back(rotater);
         rotater = glm::mat3(glm::rotate(glm::mat4(),(float)360/divisions,d0))*rotater;
 
@@ -191,10 +189,11 @@ void pho::Cursor::draw()
 
     CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,vertexCount));
     CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*2,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*3,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*4,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*5,vertexCount));
+    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*2),vertexCount));
+    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*3),vertexCount));
+    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*4),vertexCount));
+    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*5),vertexCount));
+
 }
 
 void pho::Cursor::drawFromLight()

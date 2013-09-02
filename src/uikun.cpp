@@ -73,7 +73,7 @@ Engine::Engine():
     serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
 
-    if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
+    /*if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
             fprintf(stderr, "PS Move API init failed (wrong version?)\n");
             this->shutdown();
     }
@@ -89,7 +89,7 @@ Engine::Engine():
     char *serial = psmove_get_serial(move);
     printf("Serial: %s\n", serial);
 
-    psmove_set_leds(move, 0, 1, psmove_get_trigger(move));
+    psmove_set_leds(move, 0, 1, psmove_get_trigger(move));*/
 
     prevMouseWheel = 0;
     gyroData = false;
@@ -135,7 +135,9 @@ void Engine::initResources() {
     generateShadowFBO();
     initPhysics();
 
-    sr.light.position = glm::vec3(0,160,-60);
+    //sr.light.position = glm::vec3(0,160,-60);
+    sr.light.position = glm::vec3(0,60,0);
+
     sr.light.direction = glm::vec3(0,-1,0);
     sr.light.color = glm::vec4(1,1,1,1);
     sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
@@ -202,7 +204,7 @@ void Engine::initResources() {
     s3.setScale(0.1f);
 
     floor = pho::Asset("floor.obj", &singleTexture,&sr);
-    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-5,-60));
+    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-5,-10));
     floor.receiveShadow = true;
 
     plane.setShader(&sr.flatShader);
@@ -297,6 +299,7 @@ void Engine::checkEvents() {
 
     //Joystick
     checkSpaceNavigator();
+    checkMove();
 
     if ((appState == select)) {
         if (selectionTechnique == indieSelectRelative) {
@@ -541,7 +544,7 @@ void Engine::shutdown() {
     ioservice.stop();
     errorLog.close();
     serialioservice.stop();
-    psmove_disconnect(move);
+    //psmove_disconnect(move);
 }
 
 void Engine::addTuioObject(TuioObject *tobj) {
@@ -876,58 +879,6 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
         std::cout << "del cur " << tcur->getCursorID() << " (" <<  tcur->getSessionID() << ")" << std::endl;
 }
 
-btVector3 Engine::getRayTo(glm::vec2 xy)
-{
-    //btVector3	DemoApplication::getRayTo(int x,int y)
-
-
-        float top = 1.f;
-        float bottom = -1.f;
-        float nearPlane = 1.f;
-        float tanFov = (top-bottom)*0.5f / nearPlane;
-        float fov = btScalar(2.0) * btAtan(tanFov);
-
-        btVector3 rayFrom = btVector3(xy.x,xy.y,0);
-        glm::vec3 rf = glm::mat3(sr.viewMatrix)*glm::vec3(0,0,-1);
-        btVector3 rayForward = btVector3(rf.x,rf.y,rf.z);
-
-        rayForward.normalize();
-        float farPlane = -10000.f;
-        rayForward*= farPlane;
-
-        btVector3 rightOffset;
-        btVector3 vertical = btVector3(0,1,0);
-
-        btVector3 hor;
-        hor = rayForward.cross(vertical);
-        hor.normalize();
-        vertical = hor.cross(rayForward);
-        vertical.normalize();
-
-        float tanfov = tanf(0.5f*fov);
-
-
-        hor *= 2.f * farPlane * tanfov;
-        vertical *= 2.f * farPlane * tanfov;
-
-        btScalar aspect;
-
-        aspect = WINDOW_SIZE_X / (btScalar)WINDOW_SIZE_Y;
-
-        hor*=aspect;
-
-
-        btVector3 rayToCenter = rayFrom + rayForward;
-        btVector3 dHor = hor * 1.f/float(WINDOW_SIZE_X);
-        btVector3 dVert = vertical * 1.f/float(WINDOW_SIZE_Y);
-
-
-        btVector3 rayTo = rayToCenter - 0.5f * hor + 0.5f * vertical;
-        rayTo += btScalar(xy.x) * dHor;
-        rayTo -= btScalar(xy.y) * dVert;
-        return rayTo;
-}
-
 void Engine::refresh(TuioTime frameTime) {
     //std::cout << "refresh " << frameTime.getTotalMilliseconds() << std::endl;
 }
@@ -1197,9 +1148,9 @@ void Engine::checkSpaceNavigator() {
     unsigned char buttons[2];
     std::fill_n(position,6,0.0f);
 
-    if (glfwGetJoystickPos( joystick, position,6) == 6 ) {
+    if (glfwGetJoystickPos( spaceNavigator, position,6) == 6 ) {
         //inputStarted = true;
-        glfwGetJoystickButtons(joystick,buttons,2);
+        glfwGetJoystickButtons(spaceNavigator,buttons,2);
         if (buttons[0] == GLFW_PRESS) {
 
             sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
@@ -1210,12 +1161,18 @@ void Engine::checkSpaceNavigator() {
             sr.viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
         }
         else {
-            selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
+
+            //when used as footswitch
+            if((position[2] > 0.6) || (position[1] > 0.4)) {
+                target.setPosition(experiment.advance());
+            }
+
+            /*selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
             selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*selectedAsset->modelMatrix;
             selectedAsset->modelMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*selectedAsset->modelMatrix;
             selectedAsset->rotate(glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0)));
             selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
-            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));
+            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));*/
 
             /*sr.light.viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*sr.light.viewMatrix;
             sr.light.viewMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*sr.light.viewMatrix;
@@ -1240,6 +1197,20 @@ void Engine::checkSpaceNavigator() {
         }
     }
 
+}
+
+void Engine::checkMove()
+{
+    float position[28];
+    unsigned char buttons[19];
+    std::fill_n(position,28,0.0f);
+
+    //if (glfwGetJoystickPos( moveController, position,28) == 28 )  //to get axes
+
+        glfwGetJoystickButtons(moveController,buttons,19);
+
+            //if (buttons[i] == GLFW_PRESS) {
+            //std::cout << "Button " << i <<  " pressed " <<std::endl;
 }
 
 void Engine::initPhysics()

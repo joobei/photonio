@@ -124,9 +124,9 @@ void pho::Asset::upload()
             glEnableVertexAttribArray(texCoordLoc);
             glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
         }
-        else {
-            log("No Texture Coordinates!!!");
-        }
+        //else {
+            //log("No Texture Coordinates!!!");
+        //}
 
 
         std::string assetpath;
@@ -172,7 +172,7 @@ void pho::Asset::upload()
         }
 
         if(AI_SUCCESS != tempMat->Get(AI_MATKEY_COLOR_SPECULAR,tempMesh.material.specularColor)) {
-            log("----> FAILED Specular Color");
+            //log("----> FAILED Specular Color");
         }
         else {
             tempMesh.material.specularColor.r = tempColor.r;

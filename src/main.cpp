@@ -58,27 +58,34 @@ int main()
 
     pho::Engine *engine = new Engine();
 
-    if (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) > 4))
+    if (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) > 20))
     {
-        log("Space Navigator Present");
-        engine->joystick = GLFW_JOYSTICK_1;
+        std::cout << "Joystick 1 found: " << glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) << " axes." << std::endl;
+        engine->moveController = GLFW_JOYSTICK_1;
     }
-    else if (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_AXES) > 4))
+
+    if (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) == 6))
     {
-        log("Space Navigator Present");
-        engine->joystick = GLFW_JOYSTICK_2;
+        log("Joystick 1 found Space Navigator");
+        engine->spaceNavigator = GLFW_JOYSTICK_1;
     }
-    else
+
+    if (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_AXES) > 20))
     {
-        log("Space Navigator not present");
+        std::cout << "Joystick 2 found: " << glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_AXES) << " axes. (PV Move?)" << std::endl;
+        engine->moveController = GLFW_JOYSTICK_2;
+    }
+
+    if (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_AXES) == 6))
+    {
+        log("Joystick 2 found Space Navigator");
+        engine->spaceNavigator = GLFW_JOYSTICK_2;
     }
 
     mouseFunc = std::bind(&pho::Engine::mouseButtonCallback,engine,_1,_2);
     glfwSetMouseButtonCallback(&mouseFunkThunk);
     mouseFunc2 = std::bind(&pho::Engine::mouseMoveCallback,engine,_1,_2);
     glfwSetMousePosCallback(&mouseFunkThunk2);
-
-
 
     engine->go();
 
