@@ -41,7 +41,8 @@ Engine::Engine():
     rotTechnique(screenSpace),
     technique(planeCasting),
     pyramidCursor(&sr),
-    target(&sr)
+    target(&sr),
+    ray(&sr)
 {
 #define SIZE 30                     //Size of the moving average filter
     accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -72,7 +73,7 @@ Engine::Engine():
     serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
 
-    /*if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
+    if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
             fprintf(stderr, "PS Move API init failed (wrong version?)\n");
             this->shutdown();
     }
@@ -86,7 +87,9 @@ Engine::Engine():
     }
 
     char *serial = psmove_get_serial(move);
-    printf("Serial: %s\n", serial);*/
+    printf("Serial: %s\n", serial);
+
+    psmove_set_leds(move, 0, 1, psmove_get_trigger(move));
 
     prevMouseWheel = 0;
     gyroData = false;
@@ -107,7 +110,10 @@ Engine::Engine():
 
     pointerOpacity = 1.0f;
 
-#define	SHADOW_MAP_RATIO 20;
+
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &sr.fLargest);
+
+#define	SHADOW_MAP_RATIO 8;
 }
 
 void Engine::initResources() {
@@ -172,14 +178,8 @@ void Engine::initResources() {
     glUniform1i(baseImageLoc, 0);
     glUniform1i(shadowMapLoc, 2);
 
-    sr.tubeShader = pho::Shader(shaderpath+"prlines");
-    sr.tubeShader.use();
-    sr.tubeShader["DiffuseMaterial"] = glm::vec3(1.0f, 0.5f, 0.125f);
-    sr.tubeShader["AmbientMaterial"] = glm::vec3(0.125f, 0.125f, 0.0f);
-    sr.tubeShader["SpecularMaterial"] = glm::vec3(0.5f, 0.5f, 0.5f);
-    sr.tubeShader["Shininess"] = 50.0f;
 
-    sr.cylinderShader = pho::Shader(shaderpath+"cylinder");
+    sr.lineShader = pho::Shader(shaderpath+"lines");
     sr.flatLitShader = pho::Shader(shaderpath+"flatLit");
 
     //*************************************************************
@@ -189,6 +189,8 @@ void Engine::initResources() {
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
+
+    target.setAlpha(0.6);
 
     s0 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
     s0.setScale(0.1f);
@@ -212,8 +214,10 @@ void Engine::initResources() {
     //load texture
     pyramidCursor.gradientTexture = gli::createTexture2D(assetpath+"grad2.dds");
 
-    ray = pho::Asset("ray.obj",&noTextureShader,&sr);
+    target.setPosition(glm::vec3(4,0,-8));
 
+    //load texture
+    ray.texture = gli::createTexture2D(assetpath+"grad2.dds");
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -294,12 +298,27 @@ void Engine::checkEvents() {
     //Joystick
     checkSpaceNavigator();
 
-    if ((appState == select) && (selectionTechnique == indieSelectRelative)) {
-        if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
-        {
-            intersectedAsset->beingIntersected = true;
+    if ((appState == select)) {
+        if (selectionTechnique == indieSelectRelative) {
+            if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
+            {
+                intersectedAsset->beingIntersected = true;
+            }
+        }
+
+        if (technique == rayCasting) {
+            glm::vec3 direction = glm::mat3(ray.modelMatrix)*glm::vec3(0,0,-1);
+            if (rayTestWorld(ray.getPosition(),direction,intersectedAsset))
+            {
+                intersectedAsset->beingIntersected = true;
+            }
         }
     }
+
+     /*if (psmove_get_buttons(move) & Btn_TRIANGLE) {
+
+         std::cout << "Triangle" << std::endl;
+     }*/
 
     checkPhysics();
 
@@ -329,22 +348,35 @@ void Engine::render() {
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     floor.draw();
+
     pyramidCursor.draw();
-    glm::vec3 temp = pyramidCursor.getPosition();
-    s0.setPosition(temp+pyramidCursor.v0);
-    s0.rotateAboutAsset(pyramidCursor.modelMatrix);
+
+    //match spheres to vertex positions before drawing them
+    s0.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v0);
     s0.drawPlain(red);
-    s1.setPosition(temp+pyramidCursor.v1);
-    s1.rotateAboutAsset(pyramidCursor.modelMatrix);
+
+    s1.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v1);
     s1.drawPlain(green);
-    s2.setPosition(temp+pyramidCursor.v2);
-    s2.rotateAboutAsset(pyramidCursor.modelMatrix);
+
+    s2.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v2);
     s2.drawPlain(blue);
-    s3.setPosition(temp+pyramidCursor.v3);
-    s3.rotateAboutAsset(pyramidCursor.modelMatrix);
+
+    s3.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v3);
     s3.drawPlain(yellow);
 
+    target.draw();
 
+    s0.rotateAboutAsset(target.modelMatrix,pyramidCursor.v0);
+    s0.drawPlain(red);
+
+    s1.rotateAboutAsset(target.modelMatrix,pyramidCursor.v1);
+    s1.drawPlain(green);
+
+    s2.rotateAboutAsset(target.modelMatrix,pyramidCursor.v2);
+    s2.drawPlain(blue);
+
+    s3.rotateAboutAsset(target.modelMatrix,pyramidCursor.v3);
+    s3.drawPlain(yellow);
 
 
     if (appState == select) {
@@ -509,7 +541,7 @@ void Engine::shutdown() {
     ioservice.stop();
     errorLog.close();
     serialioservice.stop();
-    //psmove_disconnect(move);
+    psmove_disconnect(move);
 }
 
 void Engine::addTuioObject(TuioObject *tobj) {
@@ -1118,7 +1150,7 @@ void Engine::generateShadowFBO()
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     { printf("GL_FRAMEBUFFER_COMPLETE error 0x%x", glCheckFramebufferStatus(GL_FRAMEBUFFER)); }
 
-    CALL_GL(glClearDepth(1.0f); glEnable(GL_DEPTH_TEST));
+    CALL_GL(glClearDepth(1.0f));
     // Needed when rendering the shadow map. This will avoid artifacts.
     CALL_GL(glPolygonOffset(1.0f, 0.0f); glBindFramebuffer(GL_FRAMEBUFFER, 0));
     //to convert the texture coordinates to -1 ~ 1
@@ -1147,6 +1179,7 @@ void Engine::shadowMapRender() {
 
     if ((appState == select) && (selectionTechnique == virtualHand)) cursor.drawFromLight();
     pyramidCursor.drawFromLight();
+    target.drawFromLight();
 
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -1157,16 +1190,16 @@ void Engine::shadowMapRender() {
 
 void Engine::checkSpaceNavigator() { 
 
-#define TRSCALE 2.0f
-#define RTSCALE 5.0f
+#define TRSCALE 1.0f
+#define RTSCALE 3.0f
 
     float position[6];
     unsigned char buttons[2];
     std::fill_n(position,6,0.0f);
 
-    if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
+    if (glfwGetJoystickPos( joystick, position,6) == 6 ) {
         //inputStarted = true;
-        glfwGetJoystickButtons(GLFW_JOYSTICK_1,buttons,2);
+        glfwGetJoystickButtons(joystick,buttons,2);
         if (buttons[0] == GLFW_PRESS) {
 
             sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
@@ -1260,7 +1293,8 @@ void Engine::checkPhysics()
     }*/
 
 
-    if ((appState == select ) && (selectionTechnique == virtualHand)) {
+    if ((appState == select ) && (selectionTechnique == virtualHand))
+    {
 
         if (sr.collisionWorld)
         {

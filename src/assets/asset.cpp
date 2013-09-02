@@ -143,7 +143,14 @@ void pho::Asset::upload()
 
         //diffuse texture
         if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path) == AI_SUCCESS )
-        { tempMesh.material.diffuseTexture = gli::createTexture2D(assetpath+path.C_Str()); }
+        {
+            tempMesh.material.diffuseTexture = gli::createTexture2D(assetpath+path.C_Str());
+            glBindTexture(GL_TEXTURE_2D,tempMesh.material.diffuseTexture);
+            CALL_GL(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST_MIPMAP_NEAREST));
+            CALL_GL(glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, res->fLargest));
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+        }
 
         //normal map texture
         if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_HEIGHT, texIndex, &path) == AI_SUCCESS )
@@ -194,7 +201,6 @@ void pho::Asset::draw() {
 
         CALL_GL(glDisable(GL_DEPTH_TEST));
 
-
         res->flatShader.use();
         res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix*tempscaleMatrix;
         res->flatShader["color"] = glm::vec4(1,0,0,1);
@@ -235,6 +241,7 @@ void pho::Asset::draw() {
             CALL_GL(glActiveTexture(GL_TEXTURE1));
             CALL_GL(glBindTexture(GL_TEXTURE_2D,0));
         }
+
 
         CALL_GL(glActiveTexture(GL_TEXTURE0));
         CALL_GL(glBindTexture(GL_TEXTURE_2D,mMeshes[i].material.diffuseTexture));
@@ -278,6 +285,7 @@ void pho::Asset::drawPlain(glm::vec3 color)
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
+        CALL_GL(glEnable(GL_DEPTH_TEST));
         CALL_GL(glDrawElements(GL_TRIANGLES,mMeshes[i].numFaces*3,GL_UNSIGNED_INT,0));
     }
 
@@ -305,11 +313,11 @@ void pho::Asset::scale()
 }
 
 
-void pho::Asset::rotate(glm::mat4 rotationMatrix) {
+void pho::Asset::rotate(glm::mat4 rotationMatrix)
+{
     glm::vec4 tempPosition = modelMatrix[3];
     modelMatrix = rotationMatrix*modelMatrix;
     modelMatrix[3] = tempPosition;
-
 }
 
 void pho::Asset::setPosition(glm::vec3 position)
@@ -327,14 +335,11 @@ glm::vec3 pho::Asset::getPosition()
     return glm::vec3(modelMatrix[3]);
 }
 
-void pho::Asset::rotateAboutAsset(glm::mat4 &matrix)
+void pho::Asset::rotateAboutAsset(const glm::mat4 &matrix, const glm::vec3 &position)
 {
-    //glm::vec4 temp = modelMatrix[3];
-    modelMatrix[3] -= matrix[3];
-    glm::vec3 temp = glm::vec3(modelMatrix[3]);
-    temp = glm::mat3(matrix)*temp;
-    modelMatrix[3] = glm::vec4(temp,1)+matrix[3];
-
+    glm::vec3 temp = glm::mat3(matrix)*position;
+    temp += glm::vec3(matrix[3]);
+    modelMatrix[3] = glm::vec4(temp,1);
 }
 
 

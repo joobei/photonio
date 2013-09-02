@@ -32,12 +32,27 @@ public:
     btCollisionObject* collisionObject;
     void drawFromLight();
     GLuint gradientTexture;
-private:
+    void setAlpha(float var);
+protected:
     int vertexCount;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
+    float alpha;
+    glm::vec3 color;
     GLuint vao;
     GLuint spherevao;
+};
+
+class Ray : public Asset {
+public:
+    Ray(sharedResources *sr);
+    void draw();
+    GLuint texture;
+    void setAlpha(float var);
+protected:
+    float alpha;
+    GLuint vao;
+
 };
 
 }

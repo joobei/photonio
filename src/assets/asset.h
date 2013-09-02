@@ -47,6 +47,7 @@ struct sharedResources {
     pho::Shader noTextureShader;
     pho::Shader cylinderShader;
     pho::Shader flatLitShader;
+    float fLargest;
     btCollisionWorld*  collisionWorld;
     GLuint shadowTexture;
     GLuint t1Location,t2Location,t3Location;
@@ -88,14 +89,14 @@ public:
     void setFlatShader(pho::Shader* tehShader);
     void setPosition(glm::vec3 position);
     void setScale(float scaleFactor);
-    std::vector<glm::vec3> vertices;
+    std::vector<glm::vec3> vertices;  //for physics
     bool beingIntersected;
     bool receiveShadow;
     glm::mat4* viewMatrix; //public because shadow map render function updates it to the pointlight matrix temporarily
     sharedResources* res;
     btCollisionObject collisionObject;
     glm::vec3 getPosition();
-    void rotateAboutAsset(glm::mat4 &matrix);
+    void rotateAboutAsset(const glm::mat4 &matrix, const glm::vec3 &position);
 protected:
     glm::mat4 tempscaleMatrix;
     void upload();

@@ -198,7 +198,7 @@ namespace detail
 			}
 		}
 
-		glBindTexture(GL_TEXTURE_2D, 0);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
 		glPixelStorei(GL_UNPACK_ALIGNMENT, Alignment);
 

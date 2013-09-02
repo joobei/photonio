@@ -92,8 +92,14 @@ namespace pho {
 
         //static const int WINDOW_SIZE_X = 1920;
         //static const int WINDOW_SIZE_Y = 1080;
-        static const int WINDOW_SIZE_X = 800;
-        static const int WINDOW_SIZE_Y = 600;
+
+        //static const int WINDOW_POS_X =  1800;
+        //static const int WINDOW_POS_Y =  20;
+
+        static const int WINDOW_SIZE_X = 1280;
+        static const int WINDOW_SIZE_Y = 720;
+        static const int WINDOW_POS_X = 810;
+        static const int WINDOW_POS_Y = 130;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -109,6 +115,7 @@ namespace pho {
         btVector3 getRayTo(glm::vec2 xy);
 		TuioClient* tuioClient;
         std::vector<glm::vec3> linestack;
+        int joystick;
 	private:
 
         void ScreenPosToWorldRay(
@@ -207,7 +214,7 @@ namespace pho {
         pho::Plane plane;
         pho::Cursor pyramidCursor;
         pho::Cursor target;
-        pho::Asset ray;
+        pho::Ray ray;
         pho::Asset floor;      
         pho::Asset* selectedAsset;
         pho::Asset* intersectedAsset;
@@ -289,7 +296,7 @@ namespace pho {
         GLuint pointVao;
 
         //PS MOVE
-        //PSMove* move;
+        PSMove* move;
 	};
 
 }

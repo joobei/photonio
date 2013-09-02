@@ -38,9 +38,7 @@ int main()
 	if (!glfwOpenWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,0,0,0,0,0,0,GLFW_WINDOW))
     { std::cout << "GLFW Init WIndow Failed" << std::endl; }
 
-	//glfwSetWindowPos(1920,-27);  //for dual display
-    //glfwSetWindowPos(-6,-27); //full screen
-    glfwSetWindowPos(810,130);
+    glfwSetWindowPos(pho::Engine::WINDOW_POS_X,pho::Engine::WINDOW_POS_X);
 
     glfwSetWindowTitle("Plane-Casting");
 	glfwEnable( GLFW_MOUSE_CURSOR );
@@ -60,18 +58,27 @@ int main()
 
     pho::Engine *engine = new Engine();
 
+    if (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) > 4))
+    {
+        log("Space Navigator Present");
+        engine->joystick = GLFW_JOYSTICK_1;
+    }
+    else if (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_PRESENT) && (glfwGetJoystickParam(GLFW_JOYSTICK_2,GLFW_AXES) > 4))
+    {
+        log("Space Navigator Present");
+        engine->joystick = GLFW_JOYSTICK_2;
+    }
+    else
+    {
+        log("Space Navigator not present");
+    }
+
     mouseFunc = std::bind(&pho::Engine::mouseButtonCallback,engine,_1,_2);
     glfwSetMouseButtonCallback(&mouseFunkThunk);
     mouseFunc2 = std::bind(&pho::Engine::mouseMoveCallback,engine,_1,_2);
     glfwSetMousePosCallback(&mouseFunkThunk2);
 
-	if (glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_PRESENT)) {
-        std::cout << "joystick present" << std::endl;
 
-		
-        std::cout << "joystick axes" << glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) << std::endl;
-	}
-    else { std::cout << "joystick not present" << std::endl;}
 
     engine->go();
 

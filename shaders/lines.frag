@@ -13,6 +13,7 @@ uniform mat4 mvMat;
 uniform mat4 pMat;
 uniform float radius;
 uniform sampler2D diffuseTexture;
+uniform float alpha;
 
 /*
         http://local.wasp.uwa.edu.au/~pbourke/geometry/lineline3d/
@@ -67,4 +68,5 @@ void main()
 
         //final color
         Color = texture(diffuseTexture,vec2(sample,0.5))*step(sample,1.0);		//step is only required if you use mipmap or gradient texture with rgb!=0 at texCoord.t=1.0
+        Color.w = alpha;
 }
