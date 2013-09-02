@@ -233,10 +233,11 @@ pho::Ray::Ray(sharedResources *sr)
 }
 
 void pho::Ray::draw() {
+
     res->lineShader.use();
     res->lineShader["mvMat"] = res->viewMatrix*modelMatrix;
     res->lineShader["pMat"] = res->projectionMatrix;
-    res->lineShader["radius"] = 0.05f;
+    res->lineShader["radius"] = 0.01f;
     res->lineShader["alpha"] = alpha;
 
     CALL_GL(glActiveTexture(GL_TEXTURE0));
@@ -244,7 +245,9 @@ void pho::Ray::draw() {
 
     CALL_GL(glBindVertexArray(vao));
     CALL_GL(glLineWidth(1));
+    //glBlendFunc(GL_ONE, GL_ONE);  //try additive blending
     CALL_GL(glDrawArrays(GL_LINES,0,vertices.size()));
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void pho::Ray::setAlpha(float var)

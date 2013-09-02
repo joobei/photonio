@@ -68,5 +68,5 @@ void main()
 
         //final color
         Color = texture(diffuseTexture,vec2(sample,0.5))*step(sample,1.0);		//step is only required if you use mipmap or gradient texture with rgb!=0 at texCoord.t=1.0
-        Color.w = alpha;
+        //Color.w = alpha;
 }
