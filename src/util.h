@@ -107,6 +107,7 @@ inline float sssTriangleC(glm::vec2 pa, glm::vec2 pb, glm::vec2 pc) {
 
 std::string readTextFile(std::string filename);
 void locationMatch(glm::mat4 &target,const glm::mat4 &source);
+void rotationMatch(glm::mat4 &target,const glm::mat4 &source);
 
 class flickManager {
 public:
@@ -144,3 +145,4 @@ private:
 
 
 #endif 
+

@@ -219,3 +219,17 @@ void pho::log(const char* message)
 }
 
 
+
+
+void pho::rotationMatch(glm::mat4 &target, const glm::mat4 &source)
+{
+    target[0][0] = source[0][0];
+    target[0][1] = source[0][1];
+    target[0][2] = source[0][2];
+    target[1][0] = source[1][0];
+    target[1][1] = source[1][1];
+    target[1][2] = source[1][2];
+    target[2][0] = source[2][0];
+    target[2][1] = source[2][1];
+    target[2][2] = source[2][2];
+}

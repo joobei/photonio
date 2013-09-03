@@ -176,6 +176,23 @@ namespace pho {
 		glm::vec3 grabbedVector;
         glm::vec3 intersectionPoint;
 
+        //scaled homer SEKI
+
+
+        glm::vec3 initPosition;
+
+        //for rotation
+        glm::mat4 objectInitMatrix;
+        glm::mat4 receiverInitMatrix;
+
+        glm::mat4 objectprevModelMatrix;
+
+        glm::mat4 polhemusMatrix;
+
+        bool directRotationStarted = false;
+        bool directTranslationStarted = false;
+        bool first = false;
+
 		//arcball stuff
 		int last_mx,last_my,cur_mx,cur_my;
 		bool mouseMove;
@@ -222,10 +239,6 @@ namespace pho {
         glm::vec3 green = glm::vec3(0,1,0);
         glm::vec3 blue = glm::vec3(0,0,1);
         glm::vec3 yellow = glm::vec3(1,1,0);
-
-
-        //input
-        bool inputStarted;
 
 		GLuint rayVBO;
 		short rayVerticesCount;

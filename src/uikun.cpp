@@ -35,7 +35,6 @@ Engine::Engine():
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
     selectionTechnique(raySelect),
-    inputStarted(false),
     mouseMove(false),
     plane(&sr),
     rotTechnique(screenSpace),
@@ -116,12 +115,12 @@ void Engine::initResources() {
     generateShadowFBO();
     initPhysics();
 
-    //sr.light.position = glm::vec3(0,160,-60);
-    sr.light.position = glm::vec3(0,40,0);
+    //sr.light.position = vec3(0,160,-60);
+    sr.light.position = vec3(0,40,0);
 
-    sr.light.direction = glm::vec3(0,-1,0);
-    sr.light.color = glm::vec4(1,1,1,1);
-    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-10),glm::vec3(0,0,-1));
+    sr.light.direction = vec3(0,-1,0);
+    sr.light.color = vec4(1,1,1,1);
+    sr.light.viewMatrix = glm::lookAt(sr.light.position,vec3(0,0,-10),vec3(0,0,-1));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -131,14 +130,14 @@ void Engine::initResources() {
     sr.noTextureShader = pho::Shader(shaderpath+"notexture");
     sr.noTextureShader.use();
     sr.noTextureShader["view"] = sr.viewMatrix;
-    sr.noTextureShader["light_position"] = glm::vec4(pointLight.position,1);
+    sr.noTextureShader["light_position"] = vec4(pointLight.position,1);
     sr.noTextureShader["light_diffuse"] = pointLight.color;
     sr.noTextureShader["light_specular"] = vec4(1,1,1,1);
 
     normalMap = pho::Shader(shaderpath+"texture");
     normalMap.use();
     normalMap["view"] = sr.viewMatrix;
-    normalMap["light_position"] = glm::vec4(pointLight.position,1);
+    normalMap["light_position"] = vec4(pointLight.position,1);
     normalMap["light_diffuse"] = pointLight.color;
     normalMap["light_specular"] = vec4(1,1,1,1);
 
@@ -169,7 +168,7 @@ void Engine::initResources() {
     //********************  Load Assets ***************************
     //*************************************************************
     cursor = pho::Asset("cursor.obj", &sr.noTextureShader,&sr);
-    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
+    cursor.modelMatrix = glm::translate(mat4(),vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
@@ -185,7 +184,7 @@ void Engine::initResources() {
     s3.setScale(0.1f);
 
     floor = pho::Asset("floor.obj", &singleTexture,&sr);
-    floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-5,-10));
+    floor.modelMatrix  = glm::translate(mat4(),vec3(0,-5,-10));
     floor.receiveShadow = true;
 
     plane.setShader(&sr.flatShader);
@@ -193,15 +192,15 @@ void Engine::initResources() {
     plane.setScale(3.0f);
     //plane.receiveShadow = true;
 
-    pyramidCursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
+    pyramidCursor.modelMatrix = glm::translate(mat4(),vec3(0,0,-5));
 
-    target.setPosition(glm::vec3(4,0,-8));
+    target.setPosition(vec3(4,0,-8));
 
     //load texture
     ray.texture = gli::createTexture2D(assetpath+"grad2.dds");
     ray.setAlpha(1.0f);
 
-    glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
+    vec3 disc = vec3(0.0,0.0,0.0);
     GLuint buffer;
 
     glGenVertexArrays(1,&pointVao);
@@ -235,9 +234,17 @@ void Engine::initResources() {
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
+    unsigned char buttons[19];
 
     checkKeyboard();
-    if (technique == rayCasting ) { checkPolhemus(ray.modelMatrix); }
+    if ((technique == rayCasting) && (appState == select)) {
+        checkPolhemus(ray.modelMatrix);
+        glfwGetJoystickButtons(moveController,buttons,19);
+    }
+    if ((technique == rayCasting) && (appState == direct)) {
+        checkPolhemus(polhemusMatrix);
+        glfwGetJoystickButtons(moveController,buttons,19);
+    }
 
     if (technique == mouse) {
         float wheel = glfwGetMouseWheel();
@@ -245,7 +252,6 @@ void Engine::checkEvents() {
             float amount = (wheel - prevMouseWheel)/10;
             selectedAsset->modelMatrix = glm::translate(vec3(0,0,-amount))*selectedAsset->modelMatrix;
             prevMouseWheel = wheel;
-            inputStarted = true;
         }
     }
 
@@ -254,7 +260,7 @@ void Engine::checkEvents() {
     }
 
     if (flicker.inFlick(translation)) {
-        glm::mat4 flickTransform = flicker.dampenAndGiveMatrix(glm::mat3(plane.modelMatrix));
+        mat4 flickTransform = flicker.dampenAndGiveMatrix(mat3(plane.modelMatrix));
         plane.modelMatrix = flickTransform*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
         //selectedAsset->modelMatrix = flickTransform*selectedAsset->modelMatrix;
@@ -262,7 +268,7 @@ void Engine::checkEvents() {
     }
 
     if (flicker.inFlick(pinchy)) {
-        glm::mat4 flickTransform = flicker.dampenAndGivePinchMatrix();
+        mat4 flickTransform = flicker.dampenAndGivePinchMatrix();
         selectedAsset->rotate(flickTransform);
     }
 
@@ -276,7 +282,59 @@ void Engine::checkEvents() {
     checkSpaceNavigator();
     //checkMove();
 
-    unsigned char buttons[19];
+    if (appState == direct) {
+
+        //rotation
+        if ((buttons[12] == GLFW_PRESS) && (directRotationStarted == false))
+        {
+                objectInitMatrix = selectedAsset->modelMatrix;
+                receiverInitMatrix = polhemusMatrix;
+                directRotationStarted = true;
+        }
+
+        if(directRotationStarted) {
+            rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+        }
+
+        if ((buttons[11] == GLFW_PRESS) && (directTranslationStarted == false))
+        {
+
+            initPosition = rayOrigin;
+            directTranslationStarted = true;
+        }
+
+        if (directTranslationStarted) {
+
+                glm::vec3 translationVector = rayOrigin-initPosition;
+                if (glm::length(translationVector) < 5) {
+                    selectedAsset->modelMatrix = glm::translate(selectedAsset->modelMatrix,translationVector);
+                }
+                initPosition = rayOrigin;
+        }
+
+        if (buttons[12] == GLFW_RELEASE) {
+           directRotationStarted = false;
+        }
+        if (buttons[11] == GLFW_RELEASE) {
+           directTranslationStarted = false;
+        }
+        /*//translation
+        //vec3 V_hand = (-position) - (-prevPosition);
+        vec3 V_hand = (ray.getPosition()) - (receiverPrevPosition);
+
+        float SC = 0.007;
+
+        float V_hand_d = 1.2 < glm::length(V_hand) / SC ? 1.2 : glm::length(V_hand) / SC; //speed scaling
+        selectedAsset->modelMatrix[3][0] = 50*V_hand_d*V_hand[0]+objectprevModelMatrix[3][0];
+        selectedAsset->modelMatrix[3][1] = 50*V_hand_d*V_hand[1]+objectprevModelMatrix[3][1];
+        selectedAsset->modelMatrix[3][2] = 50*V_hand_d*V_hand[2]+objectprevModelMatrix[3][2];
+
+        receiverPrevPosition = ray.getPosition();
+        objectprevModelMatrix = selectedAsset->modelMatrix;*/
+        //LOG(sqrtf(pow(V_hand[0],2)+pow(V_hand[1],2)+pow(V_hand[2],2)));
+
+    }
+
 
     if ((appState == select)) {
         if (selectionTechnique == indieSelectRelative) {
@@ -287,34 +345,38 @@ void Engine::checkEvents() {
         }
 
         if (technique == rayCasting) {
-            glm::vec3 direction = glm::mat3(ray.modelMatrix)*glm::vec3(0,0,-1);
-            if (rayTestWorld(ray.getPosition(),direction,intersectedAsset))
+
+            if (rayTestWorld(rayOrigin,rayDirection,intersectedAsset))
             {
                 intersectedAsset->beingIntersected = true;
-                glm::vec3 length = intersectionPoint-ray.getPosition();
+                //for shortening ray. was weird so I cut it.
+                /*vec3 length = intersectionPoint-ray.getPosition();
                 CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
                 CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(length)));
             }
             else
             {
+                //no need to do this every frame
                 CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
-                CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(glm::vec3(0,0,-1000))));
+                CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(vec3(0,0,-1000))));
+            }*/
             }
 
-            glfwGetJoystickButtons(moveController,buttons,19);
 
-            if (buttons[11] == GLFW_PRESS)
+
+            if ((buttons[11] == GLFW_PRESS ) && (rayTestWorld(rayOrigin,rayDirection,intersectedAsset)))
             {
-                appState = translate;
-                selectedAsset = intersectedAsset;
+                appState = direct;
+                selectedAsset = intersectedAsset;              
+
+                directTranslationStarted = true;
+                initPosition = rayOrigin;
             }
         }
     }
 
-    if ((appState == translate) && (technique == rayCasting))
-    {
-      selectedAsset->modelMatrix = ray.modelMatrix;
-    }
+
+
 
     checkPhysics();
 
@@ -322,7 +384,7 @@ void Engine::checkEvents() {
     pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
     //Put 2d cursor where object was dropped:
     //1st. calculate clip space coordinates
-    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*selectedAsset->modelMatrix*glm::vec4(0,0,0,1);
+    vec4 newtp = sr.projectionMatrix*sr.viewMatrix*selectedAsset->modelMatrix*vec4(0,0,0,1);
     //2nd. convert it in normalized device coordinates by dividing with w
     newtp/=newtp.w;
     touchPoint.x = newtp.x;
@@ -385,15 +447,15 @@ void Engine::render() {
         else {
             sr.flatShader.use();
 
-            //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*glm::mat4();
-            sr.flatShader["mvp"] = glm::translate(glm::mat4(),glm::vec3(touchPoint.x,touchPoint.y,-1));
+            //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*mat4();
+            sr.flatShader["mvp"] = glm::translate(mat4(),vec3(touchPoint.x,touchPoint.y,-1));
             CALL_GL(glBindVertexArray(pointVao));
             CALL_GL(glPointSize(20));
-            sr.flatShader["color"] = glm::vec4(0,0,0,pointerOpacity);
+            sr.flatShader["color"] = vec4(0,0,0,pointerOpacity);
             CALL_GL(glDrawArrays(GL_POINTS,0,1));
 
             CALL_GL(glDisable(GL_DEPTH_TEST));
-            sr.flatShader["color"] = glm::vec4(1,1,1,pointerOpacity);
+            sr.flatShader["color"] = vec4(1,1,1,pointerOpacity);
             CALL_GL(glPointSize(10));
             CALL_GL(glDrawArrays(GL_POINTS,0,1));
             CALL_GL(glEnable(GL_DEPTH_TEST));
@@ -493,13 +555,13 @@ void Engine::mouseMoveCallback(int x, int y) {
     float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
     float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
 
-    //glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
-    glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
+    //vec4 mouse_clip = vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
+    vec4 mouse_clip = vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
 
-    glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
+    vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
 
-    rayOrigin = glm::vec3(sr.viewMatrix[3]);
-    rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
+    rayOrigin = vec3(sr.viewMatrix[3]);
+    rayDirection = glm::normalize(vec3(mouse_world)-rayOrigin);
 
     if (appState == translate) {
         vec2 MousePt;
@@ -513,7 +575,7 @@ void Engine::mouseMoveCallback(int x, int y) {
         difference.y = -difference.y;
 
         /*if(prevMouseExists) {
-            selectedAsset->modelMatrix = glm::translate(glm::vec3(difference,0))*selectedAsset->modelMatrix;
+            selectedAsset->modelMatrix = glm::translate(vec3(difference,0))*selectedAsset->modelMatrix;
         }*/
 
         prevMousePos = MousePt;
@@ -561,7 +623,6 @@ void Engine::removeTuioObject(TuioObject *tobj) {
 
 void Engine::addTuioCursor(TuioCursor *tcur) {
 
-    inputStarted = true;
     float x,y;
     x = tcur->getX();
     y = tcur->getY();
@@ -595,7 +656,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             if ((appState == translate) || (appState == rotate)) {
 
                 if (selectionTechnique == virtualHand) {
-                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);                    
+                    cursor.modelMatrix[3] = vec4(vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);
                     selectedAsset = &cursor;
                     pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
                     sr.collisionWorld->addCollisionObject(coCursor);
@@ -613,7 +674,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
                     //Put 2d cursor where object was dropped:
                     //1st. calculate clip space coordinates
-                    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*pyramidCursor.modelMatrix*glm::vec4(0,0,0,1);
+                    vec4 newtp = sr.projectionMatrix*sr.viewMatrix*pyramidCursor.modelMatrix*vec4(0,0,0,1);
                     //2nd. convert it in normalized device coordinates by dividing with w
                     newtp/=newtp.w;
                     touchPoint.x = newtp.x;
@@ -842,26 +903,26 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
     switch (appState) {
     case select:
         if (selectionTechnique != virtualHand && (!flicker.inFlick(translation))) {
-            flicker.endFlick(glm::mat3(orientation),translation);
+            flicker.endFlick(mat3(orientation),translation);
             break;
         }
     case translate:
         if (!flicker.inFlick(translation)) {
-        flicker.endFlick(glm::mat3(orientation),translation);
+        flicker.endFlick(mat3(orientation),translation);
         }
         break;
     case rotate:
         switch (rotTechnique) {
         case screenSpace:
             if (!flicker.inFlick(rotation)) {
-            flicker.endFlick(glm::mat3(orientation),rotation);
+            flicker.endFlick(mat3(orientation),rotation);
             }
             break;
         case pinch:
             rotTechnique = screenSpace;
             //std::cout << "screenSpace" << std::endl;
             if (!flicker.inFlick(pinchy)) {
-                flicker.endFlick(glm::mat3(orientation),pinchy);
+                flicker.endFlick(mat3(orientation),pinchy);
             }
             break;
         }
@@ -877,8 +938,8 @@ void Engine::refresh(TuioTime frameTime) {
 }
 
 void Engine::checkUDP() {
-    glm::mat4 newLocationMatrix;
-    glm::vec3 newLocationVector;
+    mat4 newLocationMatrix;
+    vec3 newLocationVector;
     //UDP queue
     boost::mutex::scoped_lock lock(ioMutex);
     while (!eventQueue.isEmpty()) {
@@ -1142,16 +1203,15 @@ void Engine::checkSpaceNavigator() {
     std::fill_n(position,6,0.0f);
 
     if (glfwGetJoystickPos( spaceNavigator, position,6) == 6 ) {
-        //inputStarted = true;
         glfwGetJoystickButtons(spaceNavigator,buttons,2);
         if (buttons[0] == GLFW_PRESS) {
 
             sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
             sr.viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*sr.viewMatrix;
             sr.viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[5],vec3(0,1,0))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[4],vec3(0,0,1))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*position[3],vec3(1,0,0))*sr.viewMatrix;
         }
         else {
 
@@ -1164,24 +1224,24 @@ void Engine::checkSpaceNavigator() {
             /*selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
             selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*selectedAsset->modelMatrix;
             selectedAsset->modelMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*selectedAsset->modelMatrix;
-            selectedAsset->rotate(glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0)));
-            selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
-            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));*/
+            selectedAsset->rotate(glm::rotate(RTSCALE*position[5],vec3(0,1,0)));
+            selectedAsset->rotate(glm::rotate(RTSCALE*position[4],vec3(0,0,1)));
+            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],vec3(1,0,0)));*/
 
             /*sr.light.viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*sr.light.viewMatrix;
             sr.light.viewMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*sr.light.viewMatrix;
             sr.light.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.light.viewMatrix;
 
-            glm::vec4 tempPosition = sr.light.viewMatrix[3];
-            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.light.viewMatrix;
+            vec4 tempPosition = sr.light.viewMatrix[3];
+            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],vec3(0,1,0))*sr.light.viewMatrix;
             sr.light.viewMatrix[3] = tempPosition;
 
             tempPosition = sr.light.viewMatrix[3];
-            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,0,1))*sr.light.viewMatrix;
+            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],vec3(0,0,1))*sr.light.viewMatrix;
             sr.light.viewMatrix[3] = tempPosition;
 
             tempPosition = sr.light.viewMatrix[3];
-            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*sr.light.viewMatrix;
+            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],vec3(1,0,0))*sr.light.viewMatrix;
             sr.light.viewMatrix[3] = tempPosition;*/
 
 
@@ -1237,7 +1297,7 @@ void Engine::initPhysics()
     /*for (int i=0;i<6;++i) {
         btRigidBody
         boxes.push_back(pho::Asset("box.obj",&normalMap,&sr));
-        boxes[i].modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+        boxes[i].modelMatrix = glm::translate(mat4(),vec3(0,0,-15));
     }*/
 }
 
@@ -1292,7 +1352,7 @@ void Engine::checkPhysics()
             {
                 //selectedAsset = it->second;
                 selectedAsset = intersectedAsset;
-                grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
+                grabbedVector = vec3(cursor.modelMatrix[3])-vec3(selectedAsset->modelMatrix[3]);
                 plane.modelMatrix = selectedAsset->modelMatrix;
                 appState = translate;
                 doubleClickPerformed = false;
@@ -1306,13 +1366,13 @@ void Engine::checkPhysics()
 bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset*& intersected) {
 
     // The ray Start and End positions, in Normalized Device Coordinates (Have you read Tutorial 4 ?)
-        glm::vec4 lRayStart_NDC(
+        vec4 lRayStart_NDC(
             normalizedX,
             normalizedY,
             -1.0, // The near plane maps to Z=-1 in Normalized Device Coordinates
             1.0f
         );
-        glm::vec4 lRayEnd_NDC(
+        vec4 lRayEnd_NDC(
                     normalizedX,
                     normalizedY,
             0.0,
@@ -1322,29 +1382,29 @@ bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::As
 
         // The Projection matrix goes from Camera Space to NDC.
         // So inverse(ProjectionMatrix) goes from NDC to Camera Space.
-        glm::mat4 InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
+        mat4 InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
 
         // The View Matrix goes from World Space to Camera Space.
         // So inverse(ViewMatrix) goes from Camera Space to World Space.
-        glm::mat4 InverseViewMatrix = glm::inverse(sr.viewMatrix);
+        mat4 InverseViewMatrix = glm::inverse(sr.viewMatrix);
 
-        glm::vec4 lRayStart_camera = InverseProjectionMatrix * lRayStart_NDC;    lRayStart_camera/=lRayStart_camera.w;
-        glm::vec4 lRayStart_world  = InverseViewMatrix       * lRayStart_camera; lRayStart_world /=lRayStart_world .w;
-        glm::vec4 lRayEnd_camera   = InverseProjectionMatrix * lRayEnd_NDC;      lRayEnd_camera  /=lRayEnd_camera  .w;
-        glm::vec4 lRayEnd_world    = InverseViewMatrix       * lRayEnd_camera;   lRayEnd_world   /=lRayEnd_world   .w;
+        vec4 lRayStart_camera = InverseProjectionMatrix * lRayStart_NDC;    lRayStart_camera/=lRayStart_camera.w;
+        vec4 lRayStart_world  = InverseViewMatrix       * lRayStart_camera; lRayStart_world /=lRayStart_world .w;
+        vec4 lRayEnd_camera   = InverseProjectionMatrix * lRayEnd_NDC;      lRayEnd_camera  /=lRayEnd_camera  .w;
+        vec4 lRayEnd_world    = InverseViewMatrix       * lRayEnd_camera;   lRayEnd_world   /=lRayEnd_world   .w;
 
 
-        glm::vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
+        vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
         lRayDir_world = glm::normalize(lRayDir_world);
 
-        return rayTestWorld(glm::vec3(lRayStart_world),lRayDir_world,intersected);
+        return rayTestWorld(vec3(lRayStart_world),lRayDir_world,intersected);
 
 }
 
-bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset*& intersected) {
+bool Engine::rayTestWorld(const vec3 &origin,const vec3 &direction, pho::Asset*& intersected) {
 
-        glm::vec3 out_origin = origin;
-        glm::vec3 out_direction = direction;
+        vec3 out_origin = origin;
+        vec3 out_direction = direction;
         btVector3 temp;
 
         out_direction = out_direction*1000.0f;
@@ -1366,7 +1426,7 @@ bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, ph
 }
 
 
-bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
+bool Engine::checkPolhemus(mat4 &modelMatrix) {
 
         boost::mutex::scoped_lock lock(ioMutex);
         //SERIAL Queue
@@ -1377,13 +1437,17 @@ bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
                 glm::quat orientation;
                 mat4 transform;
 
-                //position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
                 if (appState == select)
                 {
+                    //std::cout << "x :" << temp[0] << "\t\t y:" << temp[2] << "\t\t z:" << temp[3] << std::endl;
                     position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
-                }
 
-                position += vec3(-0.32,-0.25f,-0.5f);
+                    //position += vec3(0,-2.7f,3.8f);
+                }
+                else {
+                    position = vec3(temp[0],temp[1],temp[2]);
+                    //position += vec3(0,0,-10);
+                }
 
                 orientation.w = temp[3];
                 orientation.x = temp[4];
@@ -1400,9 +1464,10 @@ bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
                 transform[3][2] = position.z;
 
                 modelMatrix = transform;
+                polhemusMatrix = transform;
 
                 rayOrigin = position;
-                rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
+                rayDirection = mat3(transform)*vec3(0,0,-1);
 
                 return true;
         }
