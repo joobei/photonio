@@ -83,7 +83,6 @@ namespace pho {
 		bool computeRotationMatrix();
 		void shutdown();
 
-
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 

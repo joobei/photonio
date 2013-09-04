@@ -307,7 +307,16 @@ void Engine::checkEvents() {
 
                 glm::vec3 translationVector = rayOrigin-initPosition;
                 if (glm::length(translationVector) < 5) {
+                    mat4 tm = mat4();
+                    rotationMatch(tm,selectedAsset->modelMatrix);
+                    vec3 pos = vec3(selectedAsset->modelMatrix[3]);
+                    selectedAsset->modelMatrix = glm::mat4();
+                    selectedAsset->setPosition(pos);
                     selectedAsset->modelMatrix = glm::translate(selectedAsset->modelMatrix,translationVector);
+                    rotationMatch(selectedAsset->modelMatrix,tm);
+
+
+                    //selectedAsset->setPosition(glm::vec3(temp));
                 }
                 initPosition = rayOrigin;
         }
@@ -1431,7 +1440,7 @@ bool Engine::checkPolhemus(mat4 &modelMatrix) {
         boost::mutex::scoped_lock lock(ioMutex);
         //SERIAL Queue
         while(!eventQueue.isSerialEmpty()) {
-                boost::array<float,7> temp = eventQueue.serialPop();
+                boost::array<float,28> temp = eventQueue.serialPop();
 
                 vec3 position;
                 glm::quat orientation;
