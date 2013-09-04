@@ -247,6 +247,7 @@ namespace pho {
 		glm::vec2 p1p,p2p,p1c,p2c;
 		glm::vec2 p1t,p2t;
         glm::vec2 p1f; //first point of contact of 1st finger (to decide axis lock or not)
+        float lastFingerDistance;
 		bool both;
 		bool consumed;
 

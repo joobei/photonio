@@ -570,6 +570,20 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         flicker.newFlick(flickState::translation);
         flicker.stopFlick(flickState::translation); // remove this for flick continue "feature"
         flicker.stopFlick(flickState::pinchy);
+        p1c.x = x;
+        p1c.y = y;
+        f1id = tcur->getCursorID();
+
+        p1p = p1c ;  //when first putting finger down there must be
+    }
+
+    if ((numberOfCursors == 2) && (appState == translate)) {
+        p2c.x = x;
+        p2c.y = y;
+        f2id = tcur->getCursorID();
+        lastFingerDistance = glm::distance(p2c,p1c);
+        std::cout << "Finger Distance : " << lastFingerDistance << std::endl;
+        p2p = p2c ;  //when first putting finger down there must be
     }
 
     if ((numberOfCursors == 1) && ( appState == rotate))
@@ -647,19 +661,19 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             {
 
                 rotTechnique = locky;
-                std::cout << "Lock Y axis" << std::endl;
+                //std::cout << "Lock Y axis" << std::endl;
             }
             else if ((p1f.x < 0.2) && (p1f.y > 0.8))
             {
 
                 rotTechnique = lockx;
-                std::cout << "Lock X axis" << std::endl;
+                //std::cout << "Lock X axis" << std::endl;
             }
             else if ((p1f.x < 0.6) && (p1f.x > 0.4) && (p1f.y > 0.4) && (p1f.y < 0.6) && (x < 0.6) && (x > 0.4) && (y > 0.4) && (y < 0.6))
             {
 
                 rotTechnique = lockz;
-                std::cout << "Lock Z axis" << std::endl;
+               // std::cout << "Lock Z axis" << std::endl;
             }
             else
             {
@@ -696,10 +710,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
     vec2 ft;
     float newAngle;
-
-    //short numberOfCursors = tuioClient->getTuioCursors().size();
-    //std::list<TUIO::TuioCursor*> cursorList;
-    //cursorList = tuioClient->getTuioCursors();
+    short numberOfCursors = tuioClient->getTuioCursors().size();
 
     switch (appState) {
     case select:
@@ -708,21 +719,48 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         break;
     case translate:
         //********************* TRANSLATE ****************************
-        tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+        if (numberOfCursors == 2)
+        {
+            if (tcur->getCursorID() == f1id) {
+                p1c.x = x;
+                p1c.y = y;
+            }
+
+            if (tcur->getCursorID() == f2id) {
+                p2c.x = x;
+                p2c.y = y;
+            }
+            float currentFingerDistance = glm::distance(p2c,p1c);
+            float distanceTravelled = lastFingerDistance-currentFingerDistance;
+
+            std::cout << distanceTravelled << std::endl;
+
+            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+            newLocationVector = tempMat*vec3(0,distanceTravelled,0);
+            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+
+            plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
+            pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);
+
+            lastFingerDistance = currentFingerDistance;
+        }
+        else
+        {
+            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
 #define TFACTORA 5
-        x=(tcur->getXSpeed())/TFACTORA;
-        y=(tcur->getYSpeed())/TFACTORA;
-        //add cursor to queue for flicking
+            x=(tcur->getXSpeed())/TFACTORA;
+            y=(tcur->getYSpeed())/TFACTORA;
+            //add cursor to queue for flicking
 
-        newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-        newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+            newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
+            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
-        plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
-        pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
+            plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
+            pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
 
-        //temp.setFromOpenGLMatrix(glm::value_ptr(tempMatrix));
-        //coHeart->setWorldTransform(temp);
-
+            //temp.setFromOpenGLMatrix(glm::value_ptr(tempMatrix));
+            //coHeart->setWorldTransform(temp);
+        }
         break;
         //*********************   ROTATE  ****************************
     case rotate:
@@ -1218,13 +1256,6 @@ void Engine::initPhysics()
 {
     btTransform temp;
 
-    btSphereShape* csSphere = new btSphereShape(1.0f);
-    coCursor = new btCollisionObject();
-    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-    coCursor->setCollisionShape(csSphere);
-    coCursor->setWorldTransform(temp);
-    coCursor->setUserPointer(&cursor);
-
     btDefaultCollisionConfiguration* collisionConfiguration = new btDefaultCollisionConfiguration();
     btCollisionDispatcher* dispatcher = new btCollisionDispatcher(collisionConfiguration);
 
@@ -1234,18 +1265,9 @@ void Engine::initPhysics()
     btAxisSweep3* broadphase = new btAxisSweep3(worldAabbMin,worldAabbMax);
 
     sr.collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
-    //dynamicsWorld = new btDynamicsWorld(dispatcher,broadphase,collisionConfiguration)
-    //btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),1);
-    if (selectionTechnique == virtualHand)
-    {
-        sr.collisionWorld->addCollisionObject(coCursor);
-    }
+
     sr.collisionWorld->addCollisionObject(pyramidCursor.collisionObject);
-    /*for (int i=0;i<6;++i) {
-        btRigidBody
-        boxes.push_back(pho::Asset("box.obj",&normalMap,&sr));
-        boxes[i].modelMatrix = glm::translate(mat4(),vec3(0,0,-15));
-    }*/
+
 }
 
 void Engine::checkPhysics()
