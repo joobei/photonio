@@ -69,7 +69,10 @@ enum flickState {
 enum RotateTechnique { //rotTechnique
     screenSpace,
     pinch,
-    clutch
+    clutch,
+    lockx,
+    locky,
+    lockz
 };
 
 enum SelectionTechnique {

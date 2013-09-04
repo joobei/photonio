@@ -34,11 +34,11 @@ Engine::Engine():
     _udpserver(ioservice,&eventQueue,&ioMutex),
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(raySelect),
+    selectionTechnique(indieSelectRelative),
     mouseMove(false),
     plane(&sr),
     rotTechnique(screenSpace),
-    technique(rayCasting),
+    technique(planeCasting),
     pyramidCursor(&sr),
     target(&sr),
     ray(&sr)
@@ -643,12 +643,15 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     //std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
-    if ((numberOfCursors == 1) && ( appState == translate || appState == select)) {
+    if ((numberOfCursors == 1) && ( appState == translate || appState == select))
+    {
         flicker.newFlick(flickState::translation);
         flicker.stopFlick(flickState::translation); // remove this for flick continue "feature"
         flicker.stopFlick(flickState::pinchy);
     }
-    if ((numberOfCursors == 1) && ( appState == rotate)) {
+
+    if ((numberOfCursors == 1) && ( appState == rotate))
+    {
         flicker.stopFlick(flickState::rotation);
         flicker.newFlick(flickState::rotation);
     }
@@ -728,23 +731,39 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             p1c.y = y;
             f1id = tcur->getCursorID();
 
-            p1p = p1c;  //when first putting finger down there must be
+            p1p = p1c ;  //when first putting finger down there must be
             // a previous spot otherwise when the other finger moves it goes crazy
-
+            p1f = p1c; //save 1st touched point
         }
         if (numberOfCursors == 2) {
+            if ((p1f.x > 0.8) && (p1f.y < 0.1))
+            {
 
+                rotTechnique = locky;
+                std::cout << "Lock Y axis" << std::endl;
+            }
+            else if ((p1f.x < 0.8) && (p1f.y > 0.1))
+            {
+
+                rotTechnique = lockx;
+                std::cout << "Lock X axis" << std::endl;
+            }
+            else
+            {
+
+                rotTechnique = pinch;
+                std::cout << "pinch rotate" << '\n';
+
+
+                p2p = p2c;   //when first putting finger down there must be
+                // a previous spot otherwise when the other finger moves it goes crazy
+
+                consumed = true;
+            }
             flicker.stopFlick(pinchy);
-            rotTechnique = pinch;
-            std::cout << "pinch rotate" << '\n';
-            p2c.x = tcur->getX();
-            p2c.y = tcur->getY();
+            p2c.x = x;
+            p2c.y = y;
             f2id = tcur->getCursorID();
-
-            p2p = p2c;   //when first putting finger down there must be
-            // a previous spot otherwise when the other finger moves it goes crazy
-
-            consumed = true;
         }
     }
     if (verbose)
@@ -833,8 +852,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
                 selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
                 selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
 
-                p1c.x = tcur->getX();
-                p1c.y = tcur->getY();
+                p1c.x = x;
+                p1c.y = y;
 
                 flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
             }
@@ -897,9 +916,31 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
                 consumed = true;
             }
+            break;
+        case locky:
+            if (tcur->getCursorID() == f2id) {
 
+                p2p = p2c;
+                selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
+                //selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+
+                p2c.x = tcur->getX();
+                p2c.y = tcur->getY();
+            }
+            break;
+        case lockx:
+            if (tcur->getCursorID() == f2id) {
+
+                p2p = p2c;
+                //selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+
+                p2c.x = tcur->getX();
+                p2c.y = tcur->getY();
+            }
             break;
         }
+
     }
     if (verbose)
         std::cout << "set cur " << tcur->getCursorID() << " (" <<  tcur->getSessionID() << ") " << tcur->getX() << " " << tcur->getY()
@@ -984,24 +1025,28 @@ void Engine::checkUDP() {
                 calibrate = true;
                 break;
             case 2:
-                if (tempEvent.state() == true && appState == translate) {
+                if ((tempEvent.state() == true) && (appState == translate)) {
                     appState = rotate;
                     rotTechnique = screenSpace;
                     printf("translate --> rotate (Screenspace)");
                 }
-                if (tempEvent.state() == false && appState == rotate) {
+                if ((tempEvent.state() == false) && (appState == rotate)) {
                     appState = translate;
+                    p1f.x = 0.5;
+                    p1f.y = 0.5;
                 }
 
                 break;
             case 3:
-                if (tempEvent.state() == true && appState == translate) {
+                if ((tempEvent.state() == true) && (appState == translate)) {
                     appState = rotate;
                     rotTechnique = screenSpace;
                     printf("translate --> rotate (Screenspace)");
                 }
-                if (tempEvent.state() == false && appState == rotate) {
+                if ((tempEvent.state() == false) && (appState == rotate)) {
                     appState = translate;
+                    p1f.x = 0.5;
+                    p1f.y = 0.5;
                 }
 
                 break;
@@ -1109,6 +1154,7 @@ void Engine::checkKeyboard() {
         if (glfwGetKey('3') == GLFW_PRESS) {
             appState = select;
             intersectedAsset = NULL;
+            technique = planeCasting;
             selectionTechnique = indieSelectRelative;
             sr.collisionWorld->removeCollisionObject(coCursor);
             log("indieSelectRelative");
@@ -1119,6 +1165,7 @@ void Engine::checkKeyboard() {
         if (glfwGetKey('4') == GLFW_PRESS) {
             appState = select;
             selectionTechnique = indieSelectHybrid;
+            technique = planeCasting;
             sr.collisionWorld->removeCollisionObject(coCursor);
             log("indieCursorHybrid");
             keyPressOK = false;
@@ -1128,6 +1175,7 @@ void Engine::checkKeyboard() {
         if (glfwGetKey('5') == GLFW_PRESS) {
             appState = select;
             selectionTechnique = planeSelectRelative;
+            technique = planeCasting;
             sr.collisionWorld->removeCollisionObject(coCursor);
             log("planeSelectRelative");
             keyPressOK = false;
