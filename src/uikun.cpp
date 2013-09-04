@@ -35,7 +35,6 @@ Engine::Engine():
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
     selectionTechnique(indieSelectRelative),
-    mouseMove(false),
     plane(&sr),
     rotTechnique(screenSpace),
     technique(planeCasting),
@@ -83,8 +82,6 @@ Engine::Engine():
     tf = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
 
     perspective = 80.0f;
-
-    last_mx = last_my = cur_mx = cur_my = 0;
 
     consumed = false;
 
@@ -517,81 +514,6 @@ bool Engine::computeRotationMatrix() {
     return true;
 }
 
-void Engine::mouseButtonCallback(int button, int state) {
-
-    glfwGetMousePos(&cur_mx,&cur_my);
-
-    boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
-    double difference = elapsed_times.wall-previousTime.wall;
-
-    if (difference > 150000000) {
-        //doubleClickPerformed = true;
-        selectedAsset = &pyramidCursor;
-    }
-
-    previousTime = elapsed_times;
-
-
-    if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_PRESS))
-    {
-
-
-    }
-    if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_RELEASE))
-    {
-        appState = rotate;
-    }
-    if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_PRESS)) {
-
-        mouseMove = true;
-        prevMouseExists = true;
-        prevMousePos = glm::vec2(cur_mx,cur_my);
-
-        appState = translate;
-
-    }
-    if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_RELEASE)) {
-
-        mouseMove = false;
-        prevMouseExists = false;
-
-        appState = rotate;
-    }
-}
-
-void Engine::mouseMoveCallback(int x, int y) {
-
-    float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
-    float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
-
-    //vec4 mouse_clip = vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
-    vec4 mouse_clip = vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
-
-    vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
-
-    rayOrigin = vec3(sr.viewMatrix[3]);
-    rayDirection = glm::normalize(vec3(mouse_world)-rayOrigin);
-
-    if (appState == translate) {
-        vec2 MousePt;
-
-        MousePt.x = x;
-        MousePt.y = y;
-
-        vec2 difference = MousePt-prevMousePos;
-        difference.x /= 50;
-        difference.y /= 50;
-        difference.y = -difference.y;
-
-        /*if(prevMouseExists) {
-            selectedAsset->modelMatrix = glm::translate(vec3(difference,0))*selectedAsset->modelMatrix;
-        }*/
-
-        prevMousePos = MousePt;
-
-    }
-}
-
 void Engine::go() {
     initResources();
     while(true) {
@@ -667,42 +589,27 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
             if ((appState == translate) || (appState == rotate)) {
 
-                if (selectionTechnique == virtualHand) {
-                    cursor.modelMatrix[3] = vec4(vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);
-                    selectedAsset = &cursor;
-                    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
-                    sr.collisionWorld->addCollisionObject(coCursor);
-                }
-                else {
-                    sr.collisionWorld->addCollisionObject(coCursor);
-                    locationMatch(cursor.modelMatrix,pyramidCursor.modelMatrix);
-                    locationMatch(plane.modelMatrix,cursor.modelMatrix);
-                    selectedAsset = &cursor;
-                    appState = select;
 
-                    sr.collisionWorld->performDiscreteCollisionDetection();
 
-                    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+                //Put 2d cursor where object was dropped:
+                //1st. calculate clip space coordinates
+                vec4 newtp = sr.projectionMatrix*sr.viewMatrix*pyramidCursor.modelMatrix*vec4(0,0,0,1);
+                //2nd. convert it in normalized device coordinates by dividing with w
+                newtp/=newtp.w;
+                touchPoint.x = newtp.x;
+                touchPoint.y = newtp.y;
 
-                    //Put 2d cursor where object was dropped:
-                    //1st. calculate clip space coordinates
-                    vec4 newtp = sr.projectionMatrix*sr.viewMatrix*pyramidCursor.modelMatrix*vec4(0,0,0,1);
-                    //2nd. convert it in normalized device coordinates by dividing with w
-                    newtp/=newtp.w;
-                    touchPoint.x = newtp.x;
-                    touchPoint.y = newtp.y;
-
-                }
-                doubleClickPerformed = false;
-                appState = select;
             }
+            doubleClickPerformed = false;
+            appState = select;
+        }
 
-            if((appState == select) && (selectionTechnique != virtualHand) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset)) {
-                   selectedAsset = intersectedAsset;
-                   appState = translate;
-            }
+        if((appState == select) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset)) {
+            selectedAsset = intersectedAsset;
+            appState = translate;
         }
     }
+
     previousTime = elapsed_times;
 
 
@@ -736,17 +643,23 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             p1f = p1c; //save 1st touched point
         }
         if (numberOfCursors == 2) {
-            if ((p1f.x > 0.8) && (p1f.y < 0.1))
+            if ((p1f.x > 0.8) && (p1f.y < 0.2))
             {
 
                 rotTechnique = locky;
                 std::cout << "Lock Y axis" << std::endl;
             }
-            else if ((p1f.x < 0.8) && (p1f.y > 0.1))
+            else if ((p1f.x < 0.2) && (p1f.y > 0.8))
             {
 
                 rotTechnique = lockx;
                 std::cout << "Lock X axis" << std::endl;
+            }
+            else if ((p1f.x < 0.6) && (p1f.x > 0.4) && (p1f.y > 0.4) && (p1f.y < 0.6) && (x < 0.6) && (x > 0.4) && (y > 0.4) && (y < 0.6))
+            {
+
+                rotTechnique = lockz;
+                std::cout << "Lock Z axis" << std::endl;
             }
             else
             {
@@ -778,10 +691,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     y = tcur->getY();
     mat3 tempMat;
     mat4 newLocationMatrix;
-    mat4 tempMatrix;
-
-    //std::cout << "x: " << x;
-    //std::cout << "\t\t y: " << y << std::endl;
 
     flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
@@ -794,34 +703,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if (selectionTechnique == indieSelectAbsolute ) {
-            touchPoint.x = 2*x-1;
-            touchPoint.y = 2*(1-y)-1;
-            break;
-        }
-        if (selectionTechnique == indieSelectRelative) {
-            touchPoint.x += tcur->getXSpeed()/30;
-            touchPoint.y += -1*tcur->getYSpeed()/30;
-            break;
-        }
-        if (selectionTechnique == indieSelectHybrid) {
-            touchPoint.x += tcur->getXSpeed()/100;
-            touchPoint.y += -1*tcur->getYSpeed()/100;
-            break;
-        }
-        if (selectionTechnique == planeSelectRelative) {
-#define TFACTOR 20
-            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-
-            x=(tcur->getXSpeed())/TFACTOR;
-            y=(tcur->getYSpeed())/TFACTOR;
-
-            newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
-            touchPoint.x += newLocationVector.x;
-            touchPoint.y += newLocationVector.y;
-            break;
-        }
+        touchPoint.x += tcur->getXSpeed()/30;
+        touchPoint.y += -1*tcur->getYSpeed()/30;
+        break;
     case translate:
         //********************* TRANSLATE ****************************
         tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
@@ -871,6 +755,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 
             break;
+        case lockz:
         case pinch:
             // ***  PINCH  **********
 
@@ -909,8 +794,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
                 selectedAsset->rotate(glm::rotate((newAngle-referenceAngle)*(-50),vec3(0,0,1)));
 
-                selectedAsset->rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
-                selectedAsset->rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
+                if(rotTechnique != lockz) {
+                    selectedAsset->rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
+                    selectedAsset->rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
+                }
 
                 flicker.addRotate(newAngle-referenceAngle);
 
@@ -965,9 +852,12 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
         switch (rotTechnique) {
         case screenSpace:
             if (!flicker.inFlick(rotation)) {
-            flicker.endFlick(mat3(orientation),rotation);
+                flicker.endFlick(mat3(orientation),rotation);
             }
             break;
+        case lockx:
+        case locky:
+        case lockz:
         case pinch:
             rotTechnique = screenSpace;
             //std::cout << "screenSpace" << std::endl;
@@ -1361,63 +1251,9 @@ void Engine::initPhysics()
 void Engine::checkPhysics()
 {
     btTransform temp;
-
     temp.setFromOpenGLMatrix(glm::value_ptr(pyramidCursor.modelMatrix));
     pyramidCursor.collisionObject->setWorldTransform(temp);
 
-    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-    coCursor->setWorldTransform(temp);
-
-
-    /*if ((appState == select) && (selectionTechnique == virtualHand)) {
-        temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-        coCursor->setWorldTransform(temp);
-    }*/
-
-
-    if ((appState == select ) && (selectionTechnique == virtualHand))
-    {
-
-        if (sr.collisionWorld)
-        {
-            sr.collisionWorld->performDiscreteCollisionDetection();
-        }
-
-        std::map<btCollisionObject*,pho::Asset*>::iterator it;
-        int numManifolds = sr.collisionWorld->getDispatcher()->getNumManifolds();
-        for (int i=0;i<numManifolds;i++)
-        {
-            btPersistentManifold* contactManifold =  sr.collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
-            btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-            btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
-
-            pho::Asset* a = static_cast<pho::Asset*>(obA->getUserPointer());
-            if (a!=(&cursor))
-            {   //if A is NOT the cursor we want to highlight it
-                a->beingIntersected = true;
-                intersectedAsset = a;
-            }
-            else
-            {   //if A was the cursor then it's B that we want
-                a = static_cast<pho::Asset*>(obB->getUserPointer());
-                a->beingIntersected = true;
-                intersectedAsset = a;
-            }
-
-
-            if (doubleClickPerformed)
-            {
-                //selectedAsset = it->second;
-                selectedAsset = intersectedAsset;
-                grabbedVector = vec3(cursor.modelMatrix[3])-vec3(selectedAsset->modelMatrix[3]);
-                plane.modelMatrix = selectedAsset->modelMatrix;
-                appState = translate;
-                doubleClickPerformed = false;
-                sr.collisionWorld->removeCollisionObject(coCursor);
-                break;
-            }
-        }
-    }
 }
 
 bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset*& intersected) {

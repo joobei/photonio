@@ -5,26 +5,8 @@
 #include "boost/bind.hpp"
 #include <functional>
 
-typedef void (*GLFWmousebuttonfun)(int,int);
-void glfwMouseCallback(GLFWmousebuttonfun f){}
-std::function<void (int,int)> mouseFunc;
-void mouseFunkThunk(int x, int y)
-{
-    mouseFunc(x, y);
-}
-
-typedef void (*GLFWmouseposfun)(int,int);
-void glfwMouseCallback2(GLFWmouseposfun f){}
-std::function<void (int,int)> mouseFunc2;
-void mouseFunkThunk2(int x, int y)
-{
-    mouseFunc2(x, y);
-}
-
 int main()
 {
-    using std::placeholders::_1;
-    using std::placeholders::_2;
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
@@ -81,11 +63,6 @@ int main()
         log("Joystick 2 found Space Navigator");
         engine->spaceNavigator = GLFW_JOYSTICK_2;
     }
-
-    mouseFunc = std::bind(&pho::Engine::mouseButtonCallback,engine,_1,_2);
-    glfwSetMouseButtonCallback(&mouseFunkThunk);
-    mouseFunc2 = std::bind(&pho::Engine::mouseMoveCallback,engine,_1,_2);
-    glfwSetMousePosCallback(&mouseFunkThunk2);
 
     engine->go();
 
