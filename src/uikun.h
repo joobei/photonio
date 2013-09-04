@@ -163,7 +163,7 @@ namespace pho {
 		//Picking
         glm::mat4 InverseProjectionMatrix;
         glm::mat4 InverseViewMatrix;
-        bool doubleClickPerformed =false;
+
 		GLuint hitObject;
 		bool objectHit,sphereHit;
 		
@@ -294,9 +294,7 @@ namespace pho {
 
 
         //Physics
-        btCollisionObject* coCursor =0;
-
-        bool switchOnNextFrame=false;
+        //bool switchOnNextFrame=false;
 
         //Indirect Finger
         glm::vec2 touchPoint;

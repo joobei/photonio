@@ -386,7 +386,7 @@ void Engine::checkEvents() {
 
     checkPhysics();
 
-    if(switchOnNextFrame) {
+    /*if(switchOnNextFrame) {
     pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
     //Put 2d cursor where object was dropped:
     //1st. calculate clip space coordinates
@@ -396,7 +396,7 @@ void Engine::checkEvents() {
     touchPoint.x = newtp.x;
     touchPoint.y = newtp.y;
     switchOnNextFrame = false;
-    }
+    }*/
 
     if(touchPoint.x < -1.0f) { touchPoint.x = -1.0; }
     if(touchPoint.x > 1.0f) { touchPoint.x = 1; }
@@ -582,7 +582,6 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         p2c.y = y;
         f2id = tcur->getCursorID();
         lastFingerDistance = glm::distance(p2c,p1c);
-        std::cout << "Finger Distance : " << lastFingerDistance << std::endl;
         p2p = p2c ;  //when first putting finger down there must be
     }
 
@@ -596,14 +595,16 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     double difference = elapsed_times.wall-previousTime.wall;
 
     if (numberOfCursors == 1 ) {
-        if (difference < 150000000) {  //if doubleClick
-            if((appState == select) && (selectionTechnique == virtualHand)) {
-                doubleClickPerformed = true;
-            }  //<--- this had to be moved before the next one because appstate select was the same and doubleClickPerformed was done twice
+        if (difference < 150000000)
+        {  //if doubleClick
+
+            if((appState == select) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
+            {
+                selectedAsset = intersectedAsset;
+                appState = translate;
+            }
 
             if ((appState == translate) || (appState == rotate)) {
-
-
 
                 //Put 2d cursor where object was dropped:
                 //1st. calculate clip space coordinates
@@ -614,14 +615,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                 touchPoint.y = newtp.y;
 
             }
-            doubleClickPerformed = false;
             appState = select;
         }
 
-        if((appState == select) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset)) {
-            selectedAsset = intersectedAsset;
-            appState = translate;
-        }
+
     }
 
     previousTime = elapsed_times;
@@ -629,10 +626,16 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if ((numberOfCursors == 2) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset) && (selectionTechnique !=virtualHand)) {
+        if ((numberOfCursors == 2) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset)) {
             appState = translate;
             selectedAsset = intersectedAsset;
             pho::locationMatch(plane.modelMatrix,intersectedAsset->modelMatrix);
+
+            p2c.x = x;
+            p2c.y = y;
+            f2id = tcur->getCursorID();
+            lastFingerDistance = glm::distance(p2c,p1c);
+            p2p = p2c ;  //when first putting finger down there must be
             break;
         }
         if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
@@ -657,6 +660,9 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             p1f = p1c; //save 1st touched point
         }
         if (numberOfCursors == 2) {
+
+
+
             if ((p1f.x > 0.8) && (p1f.y < 0.2))
             {
 
@@ -691,6 +697,8 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             p2c.x = x;
             p2c.y = y;
             f2id = tcur->getCursorID();
+
+            std::cout << "Distance : " << glm::distance(p1c,p2c) << std::endl;
         }
     }
     if (verbose)
@@ -733,14 +741,15 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             float currentFingerDistance = glm::distance(p2c,p1c);
             float distanceTravelled = lastFingerDistance-currentFingerDistance;
 
-            std::cout << distanceTravelled << std::endl;
-
             tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
             newLocationVector = tempMat*vec3(0,distanceTravelled,0);
-            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
-            plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
-            pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);
+            if (distanceTravelled < 0.5)
+            {
+                newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+                plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
+                pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);
+            }
 
             lastFingerDistance = currentFingerDistance;
         }
@@ -830,9 +839,13 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
                 referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x));
                 newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 
-                selectedAsset->rotate(glm::rotate((newAngle-referenceAngle)*(-50),vec3(0,0,1)));
+                float ang = newAngle-referenceAngle;
 
-                if(rotTechnique != lockz) {
+                if ( glm::abs(ang) < 1) {
+                    selectedAsset->rotate(glm::rotate((ang)*(-50),vec3(0,0,1)));
+                }
+
+                if(rotTechnique != lockz) {  //because they share a CASE in this switch statement
                     selectedAsset->rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
                     selectedAsset->rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
                 }
@@ -1032,7 +1045,6 @@ void Engine::checkKeyboard() {
             cursor.modelMatrix = glm::translate(0,0,-5);
             selectedAsset = &cursor;
             temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-            coCursor->setWorldTransform(temp);
             pyramidCursor.modelMatrix = glm::translate(0,0,-15);
             temp.setFromOpenGLMatrix(glm::value_ptr(pyramidCursor.modelMatrix));
             pyramidCursor.collisionObject->setWorldTransform(temp);
@@ -1055,7 +1067,6 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey('1') == GLFW_PRESS) {
-            sr.collisionWorld->addCollisionObject(coCursor);
             locationMatch(cursor.modelMatrix,pyramidCursor.modelMatrix);
             locationMatch(plane.modelMatrix,cursor.modelMatrix);
             selectedAsset = &cursor;
@@ -1074,7 +1085,6 @@ void Engine::checkKeyboard() {
             selectionTechnique = raySelect;
             technique = rayCasting;
             log("RayCasting");
-            sr.collisionWorld->removeCollisionObject(coCursor);
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
@@ -1084,7 +1094,6 @@ void Engine::checkKeyboard() {
             intersectedAsset = NULL;
             technique = planeCasting;
             selectionTechnique = indieSelectRelative;
-            sr.collisionWorld->removeCollisionObject(coCursor);
             log("indieSelectRelative");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
@@ -1094,7 +1103,6 @@ void Engine::checkKeyboard() {
             appState = select;
             selectionTechnique = indieSelectHybrid;
             technique = planeCasting;
-            sr.collisionWorld->removeCollisionObject(coCursor);
             log("indieCursorHybrid");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
@@ -1104,7 +1112,6 @@ void Engine::checkKeyboard() {
             appState = select;
             selectionTechnique = planeSelectRelative;
             technique = planeCasting;
-            sr.collisionWorld->removeCollisionObject(coCursor);
             log("planeSelectRelative");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
