@@ -7,42 +7,38 @@
 #include <boost/timer/timer.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
+#include <iostream>
 
 namespace pho {
+
+enum experimentType {
+    rotationTask,
+    dockingTask,
+    practice
+};
 
 class ExpManager {
 public:
     ExpManager();
     void log();
     glm::vec3 start();
-    glm::vec3 advance();
+    bool advance();
 
-    glm::vec3 *getLeftWristPosition() const;
+
     void setLeftWristPosition(glm::vec3 *value);
-
-    glm::vec4 *getLeftWristRotation() const;
     void setLeftWristRotation(glm::vec4 *value);
-
-    glm::vec3 *getRightWristPosition() const;
     void setRightWristPosition(glm::vec3 *value);
-
-    glm::vec4 *getRightWristRotation() const;
     void setRightWristRotation(glm::vec4 *value);
-
-    glm::vec3 *getWandPosition() const;
     void setWandPosition(glm::vec3 *value);
-
-    pho::Asset *getSphericalCursor() const;
     void setSphericalCursor(pho::Asset *value);
 
-    pho::Cursor *getCursor() const;
+
     void setCursor(pho::Cursor *value);
-
-    pho::Cursor *getTarget() const;
     void setTarget(pho::Cursor *value);
-
-    pho::Ray *getRay() const;
     void setRay(pho::Ray *value);
+    experimentType currentExperiment;
+    std::string user;
+    void setUser(const std::string &value);
 
 private:
     glm::vec3* leftWristPosition;
@@ -54,11 +50,14 @@ private:
     pho::Cursor* cursor;
     pho::Cursor* target;
     pho::Ray* ray;
+    void randomizePositions();
+    std::vector<glm::vec3> positions;
+    std::vector<glm::vec3> originalPositions;
+    short noOfTrials;
+    short currentTrial = 0;
+
 };
 }
-
-
-
 
 
 

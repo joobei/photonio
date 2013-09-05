@@ -16,17 +16,17 @@ public:
     EventQueue();
 
     void push(keimote::PhoneEvent event);
-    void push(boost::array<float, 28>);
+    void push(boost::array<float, 7>);
 
     bool isEmpty();
     bool isSerialEmpty();
 
     keimote::PhoneEvent pop();
-    boost::array<float, 28> serialPop();
+    boost::array<float, 7> serialPop();
 
 private:
     std::deque<keimote::PhoneEvent> queue;
-    std::deque<boost::array<float,28> > serialQueue;
+    std::deque<boost::array<float,7> > serialQueue;
 };
 
 }

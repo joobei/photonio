@@ -51,10 +51,10 @@ public:
 private:
         void startRead();
         void read_complete(const boost::system::error_code& error, std::size_t bytes_transferred);
+        float getFloat(int index);
 		
 
-        //static const int max_read_length = 7*4+3; // maximum amount of data to read in one operation
-        static const int max_read_length = (7*4+3+2)*4;
+        static const int max_read_length = 7*4+3; // maximum amount of data to read in one operation
         boost::asio::io_service& io_service_;
         boost::asio::serial_port serialPort; // the serial port this instance is connected to
         unsigned char serialBuffer[max_read_length]; // data read from the socket

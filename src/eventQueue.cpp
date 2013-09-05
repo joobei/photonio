@@ -11,7 +11,7 @@ void EventQueue::push(keimote::PhoneEvent event) {
     queue.push_front(event);
 }
 
-void EventQueue::push(boost::array<float,28> tEvent ) {
+void EventQueue::push(boost::array<float,7> tEvent ) {
     serialQueue.push_front(tEvent);
 }
 
@@ -30,8 +30,8 @@ keimote::PhoneEvent EventQueue::pop() {
     return tempMessage;
 }
 
-boost::array<float, 28> EventQueue::serialPop() {
-    boost::array<float,28> temp;
+boost::array<float, 7> EventQueue::serialPop() {
+    boost::array<float,7> temp;
     temp = serialQueue.front();
     serialQueue.pop_front();
     return temp;

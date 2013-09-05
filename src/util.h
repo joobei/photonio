@@ -76,11 +76,8 @@ enum RotateTechnique { //rotTechnique
 };
 
 enum SelectionTechnique {
-    virtualHand,
-    indieSelectAbsolute,
     indieSelectRelative,
     indieSelectHybrid,
-    planeSelectRelative,
     raySelect
 };
 

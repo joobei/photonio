@@ -27,6 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 using namespace std;
 
+#define USER "Nicholas"
+
 Engine::Engine():
     calibrate(false),
     eventQueue(),
@@ -87,7 +89,7 @@ Engine::Engine():
 
     pointerOpacity = 1.0f;
 
-
+    experiment.user = USER;
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &sr.fLargest);
 
 #define	SHADOW_MAP_RATIO 8;
@@ -225,6 +227,10 @@ void Engine::initResources() {
     InverseViewMatrix = glm::inverse(sr.viewMatrix);
 
     CALL_GL(glEnable(GL_PROGRAM_POINT_SIZE_EXT));
+
+    //experiment manager
+    experiment.setCursor(&pyramidCursor);
+    experiment.setTarget(&target);
 
 }
 
@@ -444,13 +450,12 @@ void Engine::render() {
 
 
     if (appState == select) {
-        if (selectionTechnique == virtualHand) {
-            cursor.draw();
-        }
-        else if (selectionTechnique == raySelect) {
+        if (selectionTechnique == raySelect)
+        {
             ray.draw();
         }
-        else {
+        else
+        {
             sr.flatShader.use();
 
             //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*mat4();
@@ -470,11 +475,10 @@ void Engine::render() {
         }
     }
 
-    if (technique == planeCasting) {
-        if ((appState == translate) || ((appState == select ) && (selectionTechnique == virtualHand))) {
+    if ((technique == planeCasting) && (appState == translate)) {
         plane.draw();
-        }
     }
+
     glfwSwapBuffers();
 }
 
@@ -638,7 +642,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             p2p = p2c ;  //when first putting finger down there must be
             break;
         }
-        if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
+        if ((selectionTechnique == indieSelectHybrid)) {
             touchPoint.x = 2*x-1;
             touchPoint.y = 2*(1-y)-1;
             break;
@@ -890,7 +894,7 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if (selectionTechnique != virtualHand && (!flicker.inFlick(translation))) {
+        if (!flicker.inFlick(translation)) {
             flicker.endFlick(mat3(orientation),translation);
             break;
         }
@@ -1072,9 +1076,8 @@ void Engine::checkKeyboard() {
             selectedAsset = &cursor;
             appState = select;
             technique = planeCasting;
-            selectionTechnique = virtualHand;
             rotTechnique = screenSpace;
-            log("virtualHand");
+
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
@@ -1109,10 +1112,10 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey('5') == GLFW_PRESS) {
-            appState = select;
+        /*    appState = select;
             selectionTechnique = planeSelectRelative;
             technique = planeCasting;
-            log("planeSelectRelative");
+            log("planeSelectRelative");*/
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
@@ -1174,7 +1177,6 @@ void Engine::shadowMapRender() {
     CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
 
-    if ((appState == select) && (selectionTechnique == virtualHand)) cursor.drawFromLight();
     pyramidCursor.drawFromLight();
     target.drawFromLight();
 
@@ -1210,7 +1212,7 @@ void Engine::checkSpaceNavigator() {
             //when used as footswitch
             if((position[2] > 0.6) || (position[1] > 0.4))
             {
-                target.setPosition(experiment.advance());
+                experiment.advance();
             }
 
             /*selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
@@ -1353,7 +1355,7 @@ bool Engine::checkPolhemus(mat4 &modelMatrix) {
         boost::mutex::scoped_lock lock(ioMutex);
         //SERIAL Queue
         while(!eventQueue.isSerialEmpty()) {
-                boost::array<float,28> temp = eventQueue.serialPop();
+                boost::array<float,7> temp = eventQueue.serialPop();
 
                 vec3 position;
                 glm::quat orientation;
