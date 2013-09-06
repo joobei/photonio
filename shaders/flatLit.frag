@@ -5,6 +5,7 @@ precision highp float;
 uniform vec4 material_diffuse;
 uniform vec4 material_specular;
 uniform float material_shininess;
+uniform float alpha;
 
 in vec2 Vertex_UV;
 in vec3 Vertex_Normal;
@@ -39,5 +40,5 @@ void main()
     }
     Out_Color.rgb = final_color.rgb;
     Out_Color.a = material_diffuse.w;
-
+    //Out_Color.a = alpha;
 }

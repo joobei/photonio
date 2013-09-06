@@ -29,13 +29,17 @@ using namespace std;
 
 #define USER "Nicholas"
 
+//factor for translation in planeCasting
+#define TFACTORA 10
+#define FACTORB 2.0f
+
 Engine::Engine():
     calibrate(false),
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
     _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
-    appState(select),
+    appState(translate),
     selectionTechnique(indieSelectRelative),
     plane(&sr),
     rotTechnique(screenSpace),
@@ -115,11 +119,11 @@ void Engine::initResources() {
     initPhysics();
 
     //sr.light.position = vec3(0,160,-60);
-    sr.light.position = vec3(0,40,0);
+    sr.light.position = vec3(0,30,0);
 
     sr.light.direction = vec3(0,-1,0);
     sr.light.color = vec4(1,1,1,1);
-    sr.light.viewMatrix = glm::lookAt(sr.light.position,vec3(0,0,-10),vec3(0,0,-1));
+    sr.light.viewMatrix = glm::lookAt(sr.light.position,vec3(0,0,0),vec3(0,0,-5));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -168,10 +172,11 @@ void Engine::initResources() {
     //*************************************************************
     cursor = pho::Asset("cursor.obj", &sr.noTextureShader,&sr);
     cursor.modelMatrix = glm::translate(mat4(),vec3(0,0,-5));
-    selectedAsset = &cursor; //when app starts we control the cursor
+    selectedAsset = &pyramidCursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
     target.setAlpha(0.6);
+    target.color = glm::vec3(0.6,0.6,0.6);
 
     s0 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
     s0.setScale(0.1f);
@@ -183,17 +188,17 @@ void Engine::initResources() {
     s3.setScale(0.1f);
 
     floor = pho::Asset("floor.obj", &singleTexture,&sr);
-    floor.modelMatrix  = glm::translate(mat4(),vec3(0,-5,-10));
+    floor.modelMatrix  = glm::translate(mat4(),vec3(0,-6,0));
     floor.receiveShadow = true;
 
     plane.setShader(&sr.flatShader);
-    plane.modelMatrix = cursor.modelMatrix;
+    plane.modelMatrix = pyramidCursor.modelMatrix;
     plane.setScale(3.0f);
     //plane.receiveShadow = true;
 
-    pyramidCursor.modelMatrix = glm::translate(mat4(),vec3(0,0,-5));
+    pyramidCursor.modelMatrix = glm::translate(mat4(),vec3(0,0,0));
 
-    target.setPosition(vec3(4,0,-8));
+    target.setPosition(vec3(6,0,2));
 
     //load texture
     ray.texture = gli::createTexture2D(assetpath+"grad2.dds");
@@ -214,7 +219,7 @@ void Engine::initResources() {
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
-    cameraPosition = vec3(0,0,0);
+    cameraPosition = vec3(0,0,10);
     sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
@@ -231,7 +236,8 @@ void Engine::initResources() {
     //experiment manager
     experiment.setCursor(&pyramidCursor);
     experiment.setTarget(&target);
-
+    experiment.setUser(USER);
+    //experiment.
 }
 
 //checks event queue for events
@@ -247,6 +253,9 @@ void Engine::checkEvents() {
     if ((technique == rayCasting) && (appState == direct)) {
         checkPolhemus(polhemusMatrix);
         glfwGetJoystickButtons(moveController,buttons,19);
+        for (auto i=0;i<19;++i) {
+            experiment.buttons[i] = buttons[i];
+        }
     }
 
     if (technique == mouse) {
@@ -423,29 +432,38 @@ void Engine::render() {
 
     //match spheres to vertex positions before drawing them
     s0.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v0);
+    s0.opacity = 1.0;
     s0.drawPlain(red);
 
+
     s1.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v1);
+    s1.opacity = 1.0;
     s1.drawPlain(green);
 
     s2.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v2);
+    s2.opacity = 1.0;
     s2.drawPlain(blue);
 
     s3.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v3);
+    s3.opacity = 1.0;
     s3.drawPlain(yellow);
 
     target.draw();
 
     s0.rotateAboutAsset(target.modelMatrix,pyramidCursor.v0);
+    s0.opacity = 0.6;
     s0.drawPlain(red);
 
     s1.rotateAboutAsset(target.modelMatrix,pyramidCursor.v1);
+    s1.opacity = 0.6;
     s1.drawPlain(green);
 
     s2.rotateAboutAsset(target.modelMatrix,pyramidCursor.v2);
+    s2.opacity = 0.6;
     s2.drawPlain(blue);
 
     s3.rotateAboutAsset(target.modelMatrix,pyramidCursor.v3);
+    s3.opacity = 0.6;
     s3.drawPlain(yellow);
 
 
@@ -534,6 +552,7 @@ void Engine::shutdown() {
     ioservice.stop();
     errorLog.close();
     serialioservice.stop();
+    experiment.closeFiles();
     //psmove_disconnect(move);
 }
 
@@ -598,7 +617,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
     double difference = elapsed_times.wall-previousTime.wall;
 
-    if (numberOfCursors == 1 ) {
+    /*if (numberOfCursors == 1 ) {
         if (difference < 150000000)
         {  //if doubleClick
 
@@ -622,10 +641,9 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             appState = select;
         }
 
-
     }
 
-    previousTime = elapsed_times;
+    previousTime = elapsed_times;*/
 
 
     switch (appState) {
@@ -760,7 +778,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         else
         {
             tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-#define TFACTORA 5
+
             x=(tcur->getXSpeed())/TFACTORA;
             y=(tcur->getYSpeed())/TFACTORA;
             //add cursor to queue for flicking
@@ -784,8 +802,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             if (tcur->getCursorID() == f1id) {
 
                 p1p = p1c;
-                selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
-                selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+                selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*FACTORB,vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*FACTORB,vec3(1,0,0)));
 
                 p1c.x = x;
                 p1c.y = y;
@@ -796,8 +814,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             if (tcur->getCursorID() == f2id) {
 
                 p2p = p2c;
-                selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
-                selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+                selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*FACTORB,vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*FACTORB,vec3(1,0,0)));
 
                 p2c.x = tcur->getX();
                 p2c.y = tcur->getY();
@@ -1071,20 +1089,17 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey('1') == GLFW_PRESS) {
-            locationMatch(cursor.modelMatrix,pyramidCursor.modelMatrix);
-            locationMatch(plane.modelMatrix,cursor.modelMatrix);
-            selectedAsset = &cursor;
-            appState = select;
+            appState = translate;
             technique = planeCasting;
-            rotTechnique = screenSpace;
-
+            selectionTechnique = indieSelectRelative;
+            log("indieSelectRelative");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
 
         if (glfwGetKey('2') == GLFW_PRESS) {
 
-            appState = select;
+            appState = translate;
             selectionTechnique = raySelect;
             technique = rayCasting;
             log("RayCasting");
@@ -1093,29 +1108,19 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey('3') == GLFW_PRESS) {
-            appState = select;
-            intersectedAsset = NULL;
-            technique = planeCasting;
-            selectionTechnique = indieSelectRelative;
-            log("indieSelectRelative");
+            experiment.currentExperiment = rotationTask;
+            experiment.reset();
+            experiment.start();
             keyPressOK = false;
+            log("Rotation Task");
             keyboardPreviousTime =  elapsed_times;
         }
 
         if (glfwGetKey('4') == GLFW_PRESS) {
-            appState = select;
-            selectionTechnique = indieSelectHybrid;
-            technique = planeCasting;
-            log("indieCursorHybrid");
-            keyPressOK = false;
-            keyboardPreviousTime =  elapsed_times;
-        }
-
-        if (glfwGetKey('5') == GLFW_PRESS) {
-        /*    appState = select;
-            selectionTechnique = planeSelectRelative;
-            technique = planeCasting;
-            log("planeSelectRelative");*/
+            experiment.currentExperiment = dockingTask;
+            experiment.reset();
+            experiment.start();
+            log("Docking Task");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
@@ -1209,10 +1214,17 @@ void Engine::checkSpaceNavigator() {
         }
         else {
 
+            boost::timer::cpu_times const elapsed_times(keyboardTimer.elapsed());
+            double difference = elapsed_times.wall-keyboardPreviousTime.wall;
+
+            if (difference > 800000000) { keyPressOK = true;}
+
             //when used as footswitch
-            if((position[2] > 0.6) || (position[1] > 0.4))
+            if(((position[2] > 0.4) || (position[1] > 0.4)) && keyPressOK)
             {
                 experiment.advance();
+                keyPressOK = false;
+                keyboardPreviousTime =  elapsed_times;
             }
 
             /*selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;

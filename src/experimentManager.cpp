@@ -1,24 +1,91 @@
 #include "experimentManager.h"
+using namespace std;
+using namespace boost;
 
 pho::ExpManager::ExpManager()
 {
-    originalPositions.push_back(glm::vec3(0.000000,-1.000000,0.000000));
-    originalPositions.push_back(glm::vec3(0.723600,-0.447215 ,0.525720));
-    originalPositions.push_back(glm::vec3(-0.276385, -0.447215, 0.850640));
-    originalPositions.push_back(glm::vec3(-0.894425, -0.447215, 0.000000));
-    originalPositions.push_back(glm::vec3(-0.276385, -0.447215, -0.850640));
-    originalPositions.push_back(glm::vec3(0.723600, -0.447215, -0.525720));
-    originalPositions.push_back(glm::vec3(0.276385, 0.447215 ,0.850640));
-    originalPositions.push_back(glm::vec3(-0.723600, 0.447215, 0.525720));
-    originalPositions.push_back(glm::vec3(-0.723600, 0.447215, -0.525720));
-    originalPositions.push_back(glm::vec3(0.276385, 0.447215, -0.850640));
-    originalPositions.push_back(glm::vec3(0.894425, 0.447215, 0.000000));
-    originalPositions.push_back(glm::vec3(0.000000, 1.000000, 0.000000));
+    p0 = glm::normalize(glm::vec3(0.000000,-1.000000,0.000000));
+    p1= glm::normalize(glm::vec3(0.723600,-0.447215 ,0.525720));
+    p2 = glm::normalize(glm::vec3(-0.276385, -0.447215, 0.850640));
+    p3 = glm::normalize(glm::vec3(-0.894425, -0.447215, 0.000000));
+    p4 = glm::normalize(glm::vec3(-0.276385, -0.447215, -0.850640));
+    p5 = glm::normalize(glm::vec3(0.723600, -0.447215, -0.525720));
+    p6 = glm::normalize(glm::vec3(0.276385, 0.447215 ,0.850640));
+    p7 = glm::normalize(glm::vec3(-0.723600, 0.447215, 0.525720));
+    p8 = glm::normalize(glm::vec3(-0.723600, 0.447215, -0.525720));
+    p9 = glm::normalize(glm::vec3(0.276385, 0.447215, -0.850640));
+    p10 = glm::normalize(glm::vec3(0.894425, 0.447215, 0.000000));
+    p11 = glm::normalize(glm::vec3(0.000000, 1.000000, 0.000000));
+
+    originalPositions.push_back(std::make_pair(p0,1));
+    originalPositions.push_back(std::make_pair(p1,2));
+    originalPositions.push_back(std::make_pair(p2,3));
+    originalPositions.push_back(std::make_pair(p3,4));
+    originalPositions.push_back(std::make_pair(p4,5));
+    originalPositions.push_back(std::make_pair(p5,6));
+    originalPositions.push_back(std::make_pair(p6,7));
+    originalPositions.push_back(std::make_pair(p7,8));
+    originalPositions.push_back(std::make_pair(p8,9));
+    originalPositions.push_back(std::make_pair(p9,10));
+    originalPositions.push_back(std::make_pair(p10,11));
+    originalPositions.push_back(std::make_pair(p11,12));
+
+    short multiplier = 3;
+
+    originalPositions.push_back(std::make_pair(magnify(p0,multiplier),1));
+    originalPositions.push_back(std::make_pair(magnify(p1,multiplier),2));
+    originalPositions.push_back(std::make_pair(magnify(p2,multiplier),3));
+    originalPositions.push_back(std::make_pair(magnify(p3,multiplier),4));
+    originalPositions.push_back(std::make_pair(magnify(p4,multiplier),5));
+    originalPositions.push_back(std::make_pair(magnify(p5,multiplier),6));
+    originalPositions.push_back(std::make_pair(magnify(p6,multiplier),7));
+    originalPositions.push_back(std::make_pair(magnify(p7,multiplier),8));
+    originalPositions.push_back(std::make_pair(magnify(p8,multiplier),9));
+    originalPositions.push_back(std::make_pair(magnify(p9,multiplier),10));
+    originalPositions.push_back(std::make_pair(magnify(p10,multiplier),11));
+    originalPositions.push_back(std::make_pair(magnify(p11,multiplier),12));
+
+    multiplier = 5;
+
+    originalPositions.push_back(std::make_pair(magnify(p0,multiplier),1));
+    originalPositions.push_back(std::make_pair(magnify(p1,multiplier),2));
+    originalPositions.push_back(std::make_pair(magnify(p2,multiplier),3));
+    originalPositions.push_back(std::make_pair(magnify(p3,multiplier),4));
+    originalPositions.push_back(std::make_pair(magnify(p4,multiplier),5));
+    originalPositions.push_back(std::make_pair(magnify(p5,multiplier),6));
+    originalPositions.push_back(std::make_pair(magnify(p6,multiplier),7));
+    originalPositions.push_back(std::make_pair(magnify(p7,multiplier),8));
+    originalPositions.push_back(std::make_pair(magnify(p8,multiplier),9));
+    originalPositions.push_back(std::make_pair(magnify(p9,multiplier),10));
+    originalPositions.push_back(std::make_pair(magnify(p10,multiplier),11));
+    originalPositions.push_back(std::make_pair(magnify(p11,multiplier),12));
+
+    for (auto i=0;i<3;++i) {
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(0,0,0))),1));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(0,0,1))),2));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(0,1,0))),3));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(0,1,1))),4));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(1,0,0))),5));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(1,0,1))),6));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(1,1,0))),7));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(1,1,1))),8));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(180.f,glm::vec3(0,0,0))),9));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(180.f,glm::vec3(0,0,1))),10));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(180.f,glm::vec3(0,1,0))),11));
+    angles.push_back(std::make_pair(glm::normalize(glm::angleAxis(180.f,glm::vec3(1,1,0))),12));
+    }
 
     currentExperiment = practice;
-
     noOfTrials = originalPositions.size();
 
+    bigLogFile.open ("bigFile.txt");
+    smallLogFile.open ("smallFile.txt");
+
+    positions = originalPositions;
+    angles = originalAngles;
+
+    iterator = positions.begin();
+    angleIterator = angles.begin();
 }
 
 void pho::ExpManager::setRay(pho::Ray *value)
@@ -26,38 +93,108 @@ void pho::ExpManager::setRay(pho::Ray *value)
     ray = value;
 }
 
+void pho::ExpManager::reset()
+{
+    currentTrial = 0;
+    iterator = positions.begin();
+    angleIterator = angles.begin();
+    //randomizePositions();
+}
+
+void pho::ExpManager::start()
+{
+    glm::vec3 pos;
+    glm::mat4 loc;
+
+    switch (currentExperiment) {
+    case dockingTask:
+        currentTrial = 0;
+        iterator = positions.begin();
+        pos = positions[currentTrial].first;
+        loc = glm::toMat4(angles[currentTrial].first);
+        loc[3] = glm::vec4(pos,1);
+        target->modelMatrix = loc;
+        cursor->modelMatrix = glm::mat4();
+        break;
+    case rotationTask:
+        break;
+
+    }
+}
+
 void pho::ExpManager::setUser(const std::string &value)
 {
     user = value;
+}
+
+void pho::ExpManager::closeFiles()
+{
+    bigLogFile.close();
+    smallLogFile.close();
+}
+
+void pho::ExpManager::log()
+{
+    bigLogFile << user << ';';
+    bigLogFile << currentFrame++ << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << user << ';';
+    bigLogFile << std::endl;
+
 }
 
 
 bool pho::ExpManager::advance()
 {
     float x,y,z;
-    if(currentTrial != noOfTrials)
-    {
-        switch (currentExperiment) {
-        case practice:
-            x = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
-            y = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
-            z = -10 + (float)rand()/((float)RAND_MAX/(0.1-(-0.1)));
-            target->setPosition(glm::vec3(x,y,z));
-            break;
-        case dockingTask:
-            currentTrial++;
-            target->setPosition(positions[currentTrial]);
-            break;
-        case rotationTask:
-            currentTrial++;
-            target->setPosition(positions[currentTrial]);
-            break;
+    glm::vec3 pos;
+    glm::mat4 loc;
+
+    switch (currentExperiment) {
+    case practice:
+        x = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
+        y = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
+        z = -10 + (float)rand()/((float)RAND_MAX/(0.1-(-0.1)));
+        target->setPosition(glm::vec3(x,y,z));
+        break;
+    case dockingTask:
+        if(iterator != positions.end())
+        {
+        currentTrial++;
+        ++iterator;
+        ++angleIterator;
         }
-    }
-    else {
-        std::cout << "Experiment Finished" << std::endl;
-        currentTrial = 0;
-        //endExperiment();
+        if(iterator != positions.end())
+        {
+            pos = iterator->first;
+            loc = glm::toMat4(angleIterator->first);
+            loc[3] = glm::vec4(pos,1);
+            target->modelMatrix = loc;
+            cursor->modelMatrix = glm::mat4();
+        }
+        if(iterator == positions.end())
+        {
+            target->setPosition(glm::vec3(5,0,-530));
+            std::cout << "Experiment Finished";
+        }
+
+        break;
+    case rotationTask:
+        currentTrial++;
+        ++angleIterator;
+        //target->setPosition(positions[currentTrial].first);
+        break;
     }
 }
 
@@ -67,7 +204,14 @@ void pho::ExpManager::randomizePositions()
 {
     positions = originalPositions;
     std::random_shuffle(positions.begin(),positions.end());
+    angles = originalAngles;
+    std::random_shuffle(angles.begin(),angles.end());
 
+}
+
+glm::vec3 pho::ExpManager::magnify(glm::vec3 &tomagnify, int by)
+{
+    return glm::vec3(tomagnify.x*by,tomagnify.y*by,tomagnify.z*by);
 }
 
 
@@ -84,12 +228,6 @@ void pho::ExpManager::setCursor(pho::Cursor *value)
 }
 
 
-void pho::ExpManager::setSphericalCursor(pho::Asset *value)
-{
-    sphericalCursor = value;
-}
-
-
 
 void pho::ExpManager::setWandPosition(glm::vec3 *value)
 {
@@ -97,29 +235,3 @@ void pho::ExpManager::setWandPosition(glm::vec3 *value)
 }
 
 
-
-void pho::ExpManager::setRightWristRotation(glm::vec4 *value)
-{
-    rightWristRotation = value;
-}
-
-
-
-void pho::ExpManager::setRightWristPosition(glm::vec3 *value)
-{
-    rightWristPosition = value;
-}
-
-
-
-void pho::ExpManager::setLeftWristRotation(glm::vec4 *value)
-{
-    leftWristRotation = value;
-}
-
-
-
-void pho::ExpManager::setLeftWristPosition(glm::vec3 *value)
-{
-    leftWristPosition = value;
-}

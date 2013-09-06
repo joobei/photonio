@@ -33,12 +33,13 @@ public:
     void drawFromLight();
     GLuint gradientTexture;
     void setAlpha(float var);
+    glm::vec3 color;
 protected:
     int vertexCount = 122;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
     float alpha;
-    glm::vec3 color;
+
     GLuint vao;
     GLuint spherevao;
 };

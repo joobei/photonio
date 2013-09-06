@@ -1,6 +1,8 @@
 #include "util.h"
 #include "vector3.h"
 
+#define LAUNCHFACTOR 50
+
 std::string pho::readTextFile(std::string filename) {
 	std::fstream shaderFile(filename,std::ios::in);
 	std::string shader;
@@ -19,35 +21,6 @@ void pho::locationMatch(glm::mat4 &target, const glm::mat4 &source) {
     //target[3][0] = source[3][0];
 }
 
-pho::WiiButtonState::WiiButtonState() {
-	a = false;
-	b = false;
-	power = false;
-	plus = false;
-	minus = false;
-    home= false;
-    one = false;
-	two = false;
-	down = false;
-	up = false;
-	left = false;
-	right = false;
-}
-
-void pho::WiiButtonState::reset() {
-	a = false;
-	b = false;
-	power = false;
-	plus = false;
-	minus = false;
-	home= false;
-	one = false;
-	two = false;
-	down = false;
-	up = false;
-	left = false;
-	right = false;
-}
 
 pho::flickManager::flickManager() {
     transform = glm::mat4();
@@ -84,16 +57,16 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot, flickState flick
         if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
             translateTimes = 500;
             currentlyInTranslateFlick = true;
-            launchPair.x = touchHistory[0].x/20;
-            launchPair.y = touchHistory[0].y/20;
+            launchPair.x = touchHistory[0].x/LAUNCHFACTOR;
+            launchPair.y = touchHistory[0].y/LAUNCHFACTOR;
         }
         break;
     case flickState::rotation:
         if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
             rotateTimes = 1000;
             currentlyInRotateFlick = true;
-            launchPair.x = touchHistory[0].x;
-            launchPair.y = touchHistory[0].y;
+            launchPair.x = touchHistory[0].x/LAUNCHFACTOR;
+            launchPair.y = touchHistory[0].y/LAUNCHFACTOR;
         }
         break;
     case pinchy:

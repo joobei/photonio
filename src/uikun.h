@@ -89,8 +89,8 @@ namespace pho {
         static const int WINDOW_SIZE_X = 1920;
         static const int WINDOW_SIZE_Y = 1080;
 
-        static const int WINDOW_POS_X =  20;
-        static const int WINDOW_POS_Y =  20;
+        static const int WINDOW_POS_X =  0;
+        static const int WINDOW_POS_Y =  0;
 
         //static const int WINDOW_SIZE_X = 1280;
         //static const int WINDOW_SIZE_Y = 720;
@@ -262,7 +262,6 @@ namespace pho {
         boost::timer::cpu_times previousTime;
         boost::timer::cpu_times keyboardPreviousTime;
         bool keyPressOK=true;
-        bool footPressOK=true;
 
         float pointerOpacity;
         bool pointerAvailable;

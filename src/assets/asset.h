@@ -97,6 +97,7 @@ public:
     btCollisionObject collisionObject;
     glm::vec3 getPosition();
     void rotateAboutAsset(const glm::mat4 &matrix, const glm::vec3 &position);
+    float opacity = 1.0;
 protected:
     glm::mat4 tempscaleMatrix;
     void upload();

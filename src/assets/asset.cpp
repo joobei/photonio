@@ -276,11 +276,10 @@ void pho::Asset::drawPlain(glm::vec3 color)
     res->flatLitShader.use();
     res->flatLitShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
     res->flatLitShader["modelview"] = res->viewMatrix*modelMatrix;
-    res->flatLitShader["material_diffuse"] = glm::vec4(color,1);
+    res->flatLitShader["material_diffuse"] = glm::vec4(color,opacity);
     res->flatLitShader["material_specular"] = glm::vec4(1,1,1,1);
     res->flatLitShader["material_shininess"] = 200.0f;
     res->flatLitShader["light_position"] = glm::vec4(res->light.position,1.f);
-
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)
     {
         CALL_GL(glBindVertexArray(mMeshes[i].vao));
