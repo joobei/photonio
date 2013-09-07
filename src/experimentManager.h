@@ -15,6 +15,12 @@
 
 namespace pho {
 
+struct finger {
+    bool exists = false;
+    float x,y;
+    int id;
+};
+
 enum experimentType {
     rotationTask,
     dockingTask,
@@ -25,13 +31,7 @@ class ExpManager {
 public:
     ExpManager();
     void log();
-
     bool advance();
-
-
-
-    void setWandPosition(glm::vec3 *value);
-
     void setCursor(pho::Cursor *value);
     void setTarget(pho::Cursor *value);
     void setRay(pho::Ray *value);
@@ -41,16 +41,14 @@ public:
     std::string user;
     void setUser(const std::string &value);
     void closeFiles();
-
+    finger finger1;
+    finger finger2;
     pho::Asset* s0,s1,s2,s3,ts0;
     unsigned char buttons[19];
+    bool pedal;
+    boost::timer::cpu_timer experimentTimer;
+    glm::mat4* wandPosition;
 private:
-    glm::vec3* leftWristPosition;
-    glm::vec4* leftWristRotation;
-    glm::vec3* rightWristPosition;
-    glm::vec4* rightWristRotation;
-    glm::vec3* wandPosition;
-    pho::Asset* sphericalCursor;
     pho::Cursor* cursor;
     pho::Cursor* target;
     pho::Ray* ray;
@@ -76,7 +74,19 @@ private:
     RotateTechnique* rotateTechnique;
     Technique* technique;
     AppState* appState;
-    flickState* flickstate;
+    flickState* flickstate;    
+
+    boost::timer::cpu_timer trialTimer;
+
+    boost::timer::cpu_timer sessionTimer;
+
+    boost::timer::cpu_times trialTime;
+    boost::timer::cpu_times experimentTime;
+    boost::timer::cpu_times sessionTime;
+
+    bool started = false;
+
+
 };
 }
 

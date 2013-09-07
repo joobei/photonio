@@ -237,12 +237,13 @@ void Engine::initResources() {
     experiment.setCursor(&pyramidCursor);
     experiment.setTarget(&target);
     experiment.setUser(USER);
-    //experiment.
+    experiment.wandPosition = &polhemusMatrix;
 }
 
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
+    //checkMove();
     unsigned char buttons[19];
 
     checkKeyboard();
@@ -417,6 +418,47 @@ void Engine::checkEvents() {
     if(touchPoint.x > 1.0f) { touchPoint.x = 1; }
     if(touchPoint.y < -1.0f) { touchPoint.y = -1.0; }
     if(touchPoint.y > 1.0f) { touchPoint.y = 1; }
+
+    std::list<TuioCursor*> list = tuioClient->getTuioCursors();
+
+    if (list.size() == 0)
+    {
+     experiment.finger1.exists = false;
+     experiment.finger1.x = 0;
+     experiment.finger1.y = 0;
+
+     experiment.finger2.exists = false;
+     experiment.finger2.x = 0;
+     experiment.finger2.y = 0;
+    }
+
+    if (list.size() == 1)
+    {
+     experiment.finger1.exists = true;
+     experiment.finger1.x = list.front()->getPosition().getX();
+     experiment.finger1.y = list.front()->getPosition().getY();
+     experiment.finger1.id = list.front()->getCursorID();
+
+     experiment.finger2.exists = false;
+     experiment.finger2.x = 0;
+     experiment.finger2.y = 0;
+    }
+
+    if (list.size() == 2)
+    {
+     experiment.finger1.exists = true;
+     experiment.finger1.x = list.front()->getPosition().getX();
+     experiment.finger1.y = list.front()->getPosition().getY();
+     experiment.finger1.id = list.front()->getCursorID();
+
+
+     experiment.finger2.exists = true;
+     experiment.finger2.x = list.back()->getPosition().getX();
+     experiment.finger2.y = list.back()->getPosition().getY();
+     experiment.finger2.id = list.back()->getCursorID();
+    }
+
+    experiment.log();
 }
 
 void Engine::render() {
@@ -1064,20 +1106,17 @@ void Engine::checkKeyboard() {
         }
         if (glfwGetKey(GLFW_KEY_SPACE)) {
             btTransform temp;
-            cursor.modelMatrix = glm::translate(0,0,-5);
-            selectedAsset = &cursor;
-            temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-            pyramidCursor.modelMatrix = glm::translate(0,0,-15);
+            selectedAsset = &pyramidCursor;
+            pyramidCursor.modelMatrix = glm::translate(0,0,0);
             temp.setFromOpenGLMatrix(glm::value_ptr(pyramidCursor.modelMatrix));
             pyramidCursor.collisionObject->setWorldTransform(temp);
             plane.modelMatrix = cursor.modelMatrix;
             flicker.stopFlick(translation);
             flicker.stopFlick(rotation);
             flicker.stopFlick(pinchy);
-            sr.viewMatrix = mat4();
-            appState = select;
-            touchPoint.x=0.0f;
-            touchPoint.y=0.0f;
+            appState = translate;
+            //touchPoint.x=0.0f;
+            //touchPoint.y=0.0f;
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
 
@@ -1095,19 +1134,22 @@ void Engine::checkKeyboard() {
             log("indieSelectRelative");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+            experiment.start();
         }
 
         if (glfwGetKey('2') == GLFW_PRESS) {
-
             appState = translate;
             selectionTechnique = raySelect;
             technique = rayCasting;
             log("RayCasting");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+            experiment.start();
         }
 
         if (glfwGetKey('3') == GLFW_PRESS) {
+            pyramidCursor.setPosition(glm::vec3(0,0,0));
+            plane.setPosition(glm::vec3(0,0,0));
             experiment.currentExperiment = rotationTask;
             experiment.reset();
             experiment.start();
@@ -1117,10 +1159,19 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey('4') == GLFW_PRESS) {
+            pyramidCursor.setPosition(glm::vec3(0,0,0));
+            plane.setPosition(glm::vec3(0,0,0));
             experiment.currentExperiment = dockingTask;
             experiment.reset();
             experiment.start();
             log("Docking Task");
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
+
+        if (glfwGetKey('0') == GLFW_PRESS) {
+            experiment.advance();
+            plane.setPosition(pyramidCursor.getPosition());
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
@@ -1222,9 +1273,15 @@ void Engine::checkSpaceNavigator() {
             //when used as footswitch
             if(((position[2] > 0.4) || (position[1] > 0.4)) && keyPressOK)
             {
+                experiment.pedal = true;
                 experiment.advance();
                 keyPressOK = false;
                 keyboardPreviousTime =  elapsed_times;
+                plane.setPosition(pyramidCursor.getPosition());
+            }
+            else
+            {
+                experiment.pedal = false;
             }
 
             /*selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
@@ -1268,9 +1325,11 @@ void Engine::checkMove()
     //if (glfwGetJoystickPos( moveController, position,28) == 28 )  //to get axes
 
         glfwGetJoystickButtons(moveController,buttons,19);
-
-            //if (buttons[i] == GLFW_PRESS) {
-            //std::cout << "Button " << i <<  " pressed " <<std::endl;
+        for (auto i=0;i<16;++i) {
+            if (buttons[i] == GLFW_PRESS) {
+            std::cout << "Button " << i <<  " pressed " <<std::endl;
+            }
+        }
 }
 
 void Engine::initPhysics()
