@@ -1268,7 +1268,10 @@ void Engine::checkSpaceNavigator() {
             boost::timer::cpu_times const elapsed_times(keyboardTimer.elapsed());
             double difference = elapsed_times.wall-keyboardPreviousTime.wall;
 
-            if (difference > 800000000) { keyPressOK = true;}
+            if (difference > 800000000)
+            {
+                keyPressOK = true;
+            }
 
             //when used as footswitch
             if(((position[2] > 0.4) || (position[1] > 0.4)) && keyPressOK)

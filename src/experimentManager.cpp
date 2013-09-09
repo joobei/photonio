@@ -158,6 +158,8 @@ void pho::ExpManager::log()
     glm::quat cur = glm::toQuat(cursor->modelMatrix);
     glm::quat tar = glm::toQuat(target->modelMatrix);
 
+    started = false;
+
     if (started) {
 
     bigLogFile << user << ';';
