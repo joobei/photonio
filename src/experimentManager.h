@@ -24,6 +24,7 @@ struct finger {
 enum experimentType {
     rotationTask,
     dockingTask,
+    movementTask,
     practice
 };
 
@@ -48,7 +49,6 @@ public:
     bool pedal;
     boost::timer::cpu_timer experimentTimer;
     glm::mat4* wandPosition;
-private:
     pho::Cursor* cursor;
     pho::Cursor* target;
     pho::Ray* ray;
@@ -60,9 +60,6 @@ private:
     std::vector<std::pair<glm::quat,short>> originalAngles;
     short noOfTrials;
     short currentTrial = 0;
-
-    std::ofstream bigLogFile;
-    std::ofstream smallLogFile;
 
     std::vector<std::pair<glm::vec3,short>>::iterator iterator;
     std::vector<std::pair<glm::quat,short>>::iterator angleIterator;
@@ -86,6 +83,16 @@ private:
 
     bool started = false;
 
+    glm::vec3 polhemus1pos;
+    glm::vec4 polhemus1quat;
+
+    glm::vec3 polhemus2pos;
+    glm::vec4 polhemus2quat;
+
+    std::ofstream bigLogFile;
+    std::ofstream smallLogFile;
+    std::ofstream fatigueLogFile;
+    std::ofstream touchLogFile;
 
 };
 }

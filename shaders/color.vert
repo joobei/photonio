@@ -4,6 +4,7 @@ in vec3 in_Position;
 in vec3 in_Color;
 
 uniform mat4 mvp;
+uniform float alpha;
 
 out vec3 color;
 

@@ -162,40 +162,42 @@ void pho::ExpManager::log()
 
     if (started) {
 
-    bigLogFile << user << ';';
-    bigLogFile << currentFrame++ << ';';
-    bigLogFile << currentTrial << ';';
-    bigLogFile << iterator->second << ';';
-    bigLogFile << angleIterator->second << ';';
-    bigLogFile << cursor->getPosition().x << ';';
-    bigLogFile << cursor->getPosition().y << ';';
-    bigLogFile << cursor->getPosition().z << ';';
-    bigLogFile << cur.x << ';';
-    bigLogFile << cur.y << ';';
-    bigLogFile << cur.z << ';';
-    bigLogFile << cur.w << ';';
-    bigLogFile << target->getPosition().x << ';';
-    bigLogFile << target->getPosition().y << ';';
-    bigLogFile << target->getPosition().z << ';';
-    bigLogFile << tar.x << ';';
-    bigLogFile << tar.y << ';';
-    bigLogFile << tar.z << ';';
-    bigLogFile << tar.w << ';';
-    bigLogFile << finger1.exists << ';';
-    bigLogFile << finger1.id << ';';
-    bigLogFile << finger1.x << ';';
-    bigLogFile << finger1.y << ';';
-    bigLogFile << finger2.exists << ';';
-    bigLogFile << finger2.id << ';';
-    bigLogFile << finger2.x << ';';
-    bigLogFile << finger2.y << ';';
-    bigLogFile << pedal << ';';
-    bigLogFile << difference/1000000.0f << ';';
-    bigLogFile << differenceSession/1000000.0f << ';';
-    bigLogFile << differenceExperiment/1000000.0f << ';';
-    //add APP STATES
-    //flick states
-    bigLogFile << '\n';
+        bigLogFile << user << ';';
+        bigLogFile << currentFrame++ << ';';
+        bigLogFile << currentTrial << ';';
+        bigLogFile << iterator->second << ';';
+        bigLogFile << angleIterator->second << ';';
+        bigLogFile << cursor->getPosition().x << ';';
+        bigLogFile << cursor->getPosition().y << ';';
+        bigLogFile << cursor->getPosition().z << ';';
+        bigLogFile << cur.x << ';';
+        bigLogFile << cur.y << ';';
+        bigLogFile << cur.z << ';';
+        bigLogFile << cur.w << ';';
+        bigLogFile << target->getPosition().x << ';';
+        bigLogFile << target->getPosition().y << ';';
+        bigLogFile << target->getPosition().z << ';';
+        bigLogFile << tar.x << ';';
+        bigLogFile << tar.y << ';';
+        bigLogFile << tar.z << ';';
+        bigLogFile << tar.w << ';';
+
+        touchLogFile << finger1.exists << ';';
+        touchLogFile << finger1.id << ';';
+        touchLogFile << finger1.x << ';';
+        touchLogFile << finger1.y << ';';
+        touchLogFile << finger2.exists << ';';
+        touchLogFile << finger2.id << ';';
+        touchLogFile << finger2.x << ';';
+        touchLogFile << finger2.y << ';';
+
+        bigLogFile << pedal << ';';
+        bigLogFile << difference/1000000.0f << ';';
+        bigLogFile << differenceSession/1000000.0f << ';';
+        bigLogFile << differenceExperiment/1000000.0f << ';';
+        //add APP STATES
+        //flick states
+        bigLogFile << '\n';
     }
 }
 
@@ -210,37 +212,56 @@ bool pho::ExpManager::advance()
 
     switch (currentExperiment) {
     case practice:
-        x = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
-        y = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
-        z = -10 + (float)rand()/((float)RAND_MAX/(0.1-(-0.1)));
+        x = -5 + (float)rand()/((float)RAND_MAX/(5-(-5)));
+        y = -5 + (float)rand()/((float)RAND_MAX/(5-(-5)));
+        z = -5 + (float)rand()/((float)RAND_MAX/(5-(-5)));
         target->setPosition(glm::vec3(x,y,z));
         break;
+    case movementTask:
+
+        if(iterator != positions.end())
+        {
+            currentTrial++;
+            ++iterator;
+            ++angleIterator;
+        }
+        if(iterator != positions.end())
+        {
+           target->setPosition(iterator->first);
+            //loc = glm::toMat4(angleIterator->first);
+            //loc[3] = glm::vec4(pos,1);
+            //target->modelMatrix = loc;
+            cursor->modelMatrix = glm::mat4();
+        }
+        if(iterator == positions.end())
+        {
+            target->setPosition(glm::vec3(5,0,-530));
+            std::cout << "Experiment Finished";
+        }
+
+
     case dockingTask:
-        if (!started) {
-            started = !started;
-            trialTimer.start();
+
+        if(iterator != positions.end())
+        {
+            currentTrial++;
+            ++iterator;
+            ++angleIterator;
         }
-        else {
-            if(iterator != positions.end())
-            {
-                currentTrial++;
-                ++iterator;
-                ++angleIterator;
-            }
-            if(iterator != positions.end())
-            {
-                pos = iterator->first;
-                loc = glm::toMat4(angleIterator->first);
-                loc[3] = glm::vec4(pos,1);
-                target->modelMatrix = loc;
-                cursor->modelMatrix = glm::mat4();
-            }
-            if(iterator == positions.end())
-            {
-                target->setPosition(glm::vec3(5,0,-530));
-                std::cout << "Experiment Finished";
-            }
+        if(iterator != positions.end())
+        {
+           pos = iterator->first;
+           loc = glm::toMat4(angleIterator->first);
+           loc[3] = glm::vec4(pos,1);
+           target->modelMatrix = loc;
+           cursor->modelMatrix = glm::mat4();
         }
+        if(iterator == positions.end())
+        {
+            target->setPosition(glm::vec3(5,0,-530));
+            std::cout << "Experiment Finished";
+        }
+
         break;
     case rotationTask:
         if (!started) {
@@ -264,6 +285,7 @@ bool pho::ExpManager::advance()
 void pho::ExpManager::randomizePositions()
 {
     positions = originalPositions;
+    std::srand(time(NULL));
     std::random_shuffle(positions.begin(),positions.end());
     angles = originalAngles;
     std::random_shuffle(angles.begin(),angles.end());

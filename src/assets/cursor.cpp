@@ -7,9 +7,12 @@ using glm::mat4;
 
 pho::Cursor::Cursor(sharedResources *sr)
 {
+    vec3 red = vec3(1,0,0);
+    vec3 green = vec3(0,1,0);
+    vec3 blue = vec3(0,0,1);
+    vec3 yellow = vec3(1,1,0);
+
     res = sr;
-    alpha = 1.0;
-    color = glm::vec3(0.6,0.3,0.8);
     /*v0 = vec3(0,-0.5,0.58);
     v1 = vec3(0.5,-0.5,-0.29);
     v2 = vec3(-0.5,-0.5,-0.29);
@@ -26,25 +29,6 @@ pho::Cursor::Cursor(sharedResources *sr)
     v3 = mat3(glm::rotate(mat4(), (glm::mediump_float)-35, vec3(1,0,0)))*v3;
 
 
-    m0 = vec3((v1.x+v0.x)/2,(v1.y+v0.y)/2,(v1.z+v0.z)/2);
-    m1 = vec3((v2.x+v3.x)/2,(v2.y+v3.y)/2,(v2.z+v3.z)/2);
-    m2 = vec3((v2.x+v0.x)/2,(v2.y+v0.y)/2,(v2.z+v0.z)/2);
-    m3 = vec3((v1.x+v2.x)/2,(v1.y+v2.y)/2,(v1.z+v2.z)/2);
-    m4 = vec3((v3.x+v0.x)/2,(v3.y+v0.y)/2,(v3.z+v0.z)/2);
-    m5 = vec3((v1.x+v3.x)/2,(v1.y+v3.y)/2,(v1.z+v3.z)/2);
-
-    d0 = vec3(v1-v0);
-    d1 = vec3(v3-v2);
-    d2 = vec3(v0-v2);
-    d3 = vec3(v2-v1);
-    d4 = vec3(v3-v0);
-    d5 = vec3(v3-v1);
-
-    vec3 red = vec3(1,0,0);
-    vec3 green = vec3(0,1,0);
-    vec3 blue = vec3(0,0,1);
-    vec3 yellow = vec3(1,1,0);
-
     btConvexHullShape* collisionShape = new btConvexHullShape();
 
     collisionShape->addPoint(btVector3(v0.x,v0.y,v0.z));
@@ -56,83 +40,92 @@ pho::Cursor::Cursor(sharedResources *sr)
     collisionObject->setCollisionShape(collisionShape);
     collisionObject->setUserPointer(this);
 
-    float radius = 0.05;
+    vertices.push_back(v0);
+    colors.push_back(red);
+    colors.push_back(red);
 
-    vec3 toMultiply = vec3(1,3,-9);
-    toMultiply = glm::normalize(toMultiply);
+    normals.push_back(v1-v0);
+    normals.push_back(v1-v0);
+    vertices.push_back(v1);
 
-    //d0 represents vector between two vertices
-    //multiply that with any other vector to get vertical with cross product
+    vertices.push_back(v0);
+    colors.push_back(green);
+    colors.push_back(green);
+    normals.push_back(v2-v0);
+    normals.push_back(v2-v0);
+    vertices.push_back(v2);
 
-    vec3 rotater = glm::cross(d0,toMultiply);
-    rotater = glm::normalize(rotater);
+    vertices.push_back(v0);
+    colors.push_back(blue);
+    colors.push_back(blue);
+    normals.push_back(v3-v0);
+    normals.push_back(v3-v0);
+    vertices.push_back(v3);
 
-    int divisions = 60;
-    //rotate vertical vector around d0 to get points on the base of the cylinder
-    for (int i = 0;i < divisions+1;++i) {
-        vertices.push_back(v0+radius*rotater);
-        normals.push_back(rotater);
-        vertices.push_back(v0+d0+radius*rotater);
-        normals.push_back(rotater);
-        rotater = glm::mat3(glm::rotate(glm::mat4(),(float)360/divisions,d0))*rotater;
+    vertices.push_back(v1);
+    colors.push_back(yellow);
+    colors.push_back(yellow);
+    normals.push_back(v2-v1);
+    normals.push_back(v2-v1);
+    vertices.push_back(v2);
 
-    }
+    vertices.push_back(v1);
+    colors.push_back(red);
+    colors.push_back(red);
+    normals.push_back(v3-v1);
+    normals.push_back(v3-v1);
+    vertices.push_back(v3);
+
+    vertices.push_back(v2);
+    colors.push_back(blue);
+    colors.push_back(blue);
+    normals.push_back(v3-v2);
+    normals.push_back(v3-v2);
+    vertices.push_back(v3);
+
+    vertices.push_back(v0); vertices.push_back(v2); vertices.push_back(v1);
+
+    vec3 normal = glm::normalize(glm::cross((v1-v0),(v2-v0)));
+    normals.push_back(normal);
+    normals.push_back(normal);
+    normals.push_back(normal);
+    colors.push_back(green);
+    colors.push_back(green);
+    colors.push_back(green);
+
+    vertices.push_back(v1); vertices.push_back(v2); vertices.push_back(v3);
+
+    normal = glm::normalize(glm::cross((v3-v1),(v2-v1)));
+        normals.push_back(normal);
+        normals.push_back(normal);
+        normals.push_back(normal);
+
+        colors.push_back(blue);
+        colors.push_back(blue);
+        colors.push_back(blue);
 
 
-    rotater = glm::cross(d1,toMultiply);
-    rotater = glm::normalize(rotater);
+    vertices.push_back(v3); vertices.push_back(v2); vertices.push_back(v0);
 
-    for (int i = 0;i < divisions+1;++i) {
-        vertices.push_back(v2+radius*rotater);
-        normals.push_back(rotater);
-        vertices.push_back(v2+d1+radius*rotater);
-        normals.push_back(rotater);
-        rotater = glm::mat3(glm::rotate(glm::mat4(),(float)360/divisions,d1))*rotater;
-    }
+    normal = glm::normalize(glm::cross((v0-v3),(v2-v3)));
+        normals.push_back(normal);
+        normals.push_back(normal);
+        normals.push_back(normal);
 
-    rotater = glm::cross(d2,toMultiply);
-    rotater = glm::normalize(rotater);
+        colors.push_back(red);
+        colors.push_back(red);
+        colors.push_back(red);
 
-    for (int i = 0;i < divisions+1;++i) {
-        vertices.push_back(v2+radius*rotater);
-        normals.push_back(rotater);
-        vertices.push_back(v2+d2+radius*rotater);
-        normals.push_back(rotater);
-        rotater = glm::mat3(glm::rotate(glm::mat4(),(float)360/divisions,d2))*rotater;
-    }
+    vertices.push_back(v3); vertices.push_back(v0); vertices.push_back(v1);
 
-    rotater = glm::cross(d3,toMultiply);
-    rotater = glm::normalize(rotater);
+    normal = glm::normalize(glm::cross((v1-v3),(v0-v3)));
+        normals.push_back(normal);
+        normals.push_back(normal);
+        normals.push_back(normal);
 
-    for (int i = 0;i < divisions+1;++i) {
-        vertices.push_back(v1+radius*rotater);
-        normals.push_back(rotater);
-        vertices.push_back(v1+d3+radius*rotater);
-        normals.push_back(rotater);
-        rotater = glm::mat3(glm::rotate(glm::mat4(),(float)360/divisions,d3))*rotater;
-    }
-
-    rotater = glm::cross(d4,toMultiply);
-    rotater = glm::normalize(rotater);
-
-    for (int i = 0;i < divisions+1;++i) {
-        vertices.push_back(v0+radius*rotater);
-        normals.push_back(rotater);
-        vertices.push_back(v0+d4+radius*rotater);
-        normals.push_back(rotater);
-        rotater = glm::mat3(glm::rotate(glm::mat4(),(float)360/divisions,d4))*rotater;
-    }
-
-    rotater = glm::cross(d5,toMultiply);
-    rotater = glm::normalize(rotater);
-
-    for (int i = 0;i < divisions+1;++i) {
-        vertices.push_back(v1+radius*rotater);
-        normals.push_back(rotater);
-        vertices.push_back(v1+d5+radius*rotater);
-        normals.push_back(rotater);
-        rotater = glm::mat3(glm::rotate(glm::mat4(),(float)360/divisions,d5))*rotater;
-    }
+        colors.push_back(yellow);
+        colors.push_back(yellow);
+        colors.push_back(yellow);
 
     // generate Vertex Array for mesh
     glGenVertexArrays(1,&vao);
@@ -146,68 +139,64 @@ pho::Cursor::Cursor(sharedResources *sr)
     CALL_GL(glEnableVertexAttribArray(vertexLoc));
     CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
 
-    CALL_GL(glGenBuffers(1, &buffer));
+    /*CALL_GL(glGenBuffers(1, &buffer));
     CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, buffer));
     CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*normals.size(), normals.data(), GL_STATIC_DRAW));
     CALL_GL(glEnableVertexAttribArray(normalLoc));
-    CALL_GL(glVertexAttribPointer(normalLoc, 3, GL_FLOAT, 0, 0, 0));
+    CALL_GL(glVertexAttribPointer(normalLoc, 3, GL_FLOAT, 0, 0, 0));*/
 
-    tempscaleMatrix = glm::scale(glm::mat4(),glm::vec3(1.05,1.05,1.05));
+    CALL_GL(glGenBuffers(1, &buffer));
+    CALL_GL(glBindBuffer(GL_ARRAY_BUFFER, buffer));
+    CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*colors.size(), colors.data(), GL_STATIC_DRAW));
+    CALL_GL(glEnableVertexAttribArray(colorLoc));
+    CALL_GL(glVertexAttribPointer(colorLoc, 3, GL_FLOAT, 0, 0, 0));
+
 }
 
 
 void pho::Cursor::draw()
 {
+    //CALL_GL(glEnable(GL_CULL_FACE));
+    //CALL_GL(glCullFace(GL_BACK));
     CALL_GL(glBindVertexArray(vao));
+    res->colorShader.use();
+    res->colorShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+    res->colorShader["alpha"] = alpha;
+    CALL_GL(glDrawArrays(GL_TRIANGLES,12,vertices.size()-12));
+    //CALL_GL(glDisable(GL_CULL_FACE));
 
-    if (beingIntersected) {
-
-        CALL_GL(glDisable(GL_DEPTH_TEST));
-
-        res->flatShader.use();
-        res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix*tempscaleMatrix;
-        res->flatShader["color"] = glm::vec4(1,0,0,1);
-
-        CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,vertexCount));
-        CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount,vertexCount));
-        CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*2,vertexCount));
-        CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*3,vertexCount));
-        CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*4,vertexCount));
-        CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*5,vertexCount));
-
-        CALL_GL(glEnable(GL_DEPTH_TEST));
-        beingIntersected = false;
-    }
-
-    res->flatLitShader.use();
-    res->flatLitShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
-    res->flatLitShader["modelview"] = res->viewMatrix*modelMatrix;
-    res->flatLitShader["material_diffuse"] = vec4(color,alpha);
-    res->flatLitShader["material_specular"] = vec4(1,1,1,1);
-    res->flatLitShader["material_shininess"] = 200.0f;
-    res->flatLitShader["light_position"] = vec4(res->light.position,1.f);
-
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*2),vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*3),vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*4),vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,(vertexCount*5),vertexCount));
+    //res->flatShader.use();
+    //res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+    //res->flatShader["color"] = vec4(1,1,1,1);
+    CALL_GL(glLineWidth(5.0f));
+    CALL_GL(glDrawArrays(GL_LINES,0,24));
 
 }
 
 void pho::Cursor::drawFromLight()
 {
-    res->flatShader.use();
-    res->flatShader["mvp"] = res->projectionMatrix*res->light.viewMatrix*modelMatrix;
-    res->flatShader["color"] = vec4(1,1,1,1);
+    res->flatLitShader.use();
+    res->flatLitShader["mvp"] = res->projectionMatrix*res->light.viewMatrix*modelMatrix;
     CALL_GL(glBindVertexArray(vao));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,0,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*2,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*3,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*4,vertexCount));
-    CALL_GL(glDrawArrays(GL_TRIANGLE_STRIP,vertexCount*5,vertexCount));
+    CALL_GL(glDrawArrays(GL_TRIANGLES,12,vertices.size()-12));
+}
+
+void pho::Cursor::drawLines(bool fromLight)
+{
+    CALL_GL(glBindVertexArray(vao));
+    res->flatShader.use();
+    if (fromLight)
+    {
+        res->flatShader["mvp"] = res->projectionMatrix*res->light.viewMatrix*modelMatrix;
+        res->flatShader["color"] = vec4(0.5,0.5,0.5,1);
+    }
+    else
+    {
+        res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
+        res->flatShader["color"] = vec4(0.5,0.5,0.5,1);
+    }
+    CALL_GL(glLineWidth(5.0f));
+    CALL_GL(glDrawArrays(GL_LINES,0,24));
 }
 
 void pho::Cursor::setAlpha(float var)
@@ -222,7 +211,6 @@ pho::Ray::Ray(sharedResources *sr)
     vertices.push_back(glm::vec3(0,0,-1000));
     glGenVertexArrays(1,&vao);
     glBindVertexArray(vao);
-
 
     res = sr;
     CALL_GL(glGenBuffers(1, &vbo));

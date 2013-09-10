@@ -172,6 +172,7 @@ void Engine::initResources() {
     //*************************************************************
     cursor = pho::Asset("cursor.obj", &sr.noTextureShader,&sr);
     cursor.modelMatrix = glm::translate(mat4(),vec3(0,0,-5));
+
     selectedAsset = &pyramidCursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
@@ -197,8 +198,11 @@ void Engine::initResources() {
     //plane.receiveShadow = true;
 
     pyramidCursor.modelMatrix = glm::translate(mat4(),vec3(0,0,0));
+    //pyramidCursor.color = glm::vec3(0.8,0.4,0.8);
+    pyramidCursor.setAlpha(0.6);
 
     target.setPosition(vec3(6,0,2));
+    target.color = vec3(0.5f,0.5f,0.5f);
 
     //load texture
     ray.texture = gli::createTexture2D(assetpath+"grad2.dds");
@@ -226,6 +230,7 @@ void Engine::initResources() {
     glEnable (GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_TRUE);
+    glFrontFace(GL_CW);
 
 
     InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
@@ -358,21 +363,14 @@ void Engine::checkEvents() {
     }
 
 
-    if ((appState == select)) {
-        if (selectionTechnique == indieSelectRelative) {
-            if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
-            {
-                intersectedAsset->beingIntersected = true;
-            }
-        }
 
-        if (technique == rayCasting) {
+    if (technique == rayCasting) {
 
-            if (rayTestWorld(rayOrigin,rayDirection,intersectedAsset))
-            {
-                intersectedAsset->beingIntersected = true;
-                //for shortening ray. was weird so I cut it.
-                /*vec3 length = intersectionPoint-ray.getPosition();
+        if (rayTestWorld(rayOrigin,rayDirection,intersectedAsset))
+        {
+            intersectedAsset->beingIntersected = true;
+            //for shortening ray. was weird so I cut it.
+            /*vec3 length = intersectionPoint-ray.getPosition();
                 CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
                 CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(length)));
             }
@@ -382,20 +380,20 @@ void Engine::checkEvents() {
                 CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
                 CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(vec3(0,0,-1000))));
             }*/
-            }
+        }
 
 
 
-            if ((buttons[11] == GLFW_PRESS ) && (rayTestWorld(rayOrigin,rayDirection,intersectedAsset)))
-            {
-                appState = direct;
-                selectedAsset = intersectedAsset;              
+        if ((buttons[11] == GLFW_PRESS ) && (rayTestWorld(rayOrigin,rayDirection,intersectedAsset)))
+        {
+            appState = direct;
+            selectedAsset = intersectedAsset;
 
-                directTranslationStarted = true;
-                initPosition = rayOrigin;
-            }
+            directTranslationStarted = true;
+            initPosition = rayOrigin;
         }
     }
+
 
 
 
@@ -470,7 +468,7 @@ void Engine::render() {
 
     floor.draw();
 
-    pyramidCursor.draw();
+
 
     //match spheres to vertex positions before drawing them
     s0.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v0);
@@ -490,7 +488,7 @@ void Engine::render() {
     s3.opacity = 1.0;
     s3.drawPlain(yellow);
 
-    target.draw();
+    target.drawLines(false);
 
     s0.rotateAboutAsset(target.modelMatrix,pyramidCursor.v0);
     s0.opacity = 0.6;
@@ -508,6 +506,7 @@ void Engine::render() {
     s3.opacity = 0.6;
     s3.drawPlain(yellow);
 
+    pyramidCursor.draw();
 
     if (appState == select) {
         if (selectionTechnique == raySelect)
@@ -1138,7 +1137,7 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey('2') == GLFW_PRESS) {
-            appState = translate;
+            appState = direct;
             selectionTechnique = raySelect;
             technique = rayCasting;
             log("RayCasting");
@@ -1171,11 +1170,14 @@ void Engine::checkKeyboard() {
 
         if (glfwGetKey('0') == GLFW_PRESS) {
             experiment.advance();
-            plane.setPosition(pyramidCursor.getPosition());
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+            plane.setPosition(pyramidCursor.getPosition());
         }
 
+        if (glfwGetKey('0') == GLFW_PRESS) {
+            experiment.start();
+        }
     }
 }
 
@@ -1234,7 +1236,7 @@ void Engine::shadowMapRender() {
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
 
     pyramidCursor.drawFromLight();
-    target.drawFromLight();
+    target.drawLines(true);
 
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -1429,23 +1431,29 @@ bool Engine::checkPolhemus(mat4 &modelMatrix) {
         boost::mutex::scoped_lock lock(ioMutex);
         //SERIAL Queue
         while(!eventQueue.isSerialEmpty()) {
-                boost::array<float,7> temp = eventQueue.serialPop();
+                boost::array<float,14> temp = eventQueue.serialPop();
+
+                experiment.polhemus1pos = glm::vec3(temp[0],temp[1],temp[2]);
+                experiment.polhemus1quat = glm::vec4(temp[3],temp[4],temp[5],temp[6]);
+
+                experiment.polhemus2pos = glm::vec3(temp[7],temp[8],temp[9]);
+                experiment.polhemus2quat = glm::vec4(temp[10],temp[11],temp[12],temp[13]);
 
                 vec3 position;
                 glm::quat orientation;
                 mat4 transform;
 
-                if (appState == select)
+                /*if (appState == select)
                 {
                     //std::cout << "x :" << temp[0] << "\t\t y:" << temp[2] << "\t\t z:" << temp[3] << std::endl;
                     position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
 
                     //position += vec3(0,-2.7f,3.8f);
                 }
-                else {
+                else {*/
                     position = vec3(temp[0],temp[1],temp[2]);
                     //position += vec3(0,0,-10);
-                }
+                //}
 
                 orientation.w = temp[3];
                 orientation.x = temp[4];

@@ -11,6 +11,7 @@ in vec2 Vertex_UV;
 in vec3 Vertex_Normal;
 in vec4 Vertex_LightDir;
 in vec4 Vertex_EyeVec;
+in vec3 color;
 out vec4 Out_Color;
 
 void main()
@@ -26,6 +27,7 @@ void main()
     vec3 PN = N;
 
     vec4 tex01_color = material_diffuse;
+    //vec4 tex01_color = vec4(color,1);
     vec4 final_color = vec4(0.7* tex01_color.rgb,1*tex01_color.a); //ambient light
 
     float lambertTerm = dot(PN, L);

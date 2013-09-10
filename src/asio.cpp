@@ -84,13 +84,27 @@ void Minicom_client::startRead() {
 
 void Minicom_client::read_complete(const boost::system::error_code& error, std::size_t bytes_transferred)
 {
+    //std::cout << "Bytes Transferred :" << bytes_transferred << std::endl;
+
 	if (!error) {
 
-    boost::array<float, 7> topush;
+    boost::array<float, 14> topush;
+    int offset = (7*4+3+2);
 
-    for (int i=0;i<7;i++) {
-        topush[i] = getFloat(i);
+    for (auto index=0;index<7;++index) {
+        memcpy(&topush[index],serialBuffer+3*sizeof(char)+index*sizeof(float),sizeof(float));
     }
+    for (auto index=0;index<7;++index) {
+        memcpy(&topush[7+index],serialBuffer+offset+3*sizeof(char)+index*sizeof(float),sizeof(float));
+    }
+    /*for (auto index=0;index<7;++index) {
+        memcpy(&topush[14+index],serialBuffer+(2*offset)+3*sizeof(char)+index*sizeof(float),sizeof(float));
+    }
+    for (auto index=0;index<7;++index) {
+        memcpy(&topush[21+index],serialBuffer+(3*offset)+3*sizeof(char)+index*sizeof(float),sizeof(float));
+    }*/
+
+
     boost::mutex::scoped_lock lock(*io_mutex);
     eventQueue->push(topush);
     lock.unlock();
@@ -103,11 +117,6 @@ void Minicom_client::read_complete(const boost::system::error_code& error, std::
 	}
 }
 
-
-float Minicom_client::getFloat(int index)
-{ 	float temp = 0.0;
-        memcpy(&temp,serialBuffer+3*sizeof(char)+index*sizeof(float),sizeof(float));
-            return temp; }
 
 void Minicom_client::shutDown() {
 

@@ -15,33 +15,18 @@ public:
     glm::vec3 v2;
     glm::vec3 v3;
 
-    glm::vec3 m0;
-    glm::vec3 m1;
-    glm::vec3 m2;
-    glm::vec3 m3;
-    glm::vec3 m4;
-    glm::vec3 m5;
-
-    glm::vec3 d0;
-    glm::vec3 d1;
-    glm::vec3 d2;
-    glm::vec3 d3;
-    glm::vec3 d4;
-    glm::vec3 d5;
-
     btCollisionObject* collisionObject;
     void drawFromLight();
+    void drawLines(bool fromLight);
     GLuint gradientTexture;
     void setAlpha(float var);
     glm::vec3 color;
 protected:
-    int vertexCount = 122;
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
+    std::vector<glm::vec3> colors;
     float alpha;
-
     GLuint vao;
-    GLuint spherevao;
 };
 
 class Ray : public Asset {

@@ -3,10 +3,12 @@
 
 in vec3 in_Position;
 in vec3 in_Normal;
+in vec3 in_Color;
 
 out vec3 Vertex_Normal;
 out vec4 Vertex_LightDir;
 out vec4 Vertex_EyeVec;
+out vec3 color;
 
 uniform mat4 mvp;
 uniform mat4 modelview;
@@ -20,4 +22,5 @@ void main()
     vec4 view_vertex = modelview * vec4(in_Position,1);
     Vertex_LightDir = light_position - view_vertex;
     Vertex_EyeVec = -view_vertex;
+    color = in_Color;
 }
