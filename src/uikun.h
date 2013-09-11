@@ -86,16 +86,16 @@ namespace pho {
         static const int TOUCH_SCREEN_SIZE_X = 480;
         static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        static const int WINDOW_SIZE_X = 1920;
-        static const int WINDOW_SIZE_Y = 1080;
+        //static const int WINDOW_SIZE_X = 1920;
+        //static const int WINDOW_SIZE_Y = 1080;
 
-        static const int WINDOW_POS_X =  0;
-        static const int WINDOW_POS_Y =  0;
+        //static const int WINDOW_POS_X =  0;
+        //static const int WINDOW_POS_Y =  0;
 
-        //static const int WINDOW_SIZE_X = 1280;
-        //static const int WINDOW_SIZE_Y = 720;
-        //static const int WINDOW_POS_X = 810;
-        //static const int WINDOW_POS_Y = 130;
+        static const int WINDOW_SIZE_X = 1280;
+        static const int WINDOW_SIZE_Y = 720;
+        static const int WINDOW_POS_X = 810;
+        static const int WINDOW_POS_Y = 30;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);

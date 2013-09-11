@@ -2,6 +2,7 @@
 #define EXPERIMENT_H
 
 #include "asset.h"
+#include "plane.h"
 #include "cursor.h"
 #include "glm/gtx/random.hpp"
 #include "glm/glm.hpp"
@@ -35,9 +36,10 @@ public:
     bool advance();
     void setCursor(pho::Cursor *value);
     void setTarget(pho::Cursor *value);
-    void setRay(pho::Ray *value);
+    void setPlane(pho::Plane *value);
     void reset();
     void start();
+    void restartTrial();
     experimentType currentExperiment;
     std::string user;
     void setUser(const std::string &value);
@@ -47,10 +49,10 @@ public:
     pho::Asset* s0,s1,s2,s3,ts0;
     unsigned char buttons[19];
     bool pedal;
-    boost::timer::cpu_timer experimentTimer;
     glm::mat4* wandPosition;
     pho::Cursor* cursor;
     pho::Cursor* target;
+    pho::Plane* plane;
     pho::Ray* ray;
 
     void randomizePositions();
@@ -71,10 +73,11 @@ public:
     RotateTechnique* rotateTechnique;
     Technique* technique;
     AppState* appState;
-    flickState* flickstate;    
+
+    short inFlick = 0;
 
     boost::timer::cpu_timer trialTimer;
-
+    boost::timer::cpu_timer experimentTimer;
     boost::timer::cpu_timer sessionTimer;
 
     boost::timer::cpu_times trialTime;
@@ -89,8 +92,11 @@ public:
     glm::vec3 polhemus2pos;
     glm::vec4 polhemus2quat;
 
+    glm::mat4* phoneMatrix;
+
     std::ofstream bigLogFile;
     std::ofstream smallLogFile;
+
     std::ofstream fatigueLogFile;
     std::ofstream touchLogFile;
 

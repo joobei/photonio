@@ -73,9 +73,6 @@ Engine::Engine():
 
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
-    //Polhemus
-    serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
-
     prevMouseWheel = 0;
     gyroData = false;
     objectHit=false;
@@ -93,7 +90,6 @@ Engine::Engine():
 
     pointerOpacity = 1.0f;
 
-    experiment.user = USER;
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &sr.fLargest);
 
 #define	SHADOW_MAP_RATIO 8;
@@ -241,8 +237,13 @@ void Engine::initResources() {
     //experiment manager
     experiment.setCursor(&pyramidCursor);
     experiment.setTarget(&target);
+    experiment.setPlane(&plane);
     experiment.setUser(USER);
     experiment.wandPosition = &polhemusMatrix;
+    experiment.rotateTechnique = &rotTechnique;
+    experiment.technique = &technique;
+    experiment.appState = &appState;
+    experiment.phoneMatrix = &orientation;
 }
 
 //checks event queue for events
@@ -252,10 +253,7 @@ void Engine::checkEvents() {
     unsigned char buttons[19];
 
     checkKeyboard();
-    if ((technique == rayCasting) && (appState == select)) {
-        checkPolhemus(ray.modelMatrix);
-        glfwGetJoystickButtons(moveController,buttons,19);
-    }
+
     if ((technique == rayCasting) && (appState == direct)) {
         checkPolhemus(polhemusMatrix);
         glfwGetJoystickButtons(moveController,buttons,19);
@@ -264,20 +262,12 @@ void Engine::checkEvents() {
         }
     }
 
-    if (technique == mouse) {
-        float wheel = glfwGetMouseWheel();
-        if (wheel != prevMouseWheel) {
-            float amount = (wheel - prevMouseWheel)/10;
-            selectedAsset->modelMatrix = glm::translate(vec3(0,0,-amount))*selectedAsset->modelMatrix;
-            prevMouseWheel = wheel;
-        }
-    }
-
     if (technique == planeCasting) {
         checkUDP();
     }
 
     if (flicker.inFlick(translation)) {
+        experiment.inFlick = 1;
         mat4 flickTransform = flicker.dampenAndGiveMatrix(mat3(plane.modelMatrix));
         plane.modelMatrix = flickTransform*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
@@ -286,21 +276,28 @@ void Engine::checkEvents() {
     }
 
     if (flicker.inFlick(pinchy)) {
+        experiment.inFlick = 2;
         mat4 flickTransform = flicker.dampenAndGivePinchMatrix();
         selectedAsset->rotate(flickTransform);
     }
 
     if (flicker.inFlick(rotation)){
+        experiment.inFlick = 3;
         glm::vec2 rotation = flicker.dampenAndGiveRotationMatrix();
         selectedAsset->rotate(glm::rotate(rotation.x*3.0f,vec3(0,1,0)));
         selectedAsset->rotate(glm::rotate(rotation.y*3.0f,vec3(1,0,0)));
+    }
+
+    if (!(flicker.inFlick(rotation) || (flicker.inFlick(translation)) || flicker.inFlick(pinchy)))
+    {
+        experiment.inFlick = 0;
     }
 
     //Joystick
     checkSpaceNavigator();
     //checkMove();
 
-    if (appState == direct) {
+    if ((appState == direct) || (rotTechnique == clutch)) {
 
         //rotation
         if ((buttons[12] == GLFW_PRESS) && (directRotationStarted == false))
@@ -311,7 +308,13 @@ void Engine::checkEvents() {
         }
 
         if(directRotationStarted) {
-            rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+            if (rotTechnique == clutch)
+            {
+                rotationMatch(selectedAsset->modelMatrix,orientation*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+            }
+            else {
+                rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+            }
         }
 
         if ((buttons[11] == GLFW_PRESS) && (directTranslationStarted == false))
@@ -339,78 +342,16 @@ void Engine::checkEvents() {
                 initPosition = rayOrigin;
         }
 
-        if (buttons[12] == GLFW_RELEASE) {
+        if ((buttons[12] == GLFW_RELEASE) && (rotTechnique != clutch)) {
            directRotationStarted = false;
         }
-        if (buttons[11] == GLFW_RELEASE) {
+        if (buttons[11] == GLFW_RELEASE)  {
            directTranslationStarted = false;
         }
-        /*//translation
-        //vec3 V_hand = (-position) - (-prevPosition);
-        vec3 V_hand = (ray.getPosition()) - (receiverPrevPosition);
-
-        float SC = 0.007;
-
-        float V_hand_d = 1.2 < glm::length(V_hand) / SC ? 1.2 : glm::length(V_hand) / SC; //speed scaling
-        selectedAsset->modelMatrix[3][0] = 50*V_hand_d*V_hand[0]+objectprevModelMatrix[3][0];
-        selectedAsset->modelMatrix[3][1] = 50*V_hand_d*V_hand[1]+objectprevModelMatrix[3][1];
-        selectedAsset->modelMatrix[3][2] = 50*V_hand_d*V_hand[2]+objectprevModelMatrix[3][2];
-
-        receiverPrevPosition = ray.getPosition();
-        objectprevModelMatrix = selectedAsset->modelMatrix;*/
-        //LOG(sqrtf(pow(V_hand[0],2)+pow(V_hand[1],2)+pow(V_hand[2],2)));
 
     }
-
-
-
-    if (technique == rayCasting) {
-
-        if (rayTestWorld(rayOrigin,rayDirection,intersectedAsset))
-        {
-            intersectedAsset->beingIntersected = true;
-            //for shortening ray. was weird so I cut it.
-            /*vec3 length = intersectionPoint-ray.getPosition();
-                CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
-                CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(length)));
-            }
-            else
-            {
-                //no need to do this every frame
-                CALL_GL(glBindBuffer(GL_ARRAY_BUFFER,ray.vbo));
-                CALL_GL(glBufferSubData(GL_ARRAY_BUFFER,3*sizeof(float),3*sizeof(float),glm::value_ptr(vec3(0,0,-1000))));
-            }*/
-        }
-
-
-
-        if ((buttons[11] == GLFW_PRESS ) && (rayTestWorld(rayOrigin,rayDirection,intersectedAsset)))
-        {
-            appState = direct;
-            selectedAsset = intersectedAsset;
-
-            directTranslationStarted = true;
-            initPosition = rayOrigin;
-        }
-    }
-
-
-
-
 
     checkPhysics();
-
-    /*if(switchOnNextFrame) {
-    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
-    //Put 2d cursor where object was dropped:
-    //1st. calculate clip space coordinates
-    vec4 newtp = sr.projectionMatrix*sr.viewMatrix*selectedAsset->modelMatrix*vec4(0,0,0,1);
-    //2nd. convert it in normalized device coordinates by dividing with w
-    newtp/=newtp.w;
-    touchPoint.x = newtp.x;
-    touchPoint.y = newtp.y;
-    switchOnNextFrame = false;
-    }*/
 
     if(touchPoint.x < -1.0f) { touchPoint.x = -1.0; }
     if(touchPoint.x > 1.0f) { touchPoint.x = 1; }
@@ -627,6 +568,13 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     cursorList = tuioClient->getTuioCursors();
     short numberOfCursors = cursorList.size();
     //std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
+
+
+    if (rotTechnique == clutch) {
+         objectInitMatrix = selectedAsset->modelMatrix;
+         receiverInitMatrix = orientation;
+         directRotationStarted = true;
+    }
 
     //notify flick manager of a new gesture starting
     if ((numberOfCursors == 1) && ( appState == translate || appState == select))
@@ -951,6 +899,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
 void Engine::removeTuioCursor(TuioCursor *tcur) {
 
+    if (rotTechnique == clutch) {
+         directRotationStarted = false;
+    }
+
     switch (appState) {
     case select:
         if (!flicker.inFlick(translation)) {
@@ -1029,28 +981,54 @@ void Engine::checkUDP() {
                 calibrate = true;
                 break;
             case 2:
+                if ((rotTechnique == clutch) && (tempEvent.state() == true)) {
+                     objectInitMatrix = selectedAsset->modelMatrix;
+                     receiverInitMatrix = orientation;
+                     directRotationStarted = true;
+                }
+
+                if ((rotTechnique == clutch) && (tempEvent.state() == false)) {
+                    appState = direct;
+                    directRotationStarted = false;
+                }
+
                 if ((tempEvent.state() == true) && (appState == translate)) {
                     appState = rotate;
                     rotTechnique = screenSpace;
                     printf("translate --> rotate (Screenspace)");
                 }
                 if ((tempEvent.state() == false) && (appState == rotate)) {
+                    if (!(experiment.currentExperiment == rotationTask)) {
                     appState = translate;
                     p1f.x = 0.5;
                     p1f.y = 0.5;
+                    }
                 }
 
                 break;
             case 3:
+                if ((rotTechnique == clutch) && (tempEvent.state() == true)) {
+                     objectInitMatrix = selectedAsset->modelMatrix;
+                     receiverInitMatrix = orientation;
+                     directRotationStarted = true;
+                }
+
+                if ((rotTechnique == clutch) && (tempEvent.state() == false)) {
+                    appState = direct;
+                    directRotationStarted = false;
+                }
+
                 if ((tempEvent.state() == true) && (appState == translate)) {
                     appState = rotate;
                     rotTechnique = screenSpace;
                     printf("translate --> rotate (Screenspace)");
                 }
                 if ((tempEvent.state() == false) && (appState == rotate)) {
+                    if (!(experiment.currentExperiment == rotationTask)) {
                     appState = translate;
                     p1f.x = 0.5;
                     p1f.y = 0.5;
+                    }
                 }
 
                 break;
@@ -1075,7 +1053,7 @@ void Engine::checkKeyboard() {
     boost::timer::cpu_times const elapsed_times(keyboardTimer.elapsed());
     double difference = elapsed_times.wall-keyboardPreviousTime.wall;
 
-    if (difference > 800000000) { keyPressOK = true;}
+    if (difference > 700000000) { keyPressOK = true;}
     //to stop multiple keypresses
     if (keyPressOK) {
         if (glfwGetKey(GLFW_KEY_DOWN)) {
@@ -1104,18 +1082,7 @@ void Engine::checkKeyboard() {
 
         }
         if (glfwGetKey(GLFW_KEY_SPACE)) {
-            btTransform temp;
-            selectedAsset = &pyramidCursor;
-            pyramidCursor.modelMatrix = glm::translate(0,0,0);
-            temp.setFromOpenGLMatrix(glm::value_ptr(pyramidCursor.modelMatrix));
-            pyramidCursor.collisionObject->setWorldTransform(temp);
-            plane.modelMatrix = cursor.modelMatrix;
-            flicker.stopFlick(translation);
-            flicker.stopFlick(rotation);
-            flicker.stopFlick(pinchy);
-            appState = translate;
-            //touchPoint.x=0.0f;
-            //touchPoint.y=0.0f;
+            experiment.restartTrial();
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
 
@@ -1130,11 +1097,22 @@ void Engine::checkKeyboard() {
             appState = translate;
             technique = planeCasting;
             selectionTechnique = indieSelectRelative;
-            log("indieSelectRelative");
+            log("planeCasting");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
-            experiment.start();
+
         }
+
+        if (glfwGetKey('6') == GLFW_PRESS) {
+            appState = direct;
+            technique = planeCasting;
+            rotTechnique = clutch;
+            log("Clutching");
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+
+        }
+
 
         if (glfwGetKey('2') == GLFW_PRESS) {
             appState = direct;
@@ -1143,40 +1121,59 @@ void Engine::checkKeyboard() {
             log("RayCasting");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
-            experiment.start();
+            //Polhemus
+            serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
         }
 
         if (glfwGetKey('3') == GLFW_PRESS) {
-            pyramidCursor.setPosition(glm::vec3(0,0,0));
-            plane.setPosition(glm::vec3(0,0,0));
-            experiment.currentExperiment = rotationTask;
+            experiment.currentExperiment = movementTask;
             experiment.reset();
-            experiment.start();
+            log("Movement Task");
             keyPressOK = false;
-            log("Rotation Task");
             keyboardPreviousTime =  elapsed_times;
         }
 
         if (glfwGetKey('4') == GLFW_PRESS) {
-            pyramidCursor.setPosition(glm::vec3(0,0,0));
-            plane.setPosition(glm::vec3(0,0,0));
+            experiment.currentExperiment = rotationTask;
+            experiment.reset();
+            if (technique == planeCasting )
+            {
+                appState = rotate;
+            }
+            else {
+                appState = direct;
+            }
+
+            log("Rotation Task");
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+            cameraPosition = vec3(0,0,3);
+            sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
+        }
+
+        if (glfwGetKey('5') == GLFW_PRESS) {
             experiment.currentExperiment = dockingTask;
             experiment.reset();
-            experiment.start();
             log("Docking Task");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+        }
+
+        if (glfwGetKey(GLFW_KEY_ENTER) == GLFW_PRESS) {
+            experiment.start();
+        }
+
+        if (glfwGetKey('9') == GLFW_PRESS) {
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+            std::cout << experiment.polhemus2pos.x << std::endl;
+            std::cout << experiment.polhemus1pos.x << std::endl;
         }
 
         if (glfwGetKey('0') == GLFW_PRESS) {
             experiment.advance();
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
-            plane.setPosition(pyramidCursor.getPosition());
-        }
-
-        if (glfwGetKey('0') == GLFW_PRESS) {
-            experiment.start();
         }
     }
 }

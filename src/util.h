@@ -70,8 +70,7 @@ enum SelectionTechnique {
 enum Technique {  //appmode
     planeCasting,
     rayCasting,
-    spaceNavigator,
-    mouse
+    spaceNavigator
 };
 
 
