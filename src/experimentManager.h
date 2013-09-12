@@ -100,6 +100,8 @@ public:
     std::ofstream fatigueLogFile;
     std::ofstream touchLogFile;
 
+    bool wandtranslate = false;
+    bool wandrotate = false;
 };
 }
 

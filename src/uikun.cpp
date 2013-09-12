@@ -27,10 +27,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 using namespace std;
 
-#define USER "Nicholas"
+#define USER "Jen"
 
 //factor for translation in planeCasting
-#define TFACTORA 10
+#define TFACTORA 15
 #define FACTORB 2.0f
 
 Engine::Engine():
@@ -72,6 +72,9 @@ Engine::Engine():
     keyboardTimer.start();
 
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
+
+    //Polhemus
+    serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
     prevMouseWheel = 0;
     gyroData = false;
@@ -195,7 +198,7 @@ void Engine::initResources() {
 
     pyramidCursor.modelMatrix = glm::translate(mat4(),vec3(0,0,0));
     //pyramidCursor.color = glm::vec3(0.8,0.4,0.8);
-    pyramidCursor.setAlpha(0.6);
+    pyramidCursor.setAlpha(0.4);
 
     target.setPosition(vec3(6,0,2));
     target.color = vec3(0.5f,0.5f,0.5f);
@@ -297,10 +300,12 @@ void Engine::checkEvents() {
     checkSpaceNavigator();
     //checkMove();
 
+    float x,y,z;
+    mat3 temprot;
     if ((appState == direct) || (rotTechnique == clutch)) {
 
         //rotation
-        if ((buttons[12] == GLFW_PRESS) && (directRotationStarted == false))
+        if (((buttons[12] == GLFW_PRESS) || (buttons[4] == GLFW_PRESS) || (buttons[5] == GLFW_PRESS) || (buttons[6] == GLFW_PRESS))  && (directRotationStarted == false))
         {
                 objectInitMatrix = selectedAsset->modelMatrix;
                 receiverInitMatrix = polhemusMatrix;
@@ -312,8 +317,32 @@ void Engine::checkEvents() {
             {
                 rotationMatch(selectedAsset->modelMatrix,orientation*glm::inverse(receiverInitMatrix)*objectInitMatrix);
             }
-            else {
-                rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+            else
+            {
+                if (buttons[4] == GLFW_PRESS)
+                {
+                    //rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+                    /*temprot = glm::mat3(polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+                    z = (float)((temprot*glm::vec3(0,1,0)).x);
+                    rotationMatch(selectedAsset->modelMatrix,glm::rotate(selectedAsset->modelMatrix,z,glm::vec3(0,0,1)));*/
+                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+                }
+
+                if (buttons[5] == GLFW_PRESS)
+                {
+                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+                }
+
+                if (buttons[6] == GLFW_PRESS)
+                {
+                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+                }
+
+                if (buttons[12] == GLFW_PRESS)
+                {
+                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
+                }
+
             }
         }
 
@@ -342,13 +371,27 @@ void Engine::checkEvents() {
                 initPosition = rayOrigin;
         }
 
-        if ((buttons[12] == GLFW_RELEASE) && (rotTechnique != clutch)) {
+        if (((buttons[12] == GLFW_RELEASE) && (buttons[4] == GLFW_RELEASE) && (buttons[5] == GLFW_RELEASE) && (buttons[6] == GLFW_RELEASE)) && (rotTechnique != clutch)) {
            directRotationStarted = false;
         }
         if (buttons[11] == GLFW_RELEASE)  {
            directTranslationStarted = false;
         }
 
+    }
+
+    if (buttons[11] == GLFW_PRESS) {
+        experiment.wandtranslate = true;
+    }
+    else {
+        experiment.wandtranslate = false;
+    }
+
+    if (buttons[12] == GLFW_PRESS) {
+        experiment.wandrotate = true;
+    }
+    else {
+        experiment.wandrotate = false;
     }
 
     checkPhysics();
@@ -696,7 +739,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             {
 
                 rotTechnique = pinch;
-                std::cout << "pinch rotate" << '\n';
+                //std::cout << "pinch rotate" << '\n';
 
 
                 p2p = p2c;   //when first putting finger down there must be
@@ -709,7 +752,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             p2c.y = y;
             f2id = tcur->getCursorID();
 
-            std::cout << "Distance : " << glm::distance(p1c,p2c) << std::endl;
+            //std::cout << "Distance : " << glm::distance(p1c,p2c) << std::endl;
         }
     }
     if (verbose)
@@ -753,9 +796,9 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             float distanceTravelled = lastFingerDistance-currentFingerDistance;
 
             tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-            newLocationVector = tempMat*vec3(0,distanceTravelled,0);
+            newLocationVector = tempMat*vec3(0,distanceTravelled,0); //on the normal to the plane
 
-            if (distanceTravelled < 0.5)
+            if (distanceTravelled < 0.2)
             {
                 newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
                 plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
@@ -988,18 +1031,19 @@ void Engine::checkUDP() {
                 }
 
                 if ((rotTechnique == clutch) && (tempEvent.state() == false)) {
-                    appState = direct;
                     directRotationStarted = false;
                 }
 
                 if ((tempEvent.state() == true) && (appState == translate)) {
                     appState = rotate;
                     rotTechnique = screenSpace;
-                    printf("translate --> rotate (Screenspace)");
+                    //printf("translate --> rotate (Screenspace)");
                 }
                 if ((tempEvent.state() == false) && (appState == rotate)) {
                     if (!(experiment.currentExperiment == rotationTask)) {
                     appState = translate;
+                    lastFingerDistance = glm::distance(p2c,p1c); //fix jumping bug when
+                    //releasing rotation button
                     p1f.x = 0.5;
                     p1f.y = 0.5;
                     }
@@ -1007,30 +1051,17 @@ void Engine::checkUDP() {
 
                 break;
             case 3:
-                if ((rotTechnique == clutch) && (tempEvent.state() == true)) {
+                if ((technique == planeCasting) && (tempEvent.state() == true)) {
                      objectInitMatrix = selectedAsset->modelMatrix;
                      receiverInitMatrix = orientation;
                      directRotationStarted = true;
+                     rotTechnique = clutch;
                 }
 
                 if ((rotTechnique == clutch) && (tempEvent.state() == false)) {
-                    appState = direct;
+                    rotTechnique = screenSpace;
                     directRotationStarted = false;
                 }
-
-                if ((tempEvent.state() == true) && (appState == translate)) {
-                    appState = rotate;
-                    rotTechnique = screenSpace;
-                    printf("translate --> rotate (Screenspace)");
-                }
-                if ((tempEvent.state() == false) && (appState == rotate)) {
-                    if (!(experiment.currentExperiment == rotationTask)) {
-                    appState = translate;
-                    p1f.x = 0.5;
-                    p1f.y = 0.5;
-                    }
-                }
-
                 break;
             default:
                 calibrate = true;
@@ -1096,6 +1127,7 @@ void Engine::checkKeyboard() {
         if (glfwGetKey('1') == GLFW_PRESS) {
             appState = translate;
             technique = planeCasting;
+            rotTechnique = screenSpace;
             selectionTechnique = indieSelectRelative;
             log("planeCasting");
             keyPressOK = false;
@@ -1121,11 +1153,12 @@ void Engine::checkKeyboard() {
             log("RayCasting");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
-            //Polhemus
-            serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
+
         }
 
         if (glfwGetKey('3') == GLFW_PRESS) {
+            cameraPosition = vec3(0,0,10);
+            sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
             experiment.currentExperiment = movementTask;
             experiment.reset();
             log("Movement Task");
@@ -1157,10 +1190,13 @@ void Engine::checkKeyboard() {
             log("Docking Task");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+            cameraPosition = vec3(0,0,10);
+            sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
         }
 
         if (glfwGetKey(GLFW_KEY_ENTER) == GLFW_PRESS) {
             experiment.start();
+
         }
 
         if (glfwGetKey('9') == GLFW_PRESS) {

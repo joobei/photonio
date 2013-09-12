@@ -20,7 +20,7 @@ pho::ExpManager::ExpManager()
     p10 = glm::normalize(glm::vec3(0.894425, 0.447215, 0.000000));
     p11 = glm::normalize(glm::vec3(0.000000, 1.000000, 0.000000));
 
-    originalPositions.push_back(std::make_pair(p0,1));
+    /*originalPositions.push_back(std::make_pair(p0,1));
     originalPositions.push_back(std::make_pair(p1,2));
     originalPositions.push_back(std::make_pair(p2,3));
     originalPositions.push_back(std::make_pair(p3,4));
@@ -31,9 +31,24 @@ pho::ExpManager::ExpManager()
     originalPositions.push_back(std::make_pair(p8,9));
     originalPositions.push_back(std::make_pair(p9,10));
     originalPositions.push_back(std::make_pair(p10,11));
-    originalPositions.push_back(std::make_pair(p11,12));
+    originalPositions.push_back(std::make_pair(p11,12));*/
 
     short multiplier = 2;
+
+    originalPositions.push_back(std::make_pair(magnify(p0,multiplier),1));
+    originalPositions.push_back(std::make_pair(magnify(p1,multiplier),2));
+    originalPositions.push_back(std::make_pair(magnify(p2,multiplier),3));
+    originalPositions.push_back(std::make_pair(magnify(p3,multiplier),4));
+    originalPositions.push_back(std::make_pair(magnify(p4,multiplier),5));
+    originalPositions.push_back(std::make_pair(magnify(p5,multiplier),6));
+    originalPositions.push_back(std::make_pair(magnify(p6,multiplier),7));
+    originalPositions.push_back(std::make_pair(magnify(p7,multiplier),8));
+    originalPositions.push_back(std::make_pair(magnify(p8,multiplier),9));
+    originalPositions.push_back(std::make_pair(magnify(p9,multiplier),10));
+    originalPositions.push_back(std::make_pair(magnify(p10,multiplier),11));
+    originalPositions.push_back(std::make_pair(magnify(p11,multiplier),12));
+
+    multiplier = 4;
 
     originalPositions.push_back(std::make_pair(magnify(p0,multiplier),12+1));
     originalPositions.push_back(std::make_pair(magnify(p1,multiplier),12+2));
@@ -48,22 +63,7 @@ pho::ExpManager::ExpManager()
     originalPositions.push_back(std::make_pair(magnify(p10,multiplier),12+11));
     originalPositions.push_back(std::make_pair(magnify(p11,multiplier),12+12));
 
-    multiplier = 4;
-
-    originalPositions.push_back(std::make_pair(magnify(p0,multiplier),24+1));
-    originalPositions.push_back(std::make_pair(magnify(p1,multiplier),24+2));
-    originalPositions.push_back(std::make_pair(magnify(p2,multiplier),24+3));
-    originalPositions.push_back(std::make_pair(magnify(p3,multiplier),24+4));
-    originalPositions.push_back(std::make_pair(magnify(p4,multiplier),24+5));
-    originalPositions.push_back(std::make_pair(magnify(p5,multiplier),24+6));
-    originalPositions.push_back(std::make_pair(magnify(p6,multiplier),24+7));
-    originalPositions.push_back(std::make_pair(magnify(p7,multiplier),24+8));
-    originalPositions.push_back(std::make_pair(magnify(p8,multiplier),24+9));
-    originalPositions.push_back(std::make_pair(magnify(p9,multiplier),24+10));
-    originalPositions.push_back(std::make_pair(magnify(p10,multiplier),24+11));
-    originalPositions.push_back(std::make_pair(magnify(p11,multiplier),24+12));
-
-    for (auto i=0;i<3;++i) {
+    for (auto i=0;i<2;++i) {
         originalAngles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(0,0,0))),1));
         originalAngles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(0,0,1))),2));
         originalAngles.push_back(std::make_pair(glm::normalize(glm::angleAxis(90.f,glm::vec3(0,1,0))),3));
@@ -81,8 +81,10 @@ pho::ExpManager::ExpManager()
     currentExperiment = practice;
     noOfTrials = originalPositions.size();
 
-    bigLogFile.open ("bigFile.txt");
-    smallLogFile.open ("smallFile.txt");
+    bigLogFile.open ("logs/bigFile.csv", std::ofstream::out | std::ofstream::app);
+    smallLogFile.open ("logs/smallFile.csv", std::ofstream::out | std::ofstream::app);
+    fatigueLogFile.open("logs/fatigue.csv", std::ofstream::out | std::ofstream::app);
+    touchLogFile.open("logs/touch.csv", std::ofstream::out | std::ofstream::app);
 
     positions = originalPositions;
     angles = originalAngles;
@@ -92,7 +94,7 @@ pho::ExpManager::ExpManager()
 
     sessionTimer.stop();
     trialTimer.stop();
-    experimentTimer.stop();
+    //experimentTimer.stop();
 }
 
 void pho::ExpManager::setPlane(pho::Plane *value)
@@ -106,6 +108,8 @@ void pho::ExpManager::reset()
     randomizePositions();
     iterator = positions.begin();
     angleIterator = angles.begin();
+    started = false;
+    trialTimer.stop();
 }
 
 void pho::ExpManager::start()
@@ -141,11 +145,13 @@ void pho::ExpManager::start()
         plane->modelMatrix = glm::mat4();
         break;
     }
+
+    started = true;
 }
 
 void pho::ExpManager::restartTrial()
 {
-    //add code to restart current trial
+    trialTime = trialTimer.elapsed();
 }
 
 void pho::ExpManager::setUser(const std::string &value)
@@ -165,8 +171,8 @@ void pho::ExpManager::closeFiles()
 void pho::ExpManager::log()
 {
 
-    boost::timer::cpu_times const elapsed_times(trialTimer.elapsed());
-    double difference = elapsed_times.wall-trialTime.wall;
+    boost::timer::cpu_times const elapsed_time(trialTimer.elapsed());
+    double difference = elapsed_time.wall-trialTime.wall;
 
     boost::timer::cpu_times const elapsed_session(sessionTimer.elapsed());
     double differenceSession = elapsed_session.wall-sessionTime.wall;
@@ -177,35 +183,101 @@ void pho::ExpManager::log()
     glm::quat cur = glm::toQuat(cursor->modelMatrix);
     glm::quat tar = glm::toQuat(target->modelMatrix);
 
-    started = false;
+
     if (started) {
 
         bigLogFile << user << ';';
         bigLogFile << currentFrame++ << ';';
         bigLogFile << currentTrial << ';';
         bigLogFile << currentExperiment << ';';
-        bigLogFile << *rotateTechnique << ';';
-        bigLogFile << *technique << ';';
-        bigLogFile << *appState << ';';
+        switch (*rotateTechnique) {
+        case 0:bigLogFile << "screenspace" << ';';break;
+        case 1:bigLogFile << "pinch" << ';';break;
+        case 2:bigLogFile << "clutch" << ';';break;
+        case 3:bigLogFile << "lockx" << ';';break;
+        case 4:bigLogFile << "locky" << ';';break;
+        case 5:bigLogFile << "lockz" << ';';break;
+        }
+
+        switch (*technique) {
+        case 0:bigLogFile << "planecasting" << ';';break;
+        case 1:bigLogFile << "raycasting" << ';';break;
+        case 2:bigLogFile << "spacenavigator" << ';';break;
+        }
+
+        switch (*appState) {
+        case 0:bigLogFile << "select" << ';';break;
+        case 1:bigLogFile << "intersect" << ';';break;
+        case 2:bigLogFile << "translate" << ';';break;
+        case 3:bigLogFile << "rotate" << ';';break;
+        case 4:bigLogFile << "direct" << ';';break;
+        }
         bigLogFile << inFlick << ';';
 
         touchLogFile << user << ';';
         touchLogFile << currentFrame++ << ';';
         touchLogFile << currentTrial << ';';
-        touchLogFile << currentExperiment << ';';
-        touchLogFile << *rotateTechnique << ';';
-        touchLogFile << *technique << ';';
-        touchLogFile << *appState << ';';
+        switch (currentExperiment) {
+        case 0:touchLogFile << "rotationTask" << ';';break;
+        case 1:touchLogFile << "dockingTask" << ';';break;
+        case 2:touchLogFile << "movementTask" << ';';break;
+        }
+        switch (*rotateTechnique) {
+        case 0:touchLogFile << "screenspace" << ';';break;
+        case 1:touchLogFile << "pinch" << ';';break;
+        case 2:touchLogFile << "clutch" << ';';break;
+        case 3:touchLogFile << "lockx" << ';';break;
+        case 4:touchLogFile << "locky" << ';';break;
+        case 5:touchLogFile << "lockz" << ';';break;
+        }
+
+        switch (*technique) {
+        case 0:touchLogFile << "planecasting" << ';';break;
+        case 1:touchLogFile << "raycasting" << ';';break;
+        case 2:touchLogFile << "spacenavigator" << ';';break;
+        }
+
+        switch (*appState) {
+        case 0:touchLogFile << "select" << ';';break;
+        case 1:touchLogFile << "intersect" << ';';break;
+        case 2:touchLogFile << "translate" << ';';break;
+        case 3:touchLogFile << "rotate" << ';';break;
+        case 4:touchLogFile << "direct" << ';';break;
+        }
+
         touchLogFile << inFlick << ';';
         touchLogFile << pedal << ';';
 
         fatigueLogFile << user << ';';
         fatigueLogFile << currentFrame++ << ';';
         fatigueLogFile << currentTrial << ';';
-        fatigueLogFile << currentExperiment << ';';
-        fatigueLogFile << *rotateTechnique << ';';
-        fatigueLogFile << *technique << ';';
-        fatigueLogFile << *appState << ';';
+        switch (currentExperiment) {
+        case 0:fatigueLogFile << "rotationTask" << ';';break;
+        case 1:fatigueLogFile << "dockingTask" << ';';break;
+        case 2:fatigueLogFile << "movementTask" << ';';break;
+        }
+        switch (*rotateTechnique) {
+        case 0:fatigueLogFile << "screenspace" << ';';break;
+        case 1:fatigueLogFile << "pinch" << ';';break;
+        case 2:fatigueLogFile << "clutch" << ';';break;
+        case 3:fatigueLogFile << "lockx" << ';';break;
+        case 4:fatigueLogFile << "locky" << ';';break;
+        case 5:fatigueLogFile << "lockz" << ';';break;
+        }
+
+        switch (*technique) {
+        case 0:fatigueLogFile << "planecasting" << ';';break;
+        case 1:fatigueLogFile << "raycasting" << ';';break;
+        case 2:fatigueLogFile << "spacenavigator" << ';';break;
+        }
+
+        switch (*appState) {
+        case 0:fatigueLogFile << "select" << ';';break;
+        case 1:fatigueLogFile << "intersect" << ';';break;
+        case 2:fatigueLogFile << "translate" << ';';break;
+        case 3:fatigueLogFile << "rotate" << ';';break;
+        case 4:fatigueLogFile << "direct" << ';';break;
+        }
         fatigueLogFile << pedal << ';';
 
         bigLogFile << iterator->second << ';';
@@ -224,6 +296,9 @@ void pho::ExpManager::log()
         bigLogFile << tar.y << ';';
         bigLogFile << tar.z << ';';
         bigLogFile << tar.w << ';';
+
+        bigLogFile << wandrotate << ';';
+        bigLogFile << wandtranslate << ';';
 
         touchLogFile << finger1.exists << ';';
         touchLogFile << finger1.id << ';';
@@ -249,13 +324,12 @@ void pho::ExpManager::log()
         fatigueLogFile << polhemus2quat.z << ';';
         fatigueLogFile << polhemus2quat.w << ';';
 
-        glm::quat phone = glm::toQuat(*phoneMatrix);
+        glm::quat phone = glm::normalize(glm::toQuat(*phoneMatrix));
 
         fatigueLogFile << phone.x << ';';
         fatigueLogFile << phone.y << ';';
         fatigueLogFile << phone.z << ';';
         fatigueLogFile << phone.w << ';';
-
 
         bigLogFile << pedal << ';';
         bigLogFile << difference/1000000.0f << ';';
@@ -277,8 +351,6 @@ bool pho::ExpManager::advance()
     glm::vec3 pos;
     glm::mat4 loc;
 
-    trialTime = trialTimer.elapsed();
-
     boost::timer::cpu_times const elapsed_times(trialTimer.elapsed());
     double difference = elapsed_times.wall-trialTime.wall;
 
@@ -288,6 +360,73 @@ bool pho::ExpManager::advance()
     boost::timer::cpu_times const elapsed_experiment(experimentTimer.elapsed());
     double differenceExperiment = elapsed_experiment.wall-experimentTime.wall;
 
+    glm::quat cur = glm::toQuat(cursor->modelMatrix);
+    glm::quat tar = glm::toQuat(target->modelMatrix);
+
+    if (started) {
+        smallLogFile << user << ';';
+        smallLogFile << currentFrame << ';';
+
+        //smallLogFile << difference/1000000.0f << ';';
+        smallLogFile << difference/1000000.0f << ';';
+        smallLogFile << differenceSession/1000000.0f << ';';
+        smallLogFile << differenceExperiment/1000000.0f << ';';
+
+        switch (currentExperiment) {
+        case 0:smallLogFile << "rotationTask" << ';';break;
+        case 1:smallLogFile << "dockingTask" << ';';break;
+        case 2:smallLogFile << "movementTask" << ';';break;
+        }
+
+        smallLogFile << currentTrial << ';';
+
+        switch (*rotateTechnique) {
+        case 0:smallLogFile << "screenspace" << ';';break;
+        case 1:smallLogFile << "pinch" << ';';break;
+        case 2:smallLogFile << "clutch" << ';';break;
+        case 3:smallLogFile << "lockx" << ';';break;
+        case 4:smallLogFile << "locky" << ';';break;
+        case 5:smallLogFile << "lockz" << ';';break;
+        }
+
+        switch (*technique) {
+        case 0:smallLogFile << "planecasting" << ';';break;
+        case 1:smallLogFile << "raycasting" << ';';break;
+        case 2:smallLogFile << "spacenavigator" << ';';break;
+        }
+
+        switch (*appState) {
+        case 0:smallLogFile << "select" << ';';break;
+        case 1:smallLogFile << "intersect" << ';';break;
+        case 2:smallLogFile << "translate" << ';';break;
+        case 3:smallLogFile << "rotate" << ';';break;
+        case 4:smallLogFile << "direct" << ';';break;
+        }
+
+        smallLogFile << inFlick << ';';
+        smallLogFile << pedal << ';';
+
+        smallLogFile << iterator->second << ';';
+        smallLogFile << angleIterator->second << ';';
+        smallLogFile << cursor->getPosition().x << ';';
+        smallLogFile << cursor->getPosition().y << ';';
+        smallLogFile << cursor->getPosition().z << ';';
+        smallLogFile << cur.x << ';';
+        smallLogFile << cur.y << ';';
+        smallLogFile << cur.z << ';';
+        smallLogFile << cur.w << ';';
+        smallLogFile << target->getPosition().x << ';';
+        smallLogFile << target->getPosition().y << ';';
+        smallLogFile << target->getPosition().z << ';';
+        smallLogFile << tar.x << ';';
+        smallLogFile << tar.y << ';';
+        smallLogFile << tar.z << ';';
+        smallLogFile << tar.w << ';';
+
+
+        smallLogFile << '\n';
+
+    }
 
     std::srand(time(NULL));
     switch (currentExperiment) {
@@ -306,6 +445,7 @@ bool pho::ExpManager::advance()
         }
         if(iterator != positions.end())
         {
+            target->modelMatrix = glm::mat4();
             target->setPosition(iterator->first);
             //loc = glm::toMat4(angleIterator->first);
             //loc[3] = glm::vec4(pos,1);
@@ -315,9 +455,10 @@ bool pho::ExpManager::advance()
         if(iterator == positions.end())
         {
             target->setPosition(glm::vec3(5,0,-530));
-            std::cout << "Experiment Finished";
+            std::cout << "movement Experiment Finished";
             sessionTimer.stop();
-            sessionTime = sessionTimer.elapsed();
+            trialTimer.stop();
+            started = false;
         }
         break;
     case dockingTask:
@@ -338,9 +479,10 @@ bool pho::ExpManager::advance()
         if(iterator == positions.end())
         {
             target->setPosition(glm::vec3(5,0,-530));
-            std::cout << "Experiment Finished";
+            std::cout << "docking Experiment Finished";
             sessionTimer.stop();
-            sessionTime = sessionTimer.elapsed();
+            trialTimer.stop();
+            started = false;
         }
 
         break;
@@ -359,52 +501,18 @@ bool pho::ExpManager::advance()
         if(iterator == positions.end())
         {
             target->setPosition(glm::vec3(5,0,-530));
-            std::cout << "Experiment Finished";
+            std::cout << "rotation Experiment Finished";
+            trialTimer.stop();
             sessionTimer.stop();
-            sessionTime = sessionTimer.elapsed();
+            started = false;
         }
 
         break;
     }
     plane->modelMatrix = cursor->modelMatrix;
+    trialTime = trialTimer.elapsed();
 
-    glm::quat cur = glm::toQuat(cursor->modelMatrix);
-    glm::quat tar = glm::toQuat(target->modelMatrix);
-
-    smallLogFile << user << ';';
-    smallLogFile << currentFrame++ << ';';
-
-    smallLogFile << difference/1000000.0f << ';';
-    smallLogFile << differenceSession/1000000.0f << ';';
-    smallLogFile << differenceExperiment/1000000.0f << ';';
-
-    smallLogFile << currentTrial << ';';
-    smallLogFile << currentExperiment << ';';
-    smallLogFile << *rotateTechnique << ';';
-    smallLogFile << *technique << ';';
-    smallLogFile << *appState << ';';
-    smallLogFile << inFlick << ';';
-    smallLogFile << pedal << ';';
-
-    smallLogFile << iterator->second << ';';
-    smallLogFile << angleIterator->second << ';';
-    smallLogFile << cursor->getPosition().x << ';';
-    smallLogFile << cursor->getPosition().y << ';';
-    smallLogFile << cursor->getPosition().z << ';';
-    smallLogFile << cur.x << ';';
-    smallLogFile << cur.y << ';';
-    smallLogFile << cur.z << ';';
-    smallLogFile << cur.w << ';';
-    smallLogFile << target->getPosition().x << ';';
-    smallLogFile << target->getPosition().y << ';';
-    smallLogFile << target->getPosition().z << ';';
-    smallLogFile << tar.x << ';';
-    smallLogFile << tar.y << ';';
-    smallLogFile << tar.z << ';';
-    smallLogFile << tar.w << ';';
-
-
-    smallLogFile << '\n';
+    std::cout << currentTrial << std::endl;
 }
 
 

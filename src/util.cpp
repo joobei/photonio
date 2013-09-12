@@ -55,7 +55,7 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot, flickState flick
     switch (flickstate) {
     case translation:
         if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
-            translateTimes = 500;
+            translateTimes = 250;
             currentlyInTranslateFlick = true;
             launchPair.x = touchHistory[0].x/LAUNCHFACTOR;
             launchPair.y = touchHistory[0].y/LAUNCHFACTOR;
@@ -110,7 +110,7 @@ bool pho::flickManager::inFlick(flickState flickstate) {
     case translation:
         return currentlyInTranslateFlick;
         break;
-    case rotate:
+    case rotation:
         return currentlyInRotateFlick;
         break;
     case pinchy:
