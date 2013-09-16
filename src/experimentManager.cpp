@@ -134,17 +134,24 @@ void pho::ExpManager::start()
         target->modelMatrix = loc;
         cursor->modelMatrix = glm::mat4();
         plane->modelMatrix = glm::mat4();
+        std::cout << "Docking Task STARTED \n1" << std::endl;
         break;
+
     case rotationTask:
+        target->modelMatrix = glm::mat4();
         target->modelMatrix = glm::toMat4(angleIterator->first);
         cursor->modelMatrix = glm::mat4();
+        std::cout << "Rotation Task STARTED \n1" << std::endl;
         break;
     case movementTask:
         target->setPosition(iterator->first);
         cursor->modelMatrix = glm::mat4();
         plane->modelMatrix = glm::mat4();
+        std::cout << "Movement Task STARTED \n1" << std::endl;
         break;
     }
+
+
 
     started = true;
 }

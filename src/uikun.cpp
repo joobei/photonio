@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 using namespace std;
 
-#define USER "Jen"
+#define USER "ricardo"
 
 //factor for translation in planeCasting
 #define TFACTORA 15
