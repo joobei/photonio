@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 using namespace std;
 
-#define USER "ricardo"
+#define USER "lance"
 
 //factor for translation in planeCasting
 #define TFACTORA 15
@@ -574,10 +574,10 @@ void Engine::go() {
 }
 
 void Engine::shutdown() {
-    ioservice.stop();
     errorLog.close();
-    serialioservice.stop();
     experiment.closeFiles();
+    ioservice.stop();
+    serialioservice.stop();
     //psmove_disconnect(move);
 }
 
@@ -1311,11 +1311,16 @@ void Engine::checkSpaceNavigator() {
             //when used as footswitch
             if(((position[2] > 0.4) || (position[1] > 0.4)) && keyPressOK)
             {
-                experiment.pedal = true;
-                experiment.advance();
-                keyPressOK = false;
-                keyboardPreviousTime =  elapsed_times;
-                plane.setPosition(pyramidCursor.getPosition());
+                if (experiment.started) {
+                    experiment.pedal = true;
+                    experiment.advance();
+                    keyPressOK = false;
+                    keyboardPreviousTime =  elapsed_times;
+                    plane.setPosition(pyramidCursor.getPosition());
+                }
+                else {
+                    experiment.start();
+                }
             }
             else
             {
