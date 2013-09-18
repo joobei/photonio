@@ -221,9 +221,7 @@ namespace pho {
         pho::Asset s2;
         pho::Asset s3;
         pho::Plane plane;
-        pho::Cursor pyramidCursor;
-        pho::Cursor target;
-        pho::Ray ray;
+        pho::Asset pyramidCursor;
         pho::Asset floor;      
         pho::Asset* selectedAsset;
         pho::Asset* intersectedAsset;

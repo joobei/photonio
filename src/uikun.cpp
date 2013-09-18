@@ -43,10 +43,7 @@ Engine::Engine():
     selectionTechnique(indieSelectRelative),
     plane(&sr),
     rotTechnique(screenSpace),
-    technique(planeCasting),
-    pyramidCursor(&sr),
-    target(&sr),
-    ray(&sr)
+    technique(planeCasting)
 {
 #define SIZE 30                     //Size of the moving average filter
     accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -175,9 +172,6 @@ void Engine::initResources() {
     selectedAsset = &pyramidCursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
-    target.setAlpha(0.6);
-    target.color = glm::vec3(0.6,0.6,0.6);
-
     s0 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
     s0.setScale(0.1f);
     s1 = pho::Asset("cursor.obj", &sr.flatLitShader,&sr);
@@ -196,16 +190,9 @@ void Engine::initResources() {
     plane.setScale(3.0f);
     //plane.receiveShadow = true;
 
-    pyramidCursor.modelMatrix = glm::translate(mat4(),vec3(0,0,0));
+    pyramidCursor = pho::Asset("bump-heart.obj",&normalMap,&sr);
     //pyramidCursor.color = glm::vec3(0.8,0.4,0.8);
-    pyramidCursor.setAlpha(0.4);
 
-    target.setPosition(vec3(6,0,2));
-    target.color = vec3(0.5f,0.5f,0.5f);
-
-    //load texture
-    ray.texture = gli::createTexture2D(assetpath+"grad2.dds");
-    ray.setAlpha(1.0f);
 
     vec3 disc = vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -222,7 +209,7 @@ void Engine::initResources() {
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
-    cameraPosition = vec3(0,0,10);
+    cameraPosition = vec3(0,0,15);
     sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
@@ -237,16 +224,6 @@ void Engine::initResources() {
 
     CALL_GL(glEnable(GL_PROGRAM_POINT_SIZE_EXT));
 
-    //experiment manager
-    experiment.setCursor(&pyramidCursor);
-    experiment.setTarget(&target);
-    experiment.setPlane(&plane);
-    experiment.setUser(USER);
-    experiment.wandPosition = &polhemusMatrix;
-    experiment.rotateTechnique = &rotTechnique;
-    experiment.technique = &technique;
-    experiment.appState = &appState;
-    experiment.phoneMatrix = &orientation;
 }
 
 //checks event queue for events
@@ -401,46 +378,6 @@ void Engine::checkEvents() {
     if(touchPoint.y < -1.0f) { touchPoint.y = -1.0; }
     if(touchPoint.y > 1.0f) { touchPoint.y = 1; }
 
-    std::list<TuioCursor*> list = tuioClient->getTuioCursors();
-
-    if (list.size() == 0)
-    {
-     experiment.finger1.exists = false;
-     experiment.finger1.x = 0;
-     experiment.finger1.y = 0;
-
-     experiment.finger2.exists = false;
-     experiment.finger2.x = 0;
-     experiment.finger2.y = 0;
-    }
-
-    if (list.size() == 1)
-    {
-     experiment.finger1.exists = true;
-     experiment.finger1.x = list.front()->getPosition().getX();
-     experiment.finger1.y = list.front()->getPosition().getY();
-     experiment.finger1.id = list.front()->getCursorID();
-
-     experiment.finger2.exists = false;
-     experiment.finger2.x = 0;
-     experiment.finger2.y = 0;
-    }
-
-    if (list.size() == 2)
-    {
-     experiment.finger1.exists = true;
-     experiment.finger1.x = list.front()->getPosition().getX();
-     experiment.finger1.y = list.front()->getPosition().getY();
-     experiment.finger1.id = list.front()->getCursorID();
-
-
-     experiment.finger2.exists = true;
-     experiment.finger2.x = list.back()->getPosition().getX();
-     experiment.finger2.y = list.back()->getPosition().getY();
-     experiment.finger2.id = list.back()->getCursorID();
-    }
-
-    experiment.log();
 }
 
 void Engine::render() {
@@ -452,50 +389,12 @@ void Engine::render() {
 
     floor.draw();
 
-
-
-    //match spheres to vertex positions before drawing them
-    s0.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v0);
-    s0.opacity = 1.0;
-    s0.drawPlain(red);
-
-
-    s1.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v1);
-    s1.opacity = 1.0;
-    s1.drawPlain(green);
-
-    s2.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v2);
-    s2.opacity = 1.0;
-    s2.drawPlain(blue);
-
-    s3.rotateAboutAsset(pyramidCursor.modelMatrix,pyramidCursor.v3);
-    s3.opacity = 1.0;
-    s3.drawPlain(yellow);
-
-    target.drawLines(false);
-
-    s0.rotateAboutAsset(target.modelMatrix,pyramidCursor.v0);
-    s0.opacity = 0.6;
-    s0.drawPlain(red);
-
-    s1.rotateAboutAsset(target.modelMatrix,pyramidCursor.v1);
-    s1.opacity = 0.6;
-    s1.drawPlain(green);
-
-    s2.rotateAboutAsset(target.modelMatrix,pyramidCursor.v2);
-    s2.opacity = 0.6;
-    s2.drawPlain(blue);
-
-    s3.rotateAboutAsset(target.modelMatrix,pyramidCursor.v3);
-    s3.opacity = 0.6;
-    s3.drawPlain(yellow);
-
     pyramidCursor.draw();
 
     if (appState == select) {
         if (selectionTechnique == raySelect)
         {
-            ray.draw();
+            //ray.draw();
         }
         else
         {
@@ -796,7 +695,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             float distanceTravelled = lastFingerDistance-currentFingerDistance;
 
             tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-            newLocationVector = tempMat*vec3(0,distanceTravelled,0); //on the normal to the plane
+            newLocationVector = tempMat*vec3(0,distanceTravelled*4,0); //on the normal to the plane
 
             if (distanceTravelled < 0.2)
             {
@@ -1269,7 +1168,7 @@ void Engine::shadowMapRender() {
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
 
     pyramidCursor.drawFromLight();
-    target.drawLines(true);
+    //target.drawLines(true);
 
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
@@ -1389,7 +1288,7 @@ void Engine::initPhysics()
 
     sr.collisionWorld = new btCollisionWorld(dispatcher,broadphase,collisionConfiguration);
 
-    sr.collisionWorld->addCollisionObject(pyramidCursor.collisionObject);
+    //sr.collisionWorld->addCollisionObject(pyramidCursor.collisionObject);
 
 }
 
@@ -1397,7 +1296,7 @@ void Engine::checkPhysics()
 {
     btTransform temp;
     temp.setFromOpenGLMatrix(glm::value_ptr(pyramidCursor.modelMatrix));
-    pyramidCursor.collisionObject->setWorldTransform(temp);
+    //pyramidCursor.collisionObject->setWorldTransform(temp);
 
 }
 
