@@ -4,7 +4,7 @@
 #include "glm/glm.hpp"
 #include <vector>
 #include "GL/glew.h"
-#include "GL/glfw.h"
+#include "GLFW/glfw3.h"
 #include "util.h"
 #include "assimp/scene.h"
 #include "boost/filesystem.hpp"
@@ -12,8 +12,8 @@
 #include "assimp/postprocess.h"
 #include "shader.h"
 #include "gli/gli.hpp"
-#include "gli/gtx/gl_texture2d.hpp"
-#include <btBulletDynamicsCommon.h>
+#include "gli/core/texture2d.hpp"
+#include <bullet/btBulletDynamicsCommon.h>
 
 namespace pho {
 

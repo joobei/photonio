@@ -1,257 +1,152 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Image Copyright (c) 2008 - 2011 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2010-01-09
-// Updated : 2010-01-09
-// Licence : This source is under MIT License
-// File    : gli/core/texture2d.hpp
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+/// OpenGL Image (gli.g-truc.net)
+///
+/// Copyright (c) 2008 - 2013 G-Truc Creation (www.g-truc.net)
+/// Permission is hereby granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the "Software"), to deal
+/// in the Software without restriction, including without limitation the rights
+/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+/// copies of the Software, and to permit persons to whom the Software is
+/// furnished to do so, subject to the following conditions:
+/// 
+/// The above copyright notice and this permission notice shall be included in
+/// all copies or substantial portions of the Software.
+/// 
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+/// THE SOFTWARE.
+///
+/// @ref core
+/// @file gli/core/texture2d.hpp
+/// @date 2010-01-09 / 2012-10-16
+/// @author Christophe Riccio
+///////////////////////////////////////////////////////////////////////////////////
 
-#ifndef GLI_CORE_TEXTURE_2D_INCLUDED
-#define GLI_CORE_TEXTURE_2D_INCLUDED
+#ifndef GLI_CORE_TEXTURE2D_INCLUDED
+#define GLI_CORE_TEXTURE2D_INCLUDED
 
-// STD
-#include <vector>
-#include <cassert>
-#include <cmath>
-#include <cstring>
-
-// GLM
-#include <glm/glm.hpp>
-#include <glm/gtx/number_precision.hpp>
-#include <glm/gtx/raw_data.hpp>
-#include <glm/gtx/gradient_paint.hpp>
-#include <glm/gtx/component_wise.hpp>
-
-// GLI
-#include "shared_array.hpp"
+#include "image.hpp"
 
 namespace gli
 {
-	enum format
-	{
-		FORMAT_NULL,
+	class texture2DArray;
+	class textureCube;
+	class textureCubeArray;
 
-		// Unsigned integer formats
-		R8U,
-		RG8U,
-		RGB8U,
-		RGBA8U,
-
-		R16U,
-		RG16U,
-		RGB16U,
-		RGBA16U,
-
-		R32U,
-		RG32U,
-		RGB32U,
-		RGBA32U,
-
-		// Signed integer formats
-		R8I,
-		RG8I,
-		RGB8I,
-		RGBA8I,
-
-		R16I,
-		RG16I,
-		RGB16I,
-		RGBA16I,
-
-		R32I,
-		RG32I,
-		RGB32I,
-		RGBA32I,
-
-		// Floating formats
-		R16F,
-		RG16F,
-		RGB16F,
-		RGBA16F,
-
-		R32F,
-		RG32F,
-		RGB32F,
-		RGBA32F,
-
-		// Packed formats
-		RGBE8,
-		RGB9E5,
-		RG11B10F,
-		R5G6B5,
-		RGBA4,
-		RGB10A2,
-
-		// Depth formats
-		D16,
-		D24X8,
-		D24S8,
-		D32F,
-		D32FS8X24,
-
-		// Compressed formats
-		DXT1,
-		DXT3,
-		DXT5,
-		ATI1N_UNORM,
-		ATI1N_SNORM,
-		ATI2N_UNORM,
-		ATI2N_SNORM,
-		BP_UF16,
-		BP_SF16,
-		BP,
-
-		FORMAT_MAX
-	};
-
-	enum size_type
-	{
-		LINEAR_SIZE,
-		BLOCK_SIZE,
-		BIT_PER_PIXEL, 
-		COMPONENT
-	};
-
-	//template <template <typename> class mem>
+	/// texture2D
 	class texture2D
 	{
 	public:
-		typedef glm::uvec2 dimensions_type;
-		typedef glm::vec2 texcoord_type;
-		typedef glm::uint32 size_type;
-		typedef glm::byte value_type;
+		typedef storage::dimensions2_type dimensions_type;
+		typedef storage::texcoord2_type texcoord_type;
+		typedef storage::size_type size_type;
 		typedef gli::format format_type;
-		typedef std::size_t level_type;
-		typedef shared_array<value_type> data_type;
-
-	private:
-		class image_impl
-		{
-		public:
-			image_impl();
-			image_impl(
-				image_impl const & Image);
-
-			image_impl(
-				dimensions_type const & Dimensions,
-				format_type const & Format);
-
-			template <typename genType>
-			image_impl(
-				dimensions_type const & Dimensions,
-				format_type const & Format, 
-				genType const & Value);
-
-			image_impl(
-				dimensions_type const & Dimensions,
-				format_type const & Format, 
-				std::vector<value_type> const & Data);
-
-			image_impl(
-				dimensions_type const & Dimensions,
-				format_type const & Format, 
-				data_type const & Data);
-
-			~image_impl();
-
-			template <typename genType>
-			void setPixel(
-				dimensions_type const & TexelCoord,
-				genType const & TexelData);
-
-			size_type value_size() const;
-			size_type capacity() const;
-			dimensions_type dimensions() const;
-			size_type components() const;
-			format_type format() const;
-			
-			value_type * data();
-			value_type const * const data() const;
-
-		private:
-			data_type Data;
-			dimensions_type Dimensions;
-			format_type Format;
-		};
 
 	public:
-		typedef image_impl image;
-
 		texture2D();
-		texture2D(level_type const & Levels);
-		//texture2D(image const & Mipmap, bool GenerateMipmaps = false);
 
-		~texture2D();
+		/// Create a texture2D and allocate a new storage
+		explicit texture2D(
+			size_type const & Levels,
+			format_type const & Format,
+			dimensions_type const & Dimensions);
 
-		image & operator[] (
-			level_type const & Level);
-		image const & operator[] (
-			level_type const & Level) const;
+		/// Create a texture2D and allocate a new storage with a complete mipmap chain
+		explicit texture2D(
+			format_type const & Format,
+			dimensions_type const & Dimensions);
+
+		/// Create a texture2D view with an existing storage
+		explicit texture2D(
+			storage const & Storage);
+
+		/// Create a texture2D view with an existing storage
+		explicit texture2D(
+			storage const & Storage,
+			format_type const & Format,
+			size_type BaseLayer,
+			size_type MaxLayer,
+			size_type BaseFace,
+			size_type MaxFace,
+			size_type BaseLevel,
+			size_type MaxLevel);
+
+		/// Create a texture2D view, reference a subset of an existing texture2D instance
+		explicit texture2D(
+			texture2D const & Texture,
+			size_type const & BaseLevel,
+			size_type const & MaxLevel);
+
+		/// Create a texture2D view, reference a subset of an existing texture2DArray instance
+		explicit texture2D(
+			texture2DArray const & Texture,
+			size_type const & BaseLayer,
+			size_type const & BaseLevel,
+			size_type const & MaxLevel);
+
+		/// Create a texture view, reference a subset of an existing textureCube instance
+		explicit texture2D(
+			textureCube const & Texture,
+			size_type const & BaseFace,
+			size_type const & BaseLevel,
+			size_type const & MaxLevel);
+
+		/// Create a texture view, reference a subset of an existing textureCubeArray instance
+		explicit texture2D(
+			textureCubeArray const & Texture,
+			size_type const & BaseLayer,
+			size_type const & BaseFace,
+			size_type const & BaseLevel,
+			size_type const & MaxLevel);
+
+		operator storage() const;
+		image operator[] (size_type const & Level) const;
 
 		bool empty() const;
-		level_type levels() const;
 		format_type format() const;
+		dimensions_type dimensions() const;
+		size_type layers() const;
+		size_type faces() const;
+		size_type levels() const;
+
+		size_type size() const;
+		void * data();
+		void const * data() const;
 
 		template <typename genType>
-		void swizzle(glm::comp X, glm::comp Y, glm::comp Z, glm::comp W);
+		size_type size() const;
+		template <typename genType>
+		genType * data();
+		template <typename genType>
+		genType const * data() const;
 
-	private:
-		std::vector<image> Images;
+		void clear();
+		template <typename genType>
+		void clear(genType const & Texel);
+		template <typename genType>
+		genType fetch(dimensions_type const & TexelCoord, size_type const & Level);
+
+		size_type baseLayer() const;
+		size_type maxLayer() const;
+		size_type baseFace() const;
+		size_type maxFace() const;
+		size_type baseLevel() const;
+		size_type maxLevel() const;
+
+	private: 
+		storage Storage;
+		size_type BaseLayer; 
+		size_type MaxLayer; 
+		size_type BaseFace;
+		size_type MaxFace;
+		size_type BaseLevel;
+		size_type MaxLevel;
+		format_type Format;
 	};
-
-	typedef texture2D::image image;
-
-//namespace wip
-//{
-//	// plain
-//	template <typename genType>
-//	class plain
-//	{
-//	public:
-//		
-//	private:
-//		boost::shared_array<genType> Data;
-//	};
-//
-//	// texture2D
-//	template
-//	<
-//		typename genType, 
-//		template <typename> class surface = plain
-//	>
-//	class texture2D
-//	{
-//	public:
-//		typedef genType value_type;
-//
-//	private:
-//		class image_impl
-//		{
-//		public:
-//			template <typename coordType>
-//			value_type const & operator() (coordType const & Coord) const;
-//
-//		private:
-//			surface<value_type> Surface;
-//		};
-//
-//	public:
-//		typedef image_impl image;
-//		typedef std::vector<image> mipmaps;
-//		typedef typename mipmaps::size_type level_type;
-//
-//		level_type levels() const;
-//		image & operator[] (level_type Level);
-//		image const & operator[] (level_type Level) const;
-//
-//	private:
-//		mipmaps Mipmaps;
-//	};
-//
-//}//namespace wip
 }//namespace gli
 
-#include "texture2d.inl"
-
-#endif//GLI_CORE_TEXTURE_2D_INCLUDED
+#endif//GLI_CORE_TEXTURE2D_INCLUDED

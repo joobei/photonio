@@ -27,7 +27,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 using namespace std;
 
-Engine::Engine():
+Engine::Engine(GLFWwindow *window):
+    mainWindow(window),
     calibrate(false),
     eventQueue(),
     udpwork(ioservice),
@@ -68,23 +69,6 @@ Engine::Engine():
 
     //Polhemus
     //serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
-
-
-    if (!psmove_init(PSMOVE_CURRENT_VERSION)) {
-            fprintf(stderr, "PS Move API init failed (wrong version?)\n");
-            this->shutdown();
-    }
-
-    move = psmove_connect();
-
-    if (move == NULL) {
-        printf("Could not connect to default Move controller.\n"
-               "Please connect one via USB or Bluetooth.\n");
-        this->shutdown();
-    }
-
-    char *serial = psmove_get_serial(move);
-    printf("Serial: %s\n", serial);
 
     prevMouseWheel = 0;
     gyroData = false;
@@ -243,16 +227,6 @@ void Engine::checkEvents() {
         }
     }
 
-    if (technique == mouse) {
-        float wheel = glfwGetMouseWheel();
-        if (wheel != prevMouseWheel) {
-            float amount = (wheel - prevMouseWheel)/10;
-            selectedAsset->modelMatrix = glm::translate(vec3(0,0,-amount))*selectedAsset->modelMatrix;
-            prevMouseWheel = wheel;
-            inputStarted = true;
-        }
-    }
-
     if (technique == planeCasting) {
         checkUDP();
     }
@@ -350,7 +324,7 @@ void Engine::render() {
         plane.draw();
         }
     }
-    glfwSwapBuffers();
+    glfwSwapBuffers(mainWindow);
 }
 
 bool Engine::computeRotationMatrix() {
@@ -391,7 +365,7 @@ bool Engine::computeRotationMatrix() {
 
 void Engine::mouseButtonCallback(int button, int state) {
 
-    glfwGetMousePos(&cur_mx,&cur_my);
+    //glfwGetMousePos(&cur_mx,&cur_my);
 
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
     double difference = elapsed_times.wall-previousTime.wall;
@@ -468,7 +442,7 @@ void Engine::go() {
     while(true) {
         checkEvents();
         render();
-        if(glfwGetKey(GLFW_KEY_ESC)) {
+        if(glfwGetKey(mainWindow, GLFW_KEY_ESCAPE)) {
             shutdown();
             break;
         }
@@ -479,7 +453,7 @@ void Engine::shutdown() {
     ioservice.stop();
     errorLog.close();
     serialioservice.stop();
-    psmove_disconnect(move);
+    //psmove_disconnect(move);
 }
 
 void Engine::addTuioObject(TuioObject *tobj) {
@@ -942,35 +916,35 @@ void Engine::checkKeyboard() {
     if (difference > 800000000) { keyPressOK = true;}
     //to stop multiple keypresses
     if (keyPressOK) {
-        if (glfwGetKey(GLFW_KEY_DOWN)) {
+        if (glfwGetKey(mainWindow, GLFW_KEY_DOWN)) {
             sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,-FACTOR));
         }
 
-        if (glfwGetKey(GLFW_KEY_UP)) {
+        if (glfwGetKey(mainWindow,GLFW_KEY_UP)) {
             sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,0,FACTOR));
         }
-        if (glfwGetKey(GLFW_KEY_LEFT)) {
+        if (glfwGetKey(mainWindow,GLFW_KEY_LEFT)) {
             sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(FACTOR,0,0));
         }
-        if (glfwGetKey(GLFW_KEY_RIGHT)) {
+        if (glfwGetKey(mainWindow,GLFW_KEY_RIGHT)) {
             sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(-FACTOR,0,0));
         }
-        if (glfwGetKey(GLFW_KEY_PAGEUP)) {
+        if (glfwGetKey(mainWindow,GLFW_KEY_PAGE_UP)) {
             sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,-FACTOR,0));
         }
-        if (glfwGetKey(GLFW_KEY_PAGEDOWN)) {
+        if (glfwGetKey(mainWindow,GLFW_KEY_PAGE_DOWN)) {
             sr.viewMatrix = glm::translate(sr.viewMatrix, vec3(0,FACTOR,0));
         }
-        if (glfwGetKey(GLFW_KEY_HOME)) {
+        if (glfwGetKey(mainWindow,GLFW_KEY_HOME)) {
             perspective +=1.0;
             sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
             std::cout << "Perspective : " << perspective << '\n';
 
         }
-        if (glfwGetKey(GLFW_KEY_SPACE)) {
-            selectedAsset->modelMatrix = glm::translate(0,0,-15);
-            cursor.modelMatrix = glm::translate(0,0,-5);
-            heart.modelMatrix = glm::translate(-5,10,-15);
+        if (glfwGetKey(mainWindow,GLFW_KEY_SPACE)) {
+            selectedAsset->modelMatrix = glm::translate(glm::vec3(0,0,-15));
+            cursor.modelMatrix = glm::translate(glm::vec3(0,0,-5));
+            heart.modelMatrix = glm::translate(glm::vec3(-5,10,-15));
             plane.modelMatrix = cursor.modelMatrix;
             flicker.stopFlick(translation);
             flicker.stopFlick(rotation);
@@ -982,13 +956,13 @@ void Engine::checkKeyboard() {
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
-        if (glfwGetKey(GLFW_KEY_END)) {
+        if (glfwGetKey(mainWindow,GLFW_KEY_END)) {
             perspective -=1.0;
             sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
             //log("Perspective : " +perspective);
         }
 
-        if (glfwGetKey('1') == GLFW_PRESS) {
+        if (glfwGetKey(mainWindow,'1') == GLFW_PRESS) {
             //sr.collisionWorld->addCollisionObject(coCursor);
             locationMatch(cursor.modelMatrix,heart.modelMatrix);
             locationMatch(plane.modelMatrix,cursor.modelMatrix);
@@ -1002,7 +976,7 @@ void Engine::checkKeyboard() {
             keyboardPreviousTime =  elapsed_times;
         }
 
-        if (glfwGetKey('2') == GLFW_PRESS) {
+        if (glfwGetKey(mainWindow,'2') == GLFW_PRESS) {
 
             appState = select;
             selectionTechnique = raySelect;
@@ -1013,7 +987,7 @@ void Engine::checkKeyboard() {
             keyboardPreviousTime =  elapsed_times;
         }
 
-        if (glfwGetKey('3') == GLFW_PRESS) {
+        if (glfwGetKey(mainWindow,'3') == GLFW_PRESS) {
             appState = select;
             intersectedAsset = NULL;
             selectionTechnique = indieSelectRelative;
@@ -1023,7 +997,7 @@ void Engine::checkKeyboard() {
             keyboardPreviousTime =  elapsed_times;
         }
 
-        if (glfwGetKey('4') == GLFW_PRESS) {
+        if (glfwGetKey(mainWindow,'4') == GLFW_PRESS) {
             appState = select;
             selectionTechnique = indieSelectHybrid;
             //sr.collisionWorld->removeCollisionObject(coCursor);
@@ -1032,7 +1006,7 @@ void Engine::checkKeyboard() {
             keyboardPreviousTime =  elapsed_times;
         }
 
-        if (glfwGetKey('5') == GLFW_PRESS) {
+        if (glfwGetKey(mainWindow,'5') == GLFW_PRESS) {
             appState = select;
             selectionTechnique = planeSelectRelative;
             //sr.collisionWorld->removeCollisionObject(coCursor);
@@ -1042,7 +1016,7 @@ void Engine::checkKeyboard() {
         }
 
 
-        if(glfwGetKey('0') == GLFW_PRESS) {
+        if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {
             for(int i = 0;i<5;++i) {
                 pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
                 boxes.push_back(newBox);
@@ -1126,15 +1100,16 @@ void Engine::shadowMapRender() {
 }
 
 void Engine::checkSpaceNavigator() { 
-
+/*
 #define TRSCALE 2.0f
 #define RTSCALE 5.0f
 
     float position[6];
     unsigned char buttons[2];
+    int* arraySize;
     std::fill_n(position,6,0.0f);
 
-    if (glfwGetJoystickPos( GLFW_JOYSTICK_1, position,6) == 6 ) {
+    if (glfwGetJoystickAxes( GLFW_JOYSTICK_1, arraySize) == 6 ) {
         //inputStarted = true;
         glfwGetJoystickButtons(GLFW_JOYSTICK_1,buttons,2);
         if (buttons[0] == GLFW_PRESS) {
@@ -1174,8 +1149,8 @@ void Engine::checkSpaceNavigator() {
             /*btTransform objTrans;
             objTrans.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
             coCursor->setWorldTransform(objTrans);*/
-        }
-    }
+        //}
+    //}
 
 }
 

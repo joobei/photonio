@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <vector>
 #include <string>
 #include <fstream>
+#define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
 #include "glm/gtc/type_ptr.hpp"
 #include "glm/gtc/matrix_transform.hpp"
@@ -49,16 +50,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "TUIO/TuioObject.h"
 #include "TUIO/TuioCursor.h"
 #include "TUIO/TuioPoint.h"
-#include "psmoveapi/psmove.h"
-#include "psmoveapi/psmove_tracker.h"
-#include "psmoveapi/psmove_fusion.h"
 #include <cstdio>
 #include <functional>
 #include "shader.h"
 #include "plane.h"
-#include <GL/glfw.h>
+#include <GLFW/glfw3.h>
 #include "gli/gli.hpp"
-#include "gli/gtx/gl_texture2d.hpp"
+#include "gli/core/texture2d.hpp"
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
 
@@ -76,7 +74,7 @@ namespace pho {
     class Engine: public TuioListener {
 
 	public:
-		Engine();
+        Engine(GLFWwindow* window);
 		void checkEvents();
 		void render();
 		void recursive_render(const struct aiScene *sc, const struct aiNode* nd);
@@ -274,9 +272,8 @@ namespace pho {
         glm::vec2 touchPoint;
         GLuint pointVao;
 
-        //PS MOVE
-        PSMove* move;
-	};
+        GLFWwindow* mainWindow;
+    };
 
 }
 

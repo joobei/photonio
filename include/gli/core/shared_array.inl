@@ -1,11 +1,30 @@
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// OpenGL Image Copyright (c) 2008 - 2011 G-Truc Creation (www.g-truc.net)
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Created : 2008-12-19
-// Updated : 2005-06-13
-// Licence : This source is under MIT License
-// File    : gli/shared_array.inl
-///////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+/// OpenGL Image (gli.g-truc.net)
+///
+/// Copyright (c) 2008 - 2013 G-Truc Creation (www.g-truc.net)
+/// Permission is hereby granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the "Software"), to deal
+/// in the Software without restriction, including without limitation the rights
+/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+/// copies of the Software, and to permit persons to whom the Software is
+/// furnished to do so, subject to the following conditions:
+/// 
+/// The above copyright notice and this permission notice shall be included in
+/// all copies or substantial portions of the Software.
+/// 
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+/// THE SOFTWARE.
+///
+/// @ref core
+/// @file gli/core/shared_array.inl
+/// @date 2008-12-19 / 2013-01-12
+/// @author Christophe Riccio
+///////////////////////////////////////////////////////////////////////////////////
 
 namespace gli
 {
@@ -19,20 +38,24 @@ namespace gli
 	shared_array<T>::shared_array
 	(
 		shared_array<T> const & SharedArray
-	)
+	) :
+		Counter(SharedArray.Counter),
+		Pointer(SharedArray.Pointer)
 	{
-		this->Counter = SharedArray.Counter;
-		this->Pointer = SharedArray.Pointer;
-		(*this->Counter)++;
+		if(this->Counter)
+			(*this->Counter)++;
 	}
 
 	template <typename T>
 	shared_array<T>::shared_array
 	(
 		T * Pointer
-	)
+	) :
+		Pointer(0),
+		Counter(0)
 	{
-		this->reset(Pointer);
+		if(Pointer)
+			this->reset(Pointer);
 	}
 
 	template <typename T>
@@ -44,25 +67,27 @@ namespace gli
 	template <typename T>
 	void shared_array<T>::reset()
 	{
-		if(this->Pointer)
+		if(!this->Pointer)
+			return;
+
+		(*this->Counter)--;
+		if(*this->Counter <= 0)
 		{
-			(*this->Counter)--;
-			if(*this->Counter <= 0)
-			{
-				delete this->Counter;
-				this->Counter = 0;
-				delete[] this->Pointer;
-				this->Pointer = 0;
-			}
+			delete this->Counter;
+			delete[] this->Pointer;
 		}
+
+		this->Counter = 0;
+		this->Pointer = 0;
 	}
 
 	template <typename T>
 	void shared_array<T>::reset(T * Pointer)
 	{
-		this->Counter = new int;
+		this->reset();
+	
+		this->Counter = new long(1);
 		this->Pointer = Pointer;
-		*this->Counter = 1;
 	}
 
 	template <typename T>
@@ -79,26 +104,6 @@ namespace gli
 
 		return *this;
 	}
-
-	//template <typename T>
-	//shared_array<T> & shared_array<T>::operator=(T * Pointer)
-	//{
-	//	if(this->Pointer)
-	//	{
-	//		(*this->Counter)--;
-	//		if(*this->Counter <= 0)
-	//		{
-	//			delete this->Counter;
-	//			delete[] this->Pointer;
-	//		}
-	//	}
-
-	//	this->Counter = new int;
-	//	this->Pointer = this->Pointer;
-	//	(*this->Counter) = 1;
-
-	//	return *this;
-	//}
 
 	template <typename T>
 	bool shared_array<T>::operator==(shared_array<T> const & SharedArray) const
@@ -147,5 +152,4 @@ namespace gli
 	{
 		return this->Pointer;
 	}
-
 }//namespace gli

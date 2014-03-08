@@ -165,14 +165,16 @@ void pho::Asset::upload()
 
         //diffuse texture
         if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_DIFFUSE, texIndex, &path) == AI_SUCCESS )
-        { tempMesh.material.diffuseTexture = gli::createTexture2D(assetpath+path.C_Str()); }
+        { //tempMesh.material.diffuseTexture = gli::texture2D(assetpath+path.C_Str());
+        }
 
         //normal map texture
         if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_HEIGHT, texIndex, &path) == AI_SUCCESS )
         {
             log("**** BUMP MAP!!");
             tempMesh.material.hasBumpMap = true;
-            tempMesh.material.normalTexture = gli::createTexture2D(assetpath+path.C_Str());
+            //tempMesh.material.normalTexture = gli::texture2D(assetpath+path.C_Str());
+
         }
 
         aiColor3D tempColor;

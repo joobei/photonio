@@ -7,13 +7,17 @@ set(PROJECTNAME "uikun")
 
 project(${PROJECTNAME})
 
-list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
+#list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
+list( APPEND CMAKE_CXX_FLAGS "-std=c++11")
 
 include_directories(include)
 include_directories(lib)
 include_directories(src)
 include_directories(src/assets)
 include_directories(/usr/include/bullet)
+include_directories(/opt/local/include)
+include_directories(/opt/local/include/bullet)
+
 add_subdirectory(lib)
 
 SET(Boost_USE_STATIC_LIBS   ON)
@@ -41,12 +45,12 @@ set(shaderpath ${PROJECT_SOURCE_DIR}/shaders)
 configure_file("${PROJECT_SOURCE_DIR}/shaderpath" "${PROJECT_BINARY_DIR}/shaderpath")
 configure_file("${PROJECT_SOURCE_DIR}/assetpath" "${PROJECT_BINARY_DIR}/assetpath")
 
-
+link_directories(/opt/local/lib)
 add_executable(${PROJECTNAME} ${cpp_sources} ${shaders} ${PROTO_SRCS} ${PROTO_HDRS})
-#find_library(bulletsb libBulletSoftBody.so)
-#find_library(bulletd libBulletDynamics.so)
-#find_library(bulletc libBulletCollision.so)
-#find_library(lmath libLinearMath.so)
-#target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} glfw GLEW assimp protobuf tuio posix ip osc GL pthread ${bulletsb} ${bulletd} ${bulletc} ${lmath} /usr/local/lib64/libpsmoveapi.so /usr/local/lib64/libpsmoveapi_tracker.so)
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} glfw GLEW assimp protobuf tuio posix ip osc GL pthread BulletSoftBody BulletDynamics BulletCollision LinearMath /usr/local/lib64/libpsmoveapi.so /usr/local/lib64/libpsmoveapi_tracker.so)
+
+find_library(GLFW_LIB glfw PATH /opt/local/lib)
+find_library(GL_LIB OpenGL)
+find_library(COCOA_LIB Cocoa)
+
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${GLFW_LIB} ${COCOA_LIB} ${GL_LIB} GLEW assimp protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath)
 

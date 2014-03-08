@@ -1,125 +1,193 @@
-///////////////////////////////////////////////////////////////////////////
-// Interstate Gangs : smart_ptr.inl
-///////////////////////////////////////////////////////////////////////////
-// This file is under GPL licence
-///////////////////////////////////////////////////////////////////////////
-// CHANGELOG
-// Groove - 13/06/2005 :
-// - Create file
-///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+/// OpenGL Image (gli.g-truc.net)
+///
+/// Copyright (c) 2008 - 2013 G-Truc Creation (www.g-truc.net)
+/// Permission is hereby granted, free of charge, to any person obtaining a copy
+/// of this software and associated documentation files (the "Software"), to deal
+/// in the Software without restriction, including without limitation the rights
+/// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+/// copies of the Software, and to permit persons to whom the Software is
+/// furnished to do so, subject to the following conditions:
+/// 
+/// The above copyright notice and this permission notice shall be included in
+/// all copies or substantial portions of the Software.
+/// 
+/// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+/// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+/// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+/// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+/// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+/// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+/// THE SOFTWARE.
+///
+/// @ref core
+/// @file gli/core/shared_ptr.inl
+/// @date 2012-09-01 / 2013-01-12
+/// @author Christophe Riccio
+///////////////////////////////////////////////////////////////////////////////////
 
 namespace gli
 {
 	template <typename T>
-	util::CSmartPtr<T>::CSmartPtr()
+	inline shared_ptr<T>::shared_ptr() :
+		Counter(0),
+		Pointer(0)
+	{}
+
+	template <typename T>
+	inline shared_ptr<T>::shared_ptr(shared_ptr<T> const & SharedPtr) :
+		Counter(SharedPtr.Counter),
+		Pointer(SharedPtr.Pointer)
 	{
-		m_pPointer = 0;
+		if(this->Counter)
+			(*this->Counter)++;
 	}
 
 	template <typename T>
-	util::CSmartPtr<T>::CSmartPtr(const util::CSmartPtr<T> & SmartPtr)
+	inline shared_ptr<T>::shared_ptr(T * Pointer) :
+		Counter(new long(1)),
+		Pointer(Pointer)
+	{}
+
+	template <typename T>
+	inline shared_ptr<T>::~shared_ptr()
 	{
-		m_pReference = SmartPtr.m_pReference;
-		m_pPointer = SmartPtr.m_pPointer;
-		(*m_pReference)++;
+		this->reset();
 	}
 
 	template <typename T>
-	util::CSmartPtr<T>::CSmartPtr(T* pPointer)
+	inline shared_ptr<T>& shared_ptr<T>::operator=(shared_ptr<T> const & SharedPtr)
 	{
-		m_pReference = new int;
-		m_pPointer = pPointer;
-		(*m_pReference) = 1;
+		// Self assignment
+		if(this == &SharedPtr)
+			return *this;
+
+		if(this->Pointer)
+		{
+			(*this->Counter)--;
+			if(*this->Counter <= 0)
+			{
+				delete this->Counter;
+				delete this->Pointer;
+			}
+		}
+
+		this->Counter = SharedPtr.Counter;
+		this->Pointer = SharedPtr.Pointer;
+		(*this->Counter)++;
+
+		return *this;
 	}
 
 	template <typename T>
-	util::CSmartPtr<T>::~CSmartPtr()
+	inline shared_ptr<T> & shared_ptr<T>::operator=(T * Pointer)
 	{
-		if(!m_pPointer)
+		if(this->Pointer)
+		{
+			(*this->Counter)--;
+			if(*this->Counter <= 0)
+			{
+				delete this->Counter;
+				delete this->Pointer;
+			}
+		}
+
+		this->Counter = new long(1);
+		this->Pointer = Pointer;
+		//(*this->Reference) = 1;
+
+		return *this;
+	}
+
+	template <typename T>
+	inline bool shared_ptr<T>::operator==(shared_ptr<T> const & SharedPtr) const
+	{
+		return this->Pointer == SharedPtr.Pointer;
+	}
+
+	template <typename T>
+	inline bool shared_ptr<T>::operator!=(shared_ptr<T> const & SharedPtr) const
+	{
+		return this->Pointer != SharedPtr.Pointer;
+	}
+/*
+	template <typename T>
+	inline T& shared_ptr<T>::operator*()
+	{
+		return *this->Pointer;
+	}
+
+	template <typename T>
+	inline T * shared_ptr<T>::operator->()
+	{
+		return this->Pointer;
+	}
+*/
+
+	template <typename T>
+	inline T * shared_ptr<T>::get() const
+	{
+		return this->Pointer;
+	}
+
+	template <typename T>
+	inline T const & shared_ptr<T>::operator*() const
+	{
+		return *this->Pointer;
+	}
+
+	template <typename T>
+	inline T & shared_ptr<T>::operator*()
+	{
+		return *this->Pointer;
+	}
+
+	template <typename T>
+	inline T const * const shared_ptr<T>::operator->() const
+	{
+		return this->Pointer;
+	}
+
+	template <typename T>
+	inline T * shared_ptr<T>::operator->()
+	{
+		return this->Pointer;
+	}
+
+	template <typename T>
+	inline void shared_ptr<T>::reset()
+	{
+		if(!this->Pointer)
 			return;
 
-		(*m_pReference)--;
-		if(*m_pReference <= 0)
+		(*this->Counter)--;
+		if(*this->Counter <= 0)
 		{
-			delete m_pReference;
-			delete m_pPointer;
-		}
-	}
-
-	template <typename T>
-	util::CSmartPtr<T>& util::CSmartPtr<T>::operator=(const util::CSmartPtr<T> & SmartPtr)
-	{
-		if(m_pPointer)
-		{
-			(*m_pReference)--;
-			if(*m_pReference <= 0)
-			{
-				delete m_pReference;
-				delete m_pPointer;
-			}
+			delete this->Counter;
+			delete this->Pointer;
 		}
 
-		m_pReference = SmartPtr.m_pReference;
-		m_pPointer = SmartPtr.m_pPointer;
-		(*m_pReference)++;
-
-		return *this;
+		this->Counter = 0;
+		this->Pointer = 0;
 	}
 
 	template <typename T>
-	util::CSmartPtr<T>& util::CSmartPtr<T>::operator=(T* pPointer)
+	inline void shared_ptr<T>::reset(T * Pointer)
 	{
-		if(m_pPointer)
-		{
-			(*m_pReference)--;
-			if(*m_pReference <= 0)
-			{
-				delete m_pReference;
-				delete m_pPointer;
-			}
-		}
-
-		m_pReference = new int;
-		m_pPointer = pPointer;
-		(*m_pReference) = 1;
-
-		return *this;
+		this->reset();
+		this->Counter = new long(1);
+		this->Pointer = Pointer;
 	}
 
 	template <typename T>
-	bool util::CSmartPtr<T>::operator==(const util::CSmartPtr<T> & SmartPtr) const
+	inline long shared_ptr<T>::use_count() const
 	{
-		return m_pPointer == SmartPtr.m_pPointer;
+		return this->Counter ? *this->Counter : 0;
 	}
 
 	template <typename T>
-	bool util::CSmartPtr<T>::operator!=(const util::CSmartPtr<T> & SmartPtr) const
+	inline bool shared_ptr<T>::unique() const
 	{
-		return m_pPointer != SmartPtr.m_pPointer;
+		return this->Counter ? *this->Counter == 1 : false;
 	}
-
-	template <typename T>
-	T& util::CSmartPtr<T>::operator*()
-	{
-		return *m_pPointer;
-	}
-
-	template <typename T>
-	T* util::CSmartPtr<T>::operator->()
-	{
-		return m_pPointer;
-	}
-
-	template <typename T>
-	const T& util::CSmartPtr<T>::operator*() const
-	{
-		return *m_pPointer;
-	}
-
-	template <typename T>
-	const T* util::CSmartPtr<T>::operator->() const
-	{
-		return m_pPointer;
-	}
-
 }//namespace gli
