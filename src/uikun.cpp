@@ -442,7 +442,7 @@ void Engine::go() {
     while(true) {
         checkEvents();
         render();
-        if(glfwGetKey(mainWindow, GLFW_KEY_ESCAPE)) {
+        if(glfwGetKey(mainWindow, GLFW_KEY_ESCAPE) | !glfwWindowShouldClose(mainWindow)) {
             shutdown();
             break;
         }

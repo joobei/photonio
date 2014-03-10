@@ -7,15 +7,11 @@ pho::Plane::Plane(sharedResources* sr)
     vertices.push_back(glm::vec3(0.3,0,0.5));
     vertices.push_back(glm::vec3(-0.3,0,0.5));
     vertices.push_back(glm::vec3(-0.3,0,-0.5));
-    upload();
-}
+    //upload();
 
-
-void pho::Plane::upload()
-{
     // generate Vertex Array for mesh
-    glGenVertexArrays(1,&vao);
-    glBindVertexArray(vao);
+    CALL_GL(glGenVertexArrays(1,&vao));
+    CALL_GL(glBindVertexArray(vao));
 
     GLuint buffer;
 
@@ -24,6 +20,12 @@ void pho::Plane::upload()
     CALL_GL(glBufferData(GL_ARRAY_BUFFER, sizeof(float)*3*vertices.size(), vertices.data(), GL_STATIC_DRAW));
     CALL_GL(glEnableVertexAttribArray(vertexLoc));
     CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
+}
+
+
+void pho::Plane::upload()
+{
+
 
 }
 

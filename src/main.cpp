@@ -13,18 +13,24 @@ int main()
 
     if (!glfwInit()==GL_TRUE) {  std::cout << "glfw initialization failed";  return 1;  }
 
-    glfwWindowHint(GLFW_VERSION_MAJOR,3);
-    glfwWindowHint(GLFW_VERSION_MINOR,3);
-    glfwWindowHint(GLFW_SAMPLES,8);
-    //glfwWindowHint( GLFW_STEREO, GL_TRUE );
+    glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
+    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2 );
+    glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
+    glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
+    //glfwWindowHint(GLFW_SAMPLES,8);
+
     GLFWwindow* mainWindow = glfwCreateWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,"Plane-Casting",NULL,NULL);
     if (!mainWindow)
-    { std::cout << "GLFW Init WIndow Failed" << std::endl; }
+    {
+        std::cout << "GLFW Init Window Failed" << std::endl;
+    }
+
+    glfwMakeContextCurrent(mainWindow);
+    std::cout << "OpenGL Version: " << glGetString( GL_VERSION ) << std::endl;
 
     GLenum err = glewInit();
     if (GLEW_OK != err)
     {
-      // Problem: glewInit failed, something is seriously wrong. 
       std::cout << "GLEW Error: " << glewGetErrorString(err) <<std::endl;
 
     }

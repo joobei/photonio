@@ -11,8 +11,8 @@
 #include "assimp/Importer.hpp"
 #include "assimp/postprocess.h"
 #include "shader.h"
-#include "gli/gli.hpp"
-#include "gli/core/texture2d.hpp"
+//#include "gli/gli.hpp"
+//#include "gli/core/texture2d.hpp"
 #include <bullet/btBulletDynamicsCommon.h>
 
 namespace pho {

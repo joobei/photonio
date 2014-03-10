@@ -1,4 +1,4 @@
-# Cmake for project keimoteGL
+# Cmake for project UIKUN
 # Possible configuration required
 
 cmake_minimum_required (VERSION 2.8)
@@ -9,12 +9,12 @@ project(${PROJECTNAME})
 
 #list( APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -ftest-coverage -fprofile-arcs")
 list( APPEND CMAKE_CXX_FLAGS "-std=c++11")
+SET(CMAKE_BUILD_TYPE Debug)
 
 include_directories(include)
 include_directories(lib)
 include_directories(src)
 include_directories(src/assets)
-include_directories(/usr/include/bullet)
 include_directories(/opt/local/include)
 include_directories(/opt/local/include/bullet)
 

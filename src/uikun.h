@@ -55,8 +55,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "shader.h"
 #include "plane.h"
 #include <GLFW/glfw3.h>
-#include "gli/gli.hpp"
-#include "gli/core/texture2d.hpp"
+//#include "gli/gli.hpp"
+//#include "gli/core/texture2d.hpp"
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
 
@@ -87,10 +87,10 @@ namespace pho {
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        static const int WINDOW_SIZE_X = 1920;
-        static const int WINDOW_SIZE_Y = 1080;
-        //static const int WINDOW_SIZE_X = 800;
-        //static const int WINDOW_SIZE_Y = 600;
+        //static const int WINDOW_SIZE_X = 1920;
+        //static const int WINDOW_SIZE_Y = 1080;
+        static const int WINDOW_SIZE_X = 800;
+        static const int WINDOW_SIZE_Y = 600;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
