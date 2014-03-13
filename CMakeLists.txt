@@ -14,8 +14,8 @@ include_directories(include)
 include_directories(lib)
 include_directories(src)
 include_directories(src/assets)
-include_directories(/usr/include/bullet) #for debian default package
-#include_directories(/usr/local/include/bullet) #for self-built
+#include_directories(/usr/include/bullet) #for debian default package
+include_directories(/usr/local/include/bullet) #for self-built
 
 add_subdirectory(lib)
 
@@ -52,5 +52,5 @@ add_executable(${PROJECTNAME} ${cpp_sources} ${shaders} ${PROTO_SRCS} ${PROTO_HD
 #find_library(bulletc libBulletCollision.so)
 #find_library(lmath libLinearMath.so)
 #target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} glfw GLEW assimp protobuf tuio posix ip osc GL pthread ${bulletsb} ${bulletd} ${bulletc} ${lmath} /usr/local/lib64/libpsmoveapi.so /usr/local/lib64/libpsmoveapi_tracker.so)
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} glfw GLEW assimp protobuf tuio posix ip osc GL pthread BulletSoftBody BulletDynamics BulletCollision LinearMath /usr/local/lib64/libpsmoveapi.so /usr/local/lib64/libpsmoveapi_tracker.so)
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} glfw GLEW assimp protobuf tuio posix ip osc GL pthread BulletSoftBody BulletDynamics BulletCollision LinearMath)
 

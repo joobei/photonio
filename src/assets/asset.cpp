@@ -292,7 +292,7 @@ void pho::Asset::drawPlain(glm::vec3 color)
 void pho::Asset::drawFromLight()
 {
     res->flatShader.use();
-    res->flatShader["mvp"] = res->projectionMatrix*res->light.viewMatrix*modelMatrix;
+    res->flatShader["mvp"] = res->projectionMatrix*res->light.viewMatrix*modelMatrix*scaleMatrix;
     res->flatShader["color"] = glm::vec4(1,1,1,1);
 
     for (std::vector<pho::MyMesh>::size_type i = 0; i != mMeshes.size(); i++)

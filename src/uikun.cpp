@@ -38,7 +38,7 @@ Engine::Engine():
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
-    _serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
+    //_serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(translate),
     selectionTechnique(indieSelectRelative),
     plane(&sr),
@@ -71,7 +71,7 @@ Engine::Engine():
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
     //Polhemus
-    serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
+    //serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
 
     prevMouseWheel = 0;
     gyroData = false;
@@ -187,10 +187,11 @@ void Engine::initResources() {
 
     plane.setShader(&sr.flatShader);
     plane.modelMatrix = pyramidCursor.modelMatrix;
-    plane.setScale(3.0f);
+    plane.setScale(10.0f);
     //plane.receiveShadow = true;
 
     pyramidCursor = pho::Asset("bump-heart.obj",&normalMap,&sr);
+    pyramidCursor.setScale(0.5);
     //pyramidCursor.color = glm::vec3(0.8,0.4,0.8);
 
 
@@ -229,18 +230,8 @@ void Engine::initResources() {
 //checks event queue for events
 //and consumes them all
 void Engine::checkEvents() {
-    //checkMove();
-    unsigned char buttons[19];
 
     checkKeyboard();
-
-    if ((technique == rayCasting) && (appState == direct)) {
-        checkPolhemus(polhemusMatrix);
-        glfwGetJoystickButtons(moveController,buttons,19);
-        for (auto i=0;i<19;++i) {
-            experiment.buttons[i] = buttons[i];
-        }
-    }
 
     if (technique == planeCasting) {
         checkUDP();
@@ -276,100 +267,6 @@ void Engine::checkEvents() {
     //Joystick
     checkSpaceNavigator();
     //checkMove();
-
-    float x,y,z;
-    mat3 temprot;
-    if ((appState == direct) || (rotTechnique == clutch)) {
-
-        //rotation
-        if (((buttons[12] == GLFW_PRESS) || (buttons[4] == GLFW_PRESS) || (buttons[5] == GLFW_PRESS) || (buttons[6] == GLFW_PRESS))  && (directRotationStarted == false))
-        {
-                objectInitMatrix = selectedAsset->modelMatrix;
-                receiverInitMatrix = polhemusMatrix;
-                directRotationStarted = true;
-        }
-
-        if(directRotationStarted) {
-            if (rotTechnique == clutch)
-            {
-                rotationMatch(selectedAsset->modelMatrix,orientation*glm::inverse(receiverInitMatrix)*objectInitMatrix);
-            }
-            else
-            {
-                if (buttons[4] == GLFW_PRESS)
-                {
-                    //rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
-                    /*temprot = glm::mat3(polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
-                    z = (float)((temprot*glm::vec3(0,1,0)).x);
-                    rotationMatch(selectedAsset->modelMatrix,glm::rotate(selectedAsset->modelMatrix,z,glm::vec3(0,0,1)));*/
-                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
-                }
-
-                if (buttons[5] == GLFW_PRESS)
-                {
-                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
-                }
-
-                if (buttons[6] == GLFW_PRESS)
-                {
-                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
-                }
-
-                if (buttons[12] == GLFW_PRESS)
-                {
-                    rotationMatch(selectedAsset->modelMatrix,polhemusMatrix*glm::inverse(receiverInitMatrix)*objectInitMatrix);
-                }
-
-            }
-        }
-
-        if ((buttons[11] == GLFW_PRESS) && (directTranslationStarted == false))
-        {
-
-            initPosition = rayOrigin;
-            directTranslationStarted = true;
-        }
-
-        if (directTranslationStarted) {
-
-                glm::vec3 translationVector = rayOrigin-initPosition;
-                if (glm::length(translationVector) < 5) {
-                    mat4 tm = mat4();
-                    rotationMatch(tm,selectedAsset->modelMatrix);
-                    vec3 pos = vec3(selectedAsset->modelMatrix[3]);
-                    selectedAsset->modelMatrix = glm::mat4();
-                    selectedAsset->setPosition(pos);
-                    selectedAsset->modelMatrix = glm::translate(selectedAsset->modelMatrix,translationVector);
-                    rotationMatch(selectedAsset->modelMatrix,tm);
-
-
-                    //selectedAsset->setPosition(glm::vec3(temp));
-                }
-                initPosition = rayOrigin;
-        }
-
-        if (((buttons[12] == GLFW_RELEASE) && (buttons[4] == GLFW_RELEASE) && (buttons[5] == GLFW_RELEASE) && (buttons[6] == GLFW_RELEASE)) && (rotTechnique != clutch)) {
-           directRotationStarted = false;
-        }
-        if (buttons[11] == GLFW_RELEASE)  {
-           directTranslationStarted = false;
-        }
-
-    }
-
-    if (buttons[11] == GLFW_PRESS) {
-        experiment.wandtranslate = true;
-    }
-    else {
-        experiment.wandtranslate = false;
-    }
-
-    if (buttons[12] == GLFW_PRESS) {
-        experiment.wandrotate = true;
-    }
-    else {
-        experiment.wandrotate = false;
-    }
 
     checkPhysics();
 
@@ -476,7 +373,7 @@ void Engine::shutdown() {
     errorLog.close();
     experiment.closeFiles();
     ioservice.stop();
-    serialioservice.stop();
+    //serialioservice.stop();
     //psmove_disconnect(move);
 }
 
@@ -886,8 +783,6 @@ void Engine::refresh(TuioTime frameTime) {
 }
 
 void Engine::checkUDP() {
-    mat4 newLocationMatrix;
-    vec3 newLocationVector;
     //UDP queue
     boost::mutex::scoped_lock lock(ioMutex);
     while (!eventQueue.isEmpty()) {
@@ -923,6 +818,7 @@ void Engine::checkUDP() {
                 calibrate = true;
                 break;
             case 2:
+                //std::cout << "volume UP!" << std::endl;
                 if ((rotTechnique == clutch) && (tempEvent.state() == true)) {
                      objectInitMatrix = selectedAsset->modelMatrix;
                      receiverInitMatrix = orientation;
@@ -936,16 +832,14 @@ void Engine::checkUDP() {
                 if ((tempEvent.state() == true) && (appState == translate)) {
                     appState = rotate;
                     rotTechnique = screenSpace;
-                    //printf("translate --> rotate (Screenspace)");
+                    printf("translate --> rotate (Screenspace)");
                 }
                 if ((tempEvent.state() == false) && (appState == rotate)) {
-                    if (!(experiment.currentExperiment == rotationTask)) {
                     appState = translate;
                     lastFingerDistance = glm::distance(p2c,p1c); //fix jumping bug when
                     //releasing rotation button
                     p1f.x = 0.5;
                     p1f.y = 0.5;
-                    }
                 }
 
                 break;

@@ -87,14 +87,14 @@ namespace pho {
         static const int TOUCH_SCREEN_SIZE_X = 480;
         static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        static const int WINDOW_SIZE_X = 1920;
-        static const int WINDOW_SIZE_Y = 1080;
+        //static const int WINDOW_SIZE_X = 1920;
+        //static const int WINDOW_SIZE_Y = 1080;
 
         static const int WINDOW_POS_X =  0;
         static const int WINDOW_POS_Y =  0;
 
-        //static const int WINDOW_SIZE_X = 1280;
-        //static const int WINDOW_SIZE_Y = 720;
+        static const int WINDOW_SIZE_X = 1280;
+        static const int WINDOW_SIZE_Y = 720;
         //static const int WINDOW_POS_X = 810;
         //static const int WINDOW_POS_Y = 30;
 
@@ -203,12 +203,12 @@ namespace pho {
 
 		//SmartPhone IO
 		boost::asio::io_service ioservice;
-        boost::asio::io_service serialioservice;
+        //boost::asio::io_service serialioservice;
 		boost::asio::io_service::work udpwork;
 		boost::thread* netThread;
-        boost::thread* serialThread;
+        //boost::thread* serialThread;
 		udp_server _udpserver;
-        Minicom_client _serialserver;
+        //Minicom_client _serialserver;
 
         bool checkPolhemus(glm::mat4 &modelMatrix);
 
