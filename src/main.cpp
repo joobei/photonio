@@ -32,7 +32,7 @@ int main()
     //glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&iu);
     //std::cout << "Texture units " << iu <<std::endl;
 
-    //pho::Engine *engine = new Engine(mainWindow);
+    pho::Engine *engine = new Engine(mainWindow);
 
     /*if (glfwGetJoystickPresent(0) {
         std::cout << "joystick present" << std::endl;
@@ -42,12 +42,10 @@ int main()
 	}
     else { std::cout << "joystick not present" << std::endl;}*/
 
-    //engine->go();
+    engine->go();
 
     //delete engine;
-    while(true) {
 
-    }
     glfwTerminate();
     return 0;
 }

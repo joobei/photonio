@@ -64,7 +64,7 @@ Engine::Engine(GLFWwindow *window):
     doubleClick.start();
     keyboardTimer.start();
 
-    //netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
+    netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
     gyroData = false;
     objectHit=false;
@@ -431,21 +431,20 @@ void Engine::mouseMoveCallback(int x, int y) {
 }
 
 void Engine::go() {
-    //initResources();
-    while(true) {
-        //checkEvents();
-        //render();
-        if(glfwGetKey(mainWindow, GLFW_KEY_ESCAPE) /*| !glfwWindowShouldClose(mainWindow)*/) {
-            shutdown();
-            break;
-        }
+    initResources();
+    while(!glfwWindowShouldClose(mainWindow)) {
+        glfwPollEvents();
+        checkEvents();
+        render();
+
     }
+    shutdown();
 }
 
 void Engine::shutdown() {
     ioservice.stop();
     errorLog.close();
-    serialioservice.stop();
+    //serialioservice.stop();
     //psmove_disconnect(move);
 }
 
