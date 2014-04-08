@@ -1,9 +1,9 @@
 #ifndef ASSET_H
 #define ASSET_H
 
+#include <OpenGL/gl3.h>
 #include "glm/glm.hpp"
 #include <vector>
-#include "GL/glew.h"
 #include "GLFW/glfw3.h"
 #include "util.h"
 #include "assimp/scene.h"

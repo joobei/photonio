@@ -14,7 +14,7 @@ int main()
     if (!glfwInit()==GL_TRUE) {  std::cout << "glfw initialization failed";  return 1;  }
 
     glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
-    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 2 );
+    glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
     glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
     glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
     //glfwWindowHint(GLFW_SAMPLES,8);
@@ -28,19 +28,11 @@ int main()
     glfwMakeContextCurrent(mainWindow);
     std::cout << "OpenGL Version: " << glGetString( GL_VERSION ) << std::endl;
 
-    GLenum err = glewInit();
-    if (GLEW_OK != err)
-    {
-      std::cout << "GLEW Error: " << glewGetErrorString(err) <<std::endl;
-
-    }
-    std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) <<std::endl;
-
     //int iu = 0;
     //glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS,&iu);
     //std::cout << "Texture units " << iu <<std::endl;
 
-    pho::Engine *engine = new Engine(mainWindow);
+    //pho::Engine *engine = new Engine(mainWindow);
 
     /*if (glfwGetJoystickPresent(0) {
         std::cout << "joystick present" << std::endl;
@@ -50,9 +42,12 @@ int main()
 	}
     else { std::cout << "joystick not present" << std::endl;}*/
 
-    engine->go();
+    //engine->go();
 
-    delete engine;
+    //delete engine;
+    while(true) {
+
+    }
     glfwTerminate();
     return 0;
 }

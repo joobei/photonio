@@ -16,9 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 
 #ifndef PHOTONIO_H
 #define PHOTONIO_H
-#define WIN32_LEAN_AND_MEAN
-#include <GL/glew.h>
 
+#include <OpenGL/gl3.h>
 #include <iostream>
 #include <stdio.h>
 #include <iomanip>

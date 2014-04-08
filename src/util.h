@@ -1,7 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <GL/glew.h>
+#include <OpenGL/gl3.h>
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -35,7 +35,7 @@
 #endif
 
 namespace pho {
-    void log(const char *message);
+void log(const char *message);
 
 enum AppState {
     select,

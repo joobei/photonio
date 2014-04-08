@@ -33,7 +33,6 @@ Engine::Engine(GLFWwindow *window):
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
-    //_serialserver(serialioservice,115200,"/dev/ttyUSB0",&eventQueue,&ioMutex),
     appState(select),
     selectionTechnique(indieSelectRelative),
     inputStarted(false),
@@ -65,12 +64,8 @@ Engine::Engine(GLFWwindow *window):
     doubleClick.start();
     keyboardTimer.start();
 
-    netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
+    //netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
-    //Polhemus
-    //serialThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &serialioservice));
-
-    prevMouseWheel = 0;
     gyroData = false;
     objectHit=false;
     sphereHit=false;
@@ -181,8 +176,6 @@ void Engine::initResources() {
 
     box = pho::Asset("box.obj",&normalMap,&sr, true);
     box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,10,-15));
-
-    ray = pho::Asset("ray.obj",&noTextureShader,&sr, false);
     box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
@@ -438,11 +431,11 @@ void Engine::mouseMoveCallback(int x, int y) {
 }
 
 void Engine::go() {
-    initResources();
+    //initResources();
     while(true) {
-        checkEvents();
-        render();
-        if(glfwGetKey(mainWindow, GLFW_KEY_ESCAPE) | !glfwWindowShouldClose(mainWindow)) {
+        //checkEvents();
+        //render();
+        if(glfwGetKey(mainWindow, GLFW_KEY_ESCAPE) /*| !glfwWindowShouldClose(mainWindow)*/) {
             shutdown();
             break;
         }
