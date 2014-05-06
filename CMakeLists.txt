@@ -22,7 +22,9 @@ add_subdirectory(lib)
 
 SET(Boost_USE_STATIC_LIBS   ON)
 SET(Boost_USE_MULTITHREADED ON)
-#set(Boost_DEBUG 1)
+set(Boost_DEBUG 1)
+
+#set(BOOST_ROOT /Users/jubei/coding/boost_1_55_0)
 
 FIND_PACKAGE(Boost COMPONENTS system thread filesystem regex date_time serialization timer chrono)
 IF(Boost_FOUND)
@@ -52,5 +54,5 @@ find_library(GLFW_LIB glfw PATH /opt/local/lib)
 find_library(GL_LIB OpenGL)
 find_library(COCOA_LIB Cocoa)
 
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${GLFW_LIB} ${COCOA_LIB} ${GL_LIB} GLEW assimp protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath)
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${GLFW_LIB} ${COCOA_LIB} ${GL_LIB} GLEW assimp protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath png)
 
