@@ -96,12 +96,14 @@ void Engine::initResources() {
         shaderpath = shaderpath.substr(0,shaderpath.size()-1); //cmake puts a newline char
         shaderpath.append("/"); //at the end of the string
     }
+    else { std::cout << "Shader PATH NOT EXISTENT" << '\n'; }
 
     if (boost::filesystem::exists("assetpath")) { //if you're not using cmake put the shaders in the same dir as the binary
         assetpath = readTextFile("assetpath");
         assetpath = assetpath.substr(0,assetpath.size()-1); //cmake puts a newline char
         assetpath.append("/"); //at the end of the string
     }
+    else { std::cout << "ASSET PATH NOT EXISTENT" << '\n'; }
 
     generateShadowFBO();
 
@@ -270,16 +272,16 @@ void Engine::checkEvents() {
 
 void Engine::render() {
 
-    shadowMapRender();
+    //shadowMapRender();
 
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
-    floor.draw();
+    //floor.draw();
     heart.draw();
-    box.draw();
-
+    //box.draw();
+    /*
         for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
             boxes[i].draw();
         }
@@ -317,6 +319,7 @@ void Engine::render() {
         plane.draw();
         }
     }
+    */
     glfwSwapBuffers(mainWindow);
 }
 
@@ -432,7 +435,7 @@ void Engine::mouseMoveCallback(int x, int y) {
 
 void Engine::go() {
     initResources();
-    while(!glfwWindowShouldClose(mainWindow)) {
+    while(!glfwWindowShouldClose(mainWindow) && !(glfwGetKey(mainWindow,GLFW_KEY_ESCAPE) == GLFW_PRESS)) {
         glfwPollEvents();
         checkEvents();
         render();

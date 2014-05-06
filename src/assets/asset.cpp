@@ -49,7 +49,7 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
 
     }
     else {
-        std::cout << "imported "+filename << std::endl;
+        std::cout << "imported "+filename;
 
     }
 
@@ -147,7 +147,7 @@ void pho::Asset::upload()
             glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
         }
         else {
-            log("No Texture Coordinates!!!");
+            std::cout << "No Texture Coordinates!!!";
         }
 
 
@@ -171,7 +171,7 @@ void pho::Asset::upload()
         //normal map texture
         if (scene->mMaterials[scene->mMeshes[n]->mMaterialIndex]->GetTexture(aiTextureType_HEIGHT, texIndex, &path) == AI_SUCCESS )
         {
-            log("**** BUMP MAP!!");
+            std::cout << "**** BUMP MAP!!";
             tempMesh.material.hasBumpMap = true;
             //tempMesh.material.normalTexture = gli::texture2D(assetpath+path.C_Str());
 
@@ -189,7 +189,7 @@ void pho::Asset::upload()
         }
 
         if(AI_SUCCESS != tempMat->Get(AI_MATKEY_COLOR_SPECULAR,tempMesh.material.specularColor)) {
-            log("----> FAILED Specular Color");
+            //log("----> FAILED Specular Color");
         }
         else {
             tempMesh.material.specularColor.r = tempColor.r;
@@ -206,6 +206,7 @@ void pho::Asset::upload()
             tempMesh.material.diffuseColor.w = opacity;
         }
 
+        std::cout << std::endl;
 
         meshes.push_back(tempMesh);
     }
