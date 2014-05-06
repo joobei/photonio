@@ -54,8 +54,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include "shader.h"
 #include "plane.h"
 #include <GLFW/glfw3.h>
-//#include "gli/gli.hpp"
-//#include "gli/core/texture2d.hpp"
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
 
