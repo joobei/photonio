@@ -22,7 +22,7 @@ add_subdirectory(lib)
 
 SET(Boost_USE_STATIC_LIBS   ON)
 SET(Boost_USE_MULTITHREADED ON)
-set(Boost_DEBUG 1)
+#set(Boost_DEBUG 1)
 
 #set(BOOST_ROOT /Users/jubei/coding/boost_1_55_0)
 

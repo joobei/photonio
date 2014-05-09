@@ -278,10 +278,10 @@ void Engine::render() {
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
-    //floor.draw();
+    floor.draw();
     heart.draw();
-    //box.draw();
-    /*
+    box.draw();
+
         for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
             boxes[i].draw();
         }
@@ -319,7 +319,7 @@ void Engine::render() {
         plane.draw();
         }
     }
-    */
+
     glfwSwapBuffers(mainWindow);
 }
 
