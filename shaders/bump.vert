@@ -11,6 +11,7 @@ out vec4 Vertex_LightDir;
 out vec4 Vertex_EyeVec;
 out vec4 v_projCoord;
 
+
 uniform mat4 mvp;
 uniform mat4 modelview;
 uniform mat4 shadowMatrix;

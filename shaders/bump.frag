@@ -66,7 +66,9 @@ void main()
 
     //float lambertTerm = dot(PN, L);
     float lambertTerm = dot(PN, L);
+
     bool inShadow;
+
 
         if (lambertTerm > 0.0)
         {
@@ -79,6 +81,21 @@ void main()
             final_color += light_specular * specular;
         }
 
-    Out_Color.rgb = final_color.rgb;
+        //** shadow mapping**
+        vec4 shadowCoordinateWdivide = v_projCoord / v_projCoord.w ;
+
+        // Used to lower moiré pattern and self-shadowing
+        shadowCoordinateWdivide.z += 0.0005;
+
+        float distanceFromLight = textureProj(shadowMap,shadowCoordinateWdivide);
+        float shadow = 1.0;
+        if (v_projCoord.w > 0.0)
+        {
+            shadow = distanceFromLight < shadowCoordinateWdivide.z ? 0.5 : 1.0 ;
+        }
+
+    Out_Color.rgb = /*shadow*/final_color.rgb;
     Out_Color.a = material_diffuse.w;
+
+
 }

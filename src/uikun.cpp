@@ -84,7 +84,7 @@ Engine::Engine(GLFWwindow *window):
 
     pointerOpacity = 1.0f;
 
-#define	SHADOW_MAP_RATIO 8;
+#define	SHADOW_MAP_RATIO 4;
 }
 
 void Engine::initResources() {
@@ -110,7 +110,7 @@ void Engine::initResources() {
     sr.light.position = glm::vec3(50,10,20);
     sr.light.direction = glm::vec3(0,0,-1);
     sr.light.color = glm::vec4(1,1,1,1);
-    //sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
+    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -160,9 +160,7 @@ void Engine::initResources() {
     selectedAsset = &cursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
-    //floor = pho::Asset("floor.obj", &textureShader,&sr);
-    //floor = pho::Asset("floor.obj", &singleTexture,&sr);
-    floor = pho::Asset("floor.obj", &normalMap,&sr, false);
+    floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 
@@ -1027,10 +1025,8 @@ void Engine::checkKeyboard() {
 
 void Engine::generateShadowFBO()
 {
-    //int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
-    //int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
-    int shadowMapWidth = WINDOW_SIZE_X;
-    int shadowMapHeight = WINDOW_SIZE_Y;
+    int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
+    int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
 
     CALL_GL(glGenTextures(1, &(sr.shadowTexture)));
     CALL_GL(glActiveTexture(GL_TEXTURE0));
@@ -1083,7 +1079,6 @@ void Engine::shadowMapRender() {
 
     if ((appState == select) && (selectionTechnique == virtualHand)) cursor.drawFromLight();
     heart.drawFromLight();
-
     box.drawFromLight();
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
@@ -1223,8 +1218,8 @@ void Engine::checkPhysics()
 
     box.modelMatrix = convertBulletTransformToGLM(trans);
 
-    //heart.rigidBody->getMotionState()->getWorldTransform(trans);
-    //heart.modelMatrix = convertBulletTransformToGLM(trans);
+    heart.rigidBody->getMotionState()->getWorldTransform(trans);
+    heart.modelMatrix = convertBulletTransformToGLM(trans);
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
         boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);
