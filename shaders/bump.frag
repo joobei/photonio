@@ -61,40 +61,24 @@ void main()
     vec3 V = normalize(Vertex_EyeVec.xyz);
     vec3 PN = perturb_normal(N, V, uv);
 
-
     vec4 tex01_color = texture(diffuseTexture, uv).rgba;
-    vec4 final_color = vec4(0.4* tex01_color.rgb,1*tex01_color.a); //ambient light
+    vec4 final_color = vec4(0.55* tex01_color.rgb,1*tex01_color.a); //ambient light
 
-    float lambertTerm = dot(PN, L);
+    //float lambertTerm = dot(PN, L);
+    float lambertTerm = dot(N, L);
     bool inShadow;
-
-    // Similar as seen in OpenGL 4.0 Shading Language Cookbook
-
 
         if (lambertTerm > 0.0)
         {
             final_color += light_diffuse * vec4(1) * lambertTerm * tex01_color;
 
             vec3 E = normalize(Vertex_EyeVec.xyz);
-            vec3 R = reflect(-L, PN);
+            //vec3 R = reflect(-L, PN);
+            vec3 R = reflect(-L, N);
             float specular = pow( max(dot(R, E), 0.0), material_shininess);
             final_color += light_specular * specular;
         }
 
     Out_Color.rgb = final_color.rgb;
-    //Out_Color.a = 0.4;
     Out_Color.a = material_diffuse.w;
-
-    /*if(receiveShadow) {
-        float sh = textureProj(shadowMap, v_projCoord);
-        if ( sh != 1.0)
-        {
-            Out_Color.rgb -= 0.2;
-
-        }
-        else {
-            Out_Color *= sh;
-
-        }
-    }*/
 }

@@ -107,10 +107,10 @@ void Engine::initResources() {
 
     generateShadowFBO();
 
-    sr.light.position = glm::vec3(0,160,-60);
-    sr.light.direction = glm::vec3(0,-1,0);
+    sr.light.position = glm::vec3(50,10,20);
+    sr.light.direction = glm::vec3(0,0,-1);
     sr.light.color = glm::vec4(1,1,1,1);
-    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
+    //sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -172,13 +172,12 @@ void Engine::initResources() {
     //plane.receiveShadow = true;
 
     heart = pho::Asset("bump-heart.obj",&normalMap,&sr, true);
-    //heart = pho::Asset("corrected-heart.obj",&normalMap,&sr);
-    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
+    //heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
+    heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
     //heart.receiveShadow = true;
 
     box = pho::Asset("box.obj",&normalMap,&sr, true);
     box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,10,-15));
-    box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -277,14 +276,17 @@ void Engine::render() {
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-    //if (!inputStarted) { heart.rotate(glm::rotate(0.1f,glm::vec3(0,1,0))); }
+    if (!inputStarted)
+    {
+        heart.rotate(glm::rotate(glm::radians(0.1f),glm::vec3(0,1,0)));
+    }
     floor.draw();
     heart.draw();
     box.draw();
 
-        for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
-            boxes[i].draw();
-        }
+    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
+        boxes[i].draw();
+    }
 
 
     if (appState == select) {
@@ -294,7 +296,7 @@ void Engine::render() {
         else if (selectionTechnique == raySelect) {
             ray.draw();
         }
-        else {
+        /*else {
             sr.flatShader.use();
 
             //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*glm::mat4();
@@ -311,7 +313,7 @@ void Engine::render() {
             CALL_GL(glEnable(GL_DEPTH_TEST));
 
             pointerOpacity-=0.1;
-        }
+        }*/
     }
 
     if (technique == planeCasting) {
@@ -1221,8 +1223,8 @@ void Engine::checkPhysics()
 
     box.modelMatrix = convertBulletTransformToGLM(trans);
 
-    heart.rigidBody->getMotionState()->getWorldTransform(trans);
-    heart.modelMatrix = convertBulletTransformToGLM(trans);
+    //heart.rigidBody->getMotionState()->getWorldTransform(trans);
+    //heart.modelMatrix = convertBulletTransformToGLM(trans);
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
         boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);
