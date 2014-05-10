@@ -246,7 +246,7 @@ void Engine::checkEvents() {
     }
 
     //Joystick
-    checkSpaceNavigator();
+    //checkSpaceNavigator();
 
     /*if ((appState == select) && (selectionTechnique == indieSelectRelative)) {
         if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))

@@ -11,7 +11,9 @@ int main()
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
+
     if ((!glfwInit())==GL_TRUE) {  std::cout << "glfw initialization failed";  return 1;  }
+
 
     glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
     glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
