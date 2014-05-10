@@ -1025,8 +1025,10 @@ void Engine::checkKeyboard() {
 
 void Engine::generateShadowFBO()
 {
-    int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
-    int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
+    //int shadowMapWidth = WINDOW_SIZE_X * (int)SHADOW_MAP_RATIO;
+    //int shadowMapHeight =  WINDOW_SIZE_Y * (int)SHADOW_MAP_RATIO;
+    int shadowMapWidth = WINDOW_SIZE_X;
+    int shadowMapHeight = WINDOW_SIZE_Y;
 
     CALL_GL(glGenTextures(1, &(sr.shadowTexture)));
     CALL_GL(glActiveTexture(GL_TEXTURE0));
@@ -1095,7 +1097,7 @@ void Engine::shadowMapRender() {
 }
 
 void Engine::checkSpaceNavigator() { 
-/*
+
 #define TRSCALE 2.0f
 #define RTSCALE 5.0f
 
@@ -1104,10 +1106,10 @@ void Engine::checkSpaceNavigator() {
     int* arraySize;
     std::fill_n(position,6,0.0f);
 
-    if (glfwGetJoystickAxes( GLFW_JOYSTICK_1, arraySize) == 6 ) {
+    if (*glfwGetJoystickAxes( GLFW_JOYSTICK_1, arraySize) == 6 ) {
         //inputStarted = true;
-        glfwGetJoystickButtons(GLFW_JOYSTICK_1,buttons,2);
-        if (buttons[0] == GLFW_PRESS) {
+
+        if (glfwGetJoystickButtons(GLFW_JOYSTICK_1,arraySize)[0] == GLFW_PRESS) {
 
             sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
             sr.viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*sr.viewMatrix;
@@ -1144,9 +1146,9 @@ void Engine::checkSpaceNavigator() {
             //btTransform objTrans;
             //objTrans.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
             //coCursor->setWorldTransform(objTrans);
-        //}
-    //}
-*/
+        }
+    }
+
 }
 
 void Engine::initPhysics()

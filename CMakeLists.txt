@@ -54,5 +54,5 @@ find_library(GLFW_LIB glfw PATH /opt/local/lib)
 find_library(GL_LIB OpenGL)
 find_library(COCOA_LIB Cocoa)
 
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${GLFW_LIB} ${COCOA_LIB} ${GL_LIB} GLEW assimp protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath png)
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${GLFW_LIB} ${COCOA_LIB} ${GL_LIB} assimp protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath png)
 

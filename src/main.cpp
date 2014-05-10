@@ -11,7 +11,7 @@ int main()
 
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    if (!glfwInit()==GL_TRUE) {  std::cout << "glfw initialization failed";  return 1;  }
+    if ((!glfwInit())==GL_TRUE) {  std::cout << "glfw initialization failed";  return 1;  }
 
     glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
     glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
@@ -34,13 +34,14 @@ int main()
 
     pho::Engine *engine = new Engine(mainWindow);
 
-    /*if (glfwGetJoystickPresent(0) {
+    if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
         std::cout << "joystick present" << std::endl;
 
-		
-        std::cout << "joystick axes" << glfwGetJoystickParam(GLFW_JOYSTICK_1,GLFW_AXES) << std::endl;
+        int axes;
+        glfwGetJoystickAxes(GLFW_JOYSTICK_1,&axes);
+        std::cout << "joystick axes" << axes << std::endl;
 	}
-    else { std::cout << "joystick not present" << std::endl;}*/
+    else { std::cout << "joystick not present" << std::endl;}
 
     engine->go();
 
