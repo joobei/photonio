@@ -155,14 +155,14 @@ void Engine::initResources() {
     //*************************************************************
     //********************  Load Assets ***************************
     //*************************************************************
-    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, false);
+    cursor = pho::Asset("cursor.obj", &normalMap,&sr, false);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
     //floor = pho::Asset("floor.obj", &textureShader,&sr);
     //floor = pho::Asset("floor.obj", &singleTexture,&sr);
-    floor = pho::Asset("floor.obj", &singleTexture,&sr, false);
+    floor = pho::Asset("floor.obj", &normalMap,&sr, false);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 

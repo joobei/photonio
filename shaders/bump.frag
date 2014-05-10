@@ -62,10 +62,10 @@ void main()
     vec3 PN = perturb_normal(N, V, uv);
 
     vec4 tex01_color = texture(diffuseTexture, uv).rgba;
-    vec4 final_color = vec4(0.55* tex01_color.rgb,1*tex01_color.a); //ambient light
+    vec4 final_color = vec4(0.40* tex01_color.rgb,1*tex01_color.a); //ambient light
 
     //float lambertTerm = dot(PN, L);
-    float lambertTerm = dot(N, L);
+    float lambertTerm = dot(PN, L);
     bool inShadow;
 
         if (lambertTerm > 0.0)
@@ -74,7 +74,7 @@ void main()
 
             vec3 E = normalize(Vertex_EyeVec.xyz);
             //vec3 R = reflect(-L, PN);
-            vec3 R = reflect(-L, N);
+            vec3 R = reflect(-L, PN);
             float specular = pow( max(dot(R, E), 0.0), material_shininess);
             final_color += light_specular * specular;
         }

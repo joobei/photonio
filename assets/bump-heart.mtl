@@ -6,6 +6,6 @@ d  1.0
 Ns  20
 illum 2
 map_Kd heart-diffuse.png
-bump normalmap-njob.png
+bump bump.png
 #
 # EOF
