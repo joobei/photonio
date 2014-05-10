@@ -193,7 +193,7 @@ void Engine::initResources() {
     CALL_GL(glVertexAttribPointer(vertexLoc, 3, GL_FLOAT, 0, 0, 0));
 
     //Create the perspective matrix
-    sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
+    sr.projectionMatrix = glm::perspective(glm::radians(perspective), (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
     cameraPosition = vec3(0,0,0);
     sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
@@ -1038,7 +1038,7 @@ void Engine::generateShadowFBO()
     CALL_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE));
     CALL_GL(glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS));
     CALL_GL(glTexImage2D(GL_TEXTURE_2D,0,GL_DEPTH_COMPONENT,shadowMapWidth,shadowMapHeight,0,GL_DEPTH_COMPONENT,GL_FLOAT,NULL));
-    CALL_GL(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_COMPARE_MODE,GL_COMPARE_R_TO_TEXTURE));
+    CALL_GL(glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_COMPARE_MODE,GL_COMPARE_REF_TO_TEXTURE));
     CALL_GL(glBindTexture(GL_TEXTURE_2D, 0)); //unbind the texture
 
     CALL_GL(glGenFramebuffers(1, &shadowFBO));
@@ -1124,29 +1124,29 @@ void Engine::checkSpaceNavigator() {
             selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
             selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));
 
-            /*sr.light.viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*sr.light.viewMatrix;
-            sr.light.viewMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*sr.light.viewMatrix;
-            sr.light.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.light.viewMatrix;
+            //sr.light.viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*sr.light.viewMatrix;
+            //sr.light.viewMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*sr.light.viewMatrix;
+            //sr.light.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.light.viewMatrix;
 
-            glm::vec4 tempPosition = sr.light.viewMatrix[3];
-            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.light.viewMatrix;
-            sr.light.viewMatrix[3] = tempPosition;
+            //glm::vec4 tempPosition = sr.light.viewMatrix[3];
+            //sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.light.viewMatrix;
+            //sr.light.viewMatrix[3] = tempPosition;
 
-            tempPosition = sr.light.viewMatrix[3];
-            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,0,1))*sr.light.viewMatrix;
-            sr.light.viewMatrix[3] = tempPosition;
+            //tempPosition = sr.light.viewMatrix[3];
+            //sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,0,1))*sr.light.viewMatrix;
+            //sr.light.viewMatrix[3] = tempPosition;
 
-            tempPosition = sr.light.viewMatrix[3];
-            sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*sr.light.viewMatrix;
-            sr.light.viewMatrix[3] = tempPosition;*/
+            //tempPosition = sr.light.viewMatrix[3];
+            //sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*sr.light.viewMatrix;
+            //sr.light.viewMatrix[3] = tempPosition;
 
 
-            /*btTransform objTrans;
-            objTrans.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
-            coCursor->setWorldTransform(objTrans);*/
+            //btTransform objTrans;
+            //objTrans.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
+            //coCursor->setWorldTransform(objTrans);
         //}
     //}
-
+*/
 }
 
 void Engine::initPhysics()
