@@ -20,7 +20,6 @@ in vec4 Vertex_LightDir;
 in vec4 Vertex_EyeVec;
 in vec4 v_projCoord; //for shadow mapping
 
-
 out vec4 Out_Color;
 
 // http://www.thetenthplanet.de/archives/1180

@@ -124,7 +124,7 @@ void Engine::initResources() {
     noTextureShader["light_diffuse"] = pointLight.color;
     noTextureShader["light_specular"] = vec4(1,1,1,1);
 
-    normalMap = pho::Shader(shaderpath+"texture");
+    normalMap = pho::Shader(shaderpath+"bump");
     normalMap.use();
     normalMap["view"] = sr.viewMatrix;
     normalMap["light_position"] = glm::vec4(pointLight.position,1);
@@ -246,7 +246,7 @@ void Engine::checkEvents() {
     }
 
     //Joystick
-    //checkSpaceNavigator();
+    if(JoystickPresent) { checkSpaceNavigator();}
 
     /*if ((appState == select) && (selectionTechnique == indieSelectRelative)) {
         if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
@@ -272,7 +272,7 @@ void Engine::checkEvents() {
 
 void Engine::render() {
 
-    //shadowMapRender();
+    shadowMapRender();
 
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));

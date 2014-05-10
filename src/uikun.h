@@ -106,6 +106,7 @@ namespace pho {
 
         //util
         glm::mat4 convertBulletTransformToGLM(const btTransform& transform);
+        bool JoystickPresent;
 	private:
 		void checkUDP();
 		void checkKeyboard();

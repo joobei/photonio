@@ -19,7 +19,7 @@ int main()
     glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
     glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
     glfwWindowHint( GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE );
-    //glfwWindowHint(GLFW_SAMPLES,8);
+    glfwWindowHint( GLFW_SAMPLES,8);
 
     GLFWwindow* mainWindow = glfwCreateWindow(pho::Engine::WINDOW_SIZE_X,pho::Engine::WINDOW_SIZE_Y,"Plane-Casting",NULL,NULL);
     if (!mainWindow)
@@ -36,14 +36,19 @@ int main()
 
     pho::Engine *engine = new Engine(mainWindow);
 
-    if (glfwJoystickPresent(GLFW_JOYSTICK_1)) {
+    if (glfwJoystickPresent(GLFW_JOYSTICK_1))
+    {
         std::cout << "joystick present" << std::endl;
-
+        engine->JoystickPresent = true;
         int axes;
         glfwGetJoystickAxes(GLFW_JOYSTICK_1,&axes);
         std::cout << "joystick axes" << axes << std::endl;
 	}
-    else { std::cout << "joystick not present" << std::endl;}
+    else
+    {
+        engine->JoystickPresent = false;
+        std::cout << "joystick not present" << std::endl;
+    }
 
     engine->go();
 
