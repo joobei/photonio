@@ -160,7 +160,8 @@ void Engine::initResources() {
     selectedAsset = &cursor; //when app starts we control the cursor
     //cursor.receiveShadow = true;
 
-    floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
+    //floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
+    floor = pho::Asset("floor.obj", &normalMap,&sr,true);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 
@@ -1077,6 +1078,9 @@ void Engine::shadowMapRender() {
     CALL_GL(glViewport(0, 0, shadowMapWidth, shadowMapHeight));
     CALL_GL(glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE));
 
+    CALL_GL(glEnable(GL_CULL_FACE));
+    CALL_GL(glCullFace(GL_BACK));
+
     if ((appState == select) && (selectionTechnique == virtualHand)) cursor.drawFromLight();
     heart.drawFromLight();
     box.drawFromLight();
@@ -1085,7 +1089,7 @@ void Engine::shadowMapRender() {
         boxes[i].drawFromLight();
     }
 
-
+    CALL_GL(glDisable(GL_CULL_FACE));
     // Revert for the scene.
     CALL_GL(glBindFramebuffer(GL_FRAMEBUFFER, 0));
     CALL_GL(glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE));
