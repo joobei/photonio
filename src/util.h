@@ -15,8 +15,6 @@
 #include "glm/gtx/compatibility.hpp"
 #include "boost/timer/timer.hpp"
 
-#define ARCBALL_RADIUS 2.0f
-
 #define GLDEBUG
 
 #if defined (GLDEBUG)
@@ -59,10 +57,7 @@ enum RotateTechnique { //rotTechnique
 
 enum SelectionTechnique {
     virtualHand,
-    indieSelectAbsolute,
     indieSelectRelative,
-    indieSelectHybrid,
-    planeSelectRelative,
     raySelect
 };
 

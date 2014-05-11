@@ -54,6 +54,7 @@ struct sharedResources {
     GLuint t1Location,t2Location,t3Location;
     //Physics
     btDynamicsWorld* dynamicsWorld =0;
+    btCollisionWorld* collisionWorld =0;
 };
 
 struct myMaterial {
@@ -238,6 +239,7 @@ public:
     void drawFlat();
     void drawFromLight();
     void scale();
+    void updateMotionState();
     glm::mat4 modelMatrix;
     glm::mat4 scaleMatrix;
     void rotate(glm::mat4 rotationMatrix);

@@ -65,8 +65,6 @@ using glm::vec4;
 using glm::mat3;
 using glm::mat4;
 
-#define LOGITECH_VENDOR_ID 0x46d
-
 namespace pho {
     class Engine: public TuioListener {
 

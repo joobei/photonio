@@ -34,7 +34,7 @@ Engine::Engine(GLFWwindow *window):
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(indieSelectRelative),
+    selectionTechnique(virtualHand),
     inputStarted(false),
     mouseMove(false),
     plane(&sr),
@@ -148,17 +148,16 @@ void Engine::initResources() {
     glUniform1i(baseImageLoc, 0);
     glUniform1i(shadowMapLoc, 2);
 
-    //physics physics physics physics physics
+    // ********* physics *********
     initPhysics();
 
 
     //*************************************************************
     //********************  Load Assets ***************************
     //*************************************************************
-    cursor = pho::Asset("cursor.obj", &normalMap,&sr, false);
+    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, true);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
-    //cursor.receiveShadow = true;
 
     //floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
     floor = pho::Asset("floor.obj", &normalMap,&sr,true);
@@ -275,10 +274,6 @@ void Engine::render() {
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-    if (!inputStarted)
-    {
-        heart.rotate(glm::rotate(glm::radians(0.1f),glm::vec3(0,1,0)));
-    }
     floor.draw();
     heart.draw();
     box.draw();
@@ -295,14 +290,14 @@ void Engine::render() {
         else if (selectionTechnique == raySelect) {
             ray.draw();
         }
-        /*else {
+        else {
             sr.flatShader.use();
 
             //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*glm::mat4();
             sr.flatShader["mvp"] = glm::translate(glm::mat4(),glm::vec3(touchPoint.x,touchPoint.y,-1));
             CALL_GL(glBindVertexArray(pointVao));
             CALL_GL(glPointSize(20));
-            sr.flatShader["color"] = glm::vec4(0,0,0,pointerOpacity);
+            sr.flatShader["color"] = glm::vec4(1,0,0,pointerOpacity);
             CALL_GL(glDrawArrays(GL_POINTS,0,1));
 
             CALL_GL(glDisable(GL_DEPTH_TEST));
@@ -312,7 +307,7 @@ void Engine::render() {
             CALL_GL(glEnable(GL_DEPTH_TEST));
 
             pointerOpacity-=0.1;
-        }*/
+        }
     }
 
     if (technique == planeCasting) {
@@ -551,11 +546,6 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             pho::locationMatch(plane.modelMatrix,intersectedAsset->modelMatrix);
             break;
         }
-        if ((selectionTechnique == indieSelectAbsolute) || (selectionTechnique == indieSelectHybrid)) {
-            touchPoint.x = 2*x-1;
-            touchPoint.y = 2*(1-y)-1;
-            break;
-        }
         break;
     case translate:
         break;
@@ -609,38 +599,11 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     vec2 ft;
     float newAngle;
 
-    //short numberOfCursors = tuioClient->getTuioCursors().size();
-    //std::list<TUIO::TuioCursor*> cursorList;
-    //cursorList = tuioClient->getTuioCursors();
-
     switch (appState) {
     case select:
-        if (selectionTechnique == indieSelectAbsolute ) {
-            touchPoint.x = 2*x-1;
-            touchPoint.y = 2*(1-y)-1;
-            break;
-        }
         if (selectionTechnique == indieSelectRelative) {
             touchPoint.x += tcur->getXSpeed()/30;
             touchPoint.y += -1*tcur->getYSpeed()/30;
-            break;
-        }
-        if (selectionTechnique == indieSelectHybrid) {
-            touchPoint.x += tcur->getXSpeed()/100;
-            touchPoint.y += -1*tcur->getYSpeed()/100;
-            break;
-        }
-        if (selectionTechnique == planeSelectRelative) {
-#define TFACTOR 20
-            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-
-            x=(tcur->getXSpeed())/TFACTOR;
-            y=(tcur->getYSpeed())/TFACTOR;
-
-            newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
-            touchPoint.x += newLocationVector.x;
-            touchPoint.y += newLocationVector.y;
             break;
         }
     case translate:
@@ -656,10 +619,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
         plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
-
-        //temp.setFromOpenGLMatrix(glm::value_ptr(tempMatrix));
-        //coHeart->setWorldTransform(temp);
-
+        selectedAsset->updateMotionState();
         break;
         //*********************   ROTATE  ****************************
     case rotate:
@@ -959,7 +919,6 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey(mainWindow,'1') == GLFW_PRESS) {
-            //sr.collisionWorld->addCollisionObject(coCursor);
             locationMatch(cursor.modelMatrix,heart.modelMatrix);
             locationMatch(plane.modelMatrix,cursor.modelMatrix);
             selectedAsset = &cursor;
@@ -975,38 +934,9 @@ void Engine::checkKeyboard() {
         if (glfwGetKey(mainWindow,'2') == GLFW_PRESS) {
 
             appState = select;
-            selectionTechnique = raySelect;
-            technique = rayCasting;
-            log("RayCasting");
-            //sr.collisionWorld->removeCollisionObject(coCursor);
-            keyPressOK = false;
-            keyboardPreviousTime =  elapsed_times;
-        }
-
-        if (glfwGetKey(mainWindow,'3') == GLFW_PRESS) {
-            appState = select;
-            intersectedAsset = NULL;
             selectionTechnique = indieSelectRelative;
-            //sr.collisionWorld->removeCollisionObject(coCursor);
-            log("indieSelectRelative");
-            keyPressOK = false;
-            keyboardPreviousTime =  elapsed_times;
-        }
-
-        if (glfwGetKey(mainWindow,'4') == GLFW_PRESS) {
-            appState = select;
-            selectionTechnique = indieSelectHybrid;
-            //sr.collisionWorld->removeCollisionObject(coCursor);
-            log("indieCursorHybrid");
-            keyPressOK = false;
-            keyboardPreviousTime =  elapsed_times;
-        }
-
-        if (glfwGetKey(mainWindow,'5') == GLFW_PRESS) {
-            appState = select;
-            selectionTechnique = planeSelectRelative;
-            //sr.collisionWorld->removeCollisionObject(coCursor);
-            log("planeSelectRelative");
+            technique = planeCasting;
+            log("RayCasting");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
@@ -1177,31 +1107,6 @@ void Engine::initPhysics()
 
     sr.dynamicsWorld->addRigidBody(groundRigidBody1);
 
-    /*groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(10,0,-20)));
-
-    btRigidBody::btRigidBodyConstructionInfo
-                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,0,0));
-    btRigidBody* groundRigidBody2 = new btRigidBody(groundRigidBodyCI);
-
-    sr.dynamicsWorld->addRigidBody(groundRigidBody2);
-
-    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(-10,0,-20)));
-
-    btRigidBody::btRigidBodyConstructionInfo
-                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,0,0));
-    btRigidBody* groundRigidBody3 = new btRigidBody(groundRigidBodyCI);
-
-    sr.dynamicsWorld->addRigidBody(groundRigidBody3);
-
-
-    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,0,0)));
-
-    btRigidBody::btRigidBodyConstructionInfo
-                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,0,0));
-    btRigidBody* groundRigidBody4 = new btRigidBody(groundRigidBodyCI);
-
-    sr.dynamicsWorld->addRigidBody(groundRigidBody4);*/
-
 
 }
 
@@ -1211,6 +1116,7 @@ glm::mat4 Engine::convertBulletTransformToGLM(const btTransform& transform)
         transform.getOpenGLMatrix(data);
         return glm::make_mat4(data);
 }
+
 
 void Engine::checkPhysics()
 {
@@ -1230,35 +1136,18 @@ void Engine::checkPhysics()
         boxes[i].modelMatrix = convertBulletTransformToGLM(trans);
     }
 
-    /*btTransform temp;
+    if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
-    temp.setFromOpenGLMatrix(glm::value_ptr(heart.modelMatrix));
-    coHeart->setWorldTransform(temp);
-
-    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-    coCursor->setWorldTransform(temp);
-
-
-    /*if ((appState == select) && (selectionTechnique == virtualHand)) {
-        temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-        coCursor->setWorldTransform(temp);
-    }*/
-
-
-    /*if ((appState == select ) && (selectionTechnique == virtualHand)) {
-
-        if (collisionWorld)
-        {
-            collisionWorld->performDiscreteCollisionDetection();
-        }
+        sr.dynamicsWorld->performDiscreteCollisionDetection();
 
         std::map<btCollisionObject*,pho::Asset*>::iterator it;
-        int numManifolds = collisionWorld->getDispatcher()->getNumManifolds();
+        int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
         for (int i=0;i<numManifolds;i++)
         {
-            btPersistentManifold* contactManifold =  collisionWorld->getDispatcher()->getManifoldByIndexInternal(i);
-            btCollisionObject* obA = static_cast<btCollisionObject*>(contactManifold->getBody0());
-            btCollisionObject* obB = static_cast<btCollisionObject*>(contactManifold->getBody1());
+            std::cout << "Number of Manifolds :" << numManifolds << std::endl;
+            btPersistentManifold* contactManifold =  sr.dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
+            const btCollisionObject* obA = contactManifold->getBody0();
+            const btCollisionObject* obB = contactManifold->getBody1();
 
             pho::Asset* a = static_cast<pho::Asset*>(obA->getUserPointer());
             if (a!=(&cursor))
@@ -1282,11 +1171,11 @@ void Engine::checkPhysics()
                 plane.modelMatrix = selectedAsset->modelMatrix;
                 appState = translate;
                 doubleClickPerformed = false;
-                collisionWorld->removeCollisionObject(coCursor);
+                sr.dynamicsWorld->removeRigidBody(heart.rigidBody);
                 break;
             }
         }
-    }*/
+    }
 }
 
 bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset*& intersected) {

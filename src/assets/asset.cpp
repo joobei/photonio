@@ -313,6 +313,17 @@ void pho::Asset::scale()
     modelMatrix[3] = tempPosition;
 }
 
+void pho::Asset::updateMotionState()
+{
+
+    glm::mat4 ATTRIBUTE_ALIGNED16(modelMatrix);
+    btTransform objTrans;
+    objTrans.setIdentity();
+    objTrans.getOpenGLMatrix(glm::value_ptr(modelMatrix));
+    btDefaultMotionState mstate = btDefaultMotionState(objTrans);
+    rigidBody->setMotionState(&mstate);
+}
+
 
 void pho::Asset::rotate(glm::mat4 rotationMatrix) {
     glm::vec4 tempPosition = modelMatrix[3];
