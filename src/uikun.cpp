@@ -207,7 +207,7 @@ void Engine::initResources() {
     InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
     InverseViewMatrix = glm::inverse(sr.viewMatrix);
 
-
+    intersectedAsset = &cursor;
 }
 
 //checks event queue for events
@@ -1152,7 +1152,6 @@ void Engine::checkPhysics()
         temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
         coCursor->setWorldTransform(temp);
 
-        //heart.rigidBody->
         sr.dynamicsWorld->performDiscreteCollisionDetection();
         int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
         for (int i=0;i<numManifolds;i++)
@@ -1175,12 +1174,13 @@ void Engine::checkPhysics()
             if (doubleClickPerformed)
             {
                 //selectedAsset = it->second;
-                selectedAsset = intersectedAsset;
-                grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
-                plane.modelMatrix = selectedAsset->modelMatrix;
-                appState = translate;
-                doubleClickPerformed = false;
-                sr.dynamicsWorld->removeRigidBody(heart.rigidBody);
+                if (intersectedAsset != &cursor) {
+                    grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
+                    plane.modelMatrix = selectedAsset->modelMatrix;
+                    appState = translate;
+                    doubleClickPerformed = false;
+                    sr.dynamicsWorld->removeRigidBody(heart.rigidBody);
+                }
                 break;
             }
         }
