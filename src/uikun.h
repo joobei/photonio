@@ -200,6 +200,7 @@ namespace pho {
         pho::Asset* intersectedAsset;
         std::vector<pho::Asset> boxes;
 
+        btCollisionObject* coCursor;
         //input
         bool inputStarted;
 
@@ -259,8 +260,6 @@ namespace pho {
         void shadowMapRender();
         GLuint shadowMapLoc;
         GLuint baseImageLoc;
-
-
 
         bool switchOnNextFrame=false;
 

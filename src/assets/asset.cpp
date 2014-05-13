@@ -69,8 +69,6 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
         btDefaultMotionState* motionState =
                 new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(randomx,30,-25)));
 
-
-
         collisionShape->calculateLocalInertia(mass,fallInertia);
         btRigidBody::btRigidBodyConstructionInfo RigidBodyCI(mass,motionState,collisionShape,fallInertia);
         rigidBody = new btRigidBody(RigidBodyCI);
@@ -315,7 +313,6 @@ void pho::Asset::scale()
 
 void pho::Asset::updateMotionState()
 {
-
     glm::mat4 ATTRIBUTE_ALIGNED16(modelMatrix);
     btTransform objTrans;
     objTrans.setIdentity();

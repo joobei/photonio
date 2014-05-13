@@ -155,12 +155,12 @@ void Engine::initResources() {
     //*************************************************************
     //********************  Load Assets ***************************
     //*************************************************************
-    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, true);
+    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, false);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
 
     //floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
-    floor = pho::Asset("floor.obj", &normalMap,&sr,true);
+    floor = pho::Asset("floor.obj", &normalMap,&sr,false);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 
@@ -252,6 +252,8 @@ void Engine::checkEvents() {
         }
      }*/
 
+    cursor.updateMotionState();
+
     checkPhysics();
 
     if(switchOnNextFrame) {
@@ -287,9 +289,6 @@ void Engine::render() {
         if (selectionTechnique == virtualHand) {
             cursor.draw();
         }
-        else if (selectionTechnique == raySelect) {
-            ray.draw();
-        }
         else {
             sr.flatShader.use();
 
@@ -310,10 +309,9 @@ void Engine::render() {
         }
     }
 
-    if (technique == planeCasting) {
-        if ((appState == translate) || ((appState == select ) && (selectionTechnique == virtualHand))) {
+
+    if ((appState == translate) || ((appState == select ) && (selectionTechnique == virtualHand))) {
         plane.draw();
-        }
     }
 
     glfwSwapBuffers(mainWindow);
@@ -619,7 +617,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
         plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
-        selectedAsset->updateMotionState();
         break;
         //*********************   ROTATE  ****************************
     case rotate:
@@ -1107,7 +1104,16 @@ void Engine::initPhysics()
 
     sr.dynamicsWorld->addRigidBody(groundRigidBody1);
 
+    btTransform temp;
 
+    btSphereShape* csSphere = new btSphereShape(1.0f);
+    coCursor = new btCollisionObject();
+    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+    coCursor->setCollisionShape(csSphere);
+    coCursor->setWorldTransform(temp);
+    coCursor->setUserPointer(&cursor);
+
+    sr.dynamicsWorld->addCollisionObject(coCursor);
 }
 
 glm::mat4 Engine::convertBulletTransformToGLM(const btTransform& transform)
@@ -1138,28 +1144,28 @@ void Engine::checkPhysics()
 
     if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
+        btTransform temp;
+        temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+        coCursor->setWorldTransform(temp);
+
         sr.dynamicsWorld->performDiscreteCollisionDetection();
 
-        std::map<btCollisionObject*,pho::Asset*>::iterator it;
         int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
         for (int i=0;i<numManifolds;i++)
         {
-            std::cout << "Number of Manifolds :" << numManifolds << std::endl;
-            btPersistentManifold* contactManifold =  sr.dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
+            //std::cout << "Number of Manifolds :" << numManifolds << std::endl;
+            btPersistentManifold* contactManifold = sr.dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
             const btCollisionObject* obA = contactManifold->getBody0();
             const btCollisionObject* obB = contactManifold->getBody1();
 
-            pho::Asset* a = static_cast<pho::Asset*>(obA->getUserPointer());
-            if (a!=(&cursor))
-            {   //if A is NOT the cursor we want to highlight it
-                a->beingIntersected = true;
-                intersectedAsset = a;
+
+
+            if (obA==coCursor && ((obA != NULL) && (obB != NULL))) {
+                static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
+                //std::cout << "Cursor touching stuff \n";
             }
-            else
-            {   //if A was the cursor then it's B that we want
-                a = static_cast<pho::Asset*>(obB->getUserPointer());
-                a->beingIntersected = true;
-                intersectedAsset = a;
+            if (obB==coCursor && ((obA != NULL) && (obB != NULL))) {
+                static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
             }
 
 
