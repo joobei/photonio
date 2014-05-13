@@ -107,10 +107,13 @@ void Engine::initResources() {
 
     generateShadowFBO();
 
-    sr.light.position = glm::vec3(50,10,20);
-    sr.light.direction = glm::vec3(0,0,-1);
+    //sr.light.position = glm::vec3(50,10,20);
+    sr.light.position = glm::vec3(0,50,0);
+    //sr.light.direction = glm::vec3(0,0,-1);
+    sr.light.direction = glm::vec3(0,-1,0);
     sr.light.color = glm::vec4(1,1,1,1);
-    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
+    //sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
+    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,0),glm::vec3(0,0,-1));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -120,8 +123,8 @@ void Engine::initResources() {
     noTextureShader = pho::Shader(shaderpath+"notexture");
     noTextureShader.use();
     noTextureShader["view"] = sr.viewMatrix;
-    noTextureShader["light_position"] = glm::vec4(pointLight.position,1);
-    noTextureShader["light_diffuse"] = pointLight.color;
+    noTextureShader["light_position"] = glm::vec4(sr.light.position,1);
+    noTextureShader["light_diffuse"] = sr.light.color;
     noTextureShader["light_specular"] = vec4(1,1,1,1);
 
     normalMap = pho::Shader(shaderpath+"bump");
@@ -1099,7 +1102,7 @@ void Engine::initPhysics()
     btDefaultMotionState* groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,-10,0)));
 
     btRigidBody::btRigidBodyConstructionInfo
-                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,0,0));
+                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,-0.01,0));
     btRigidBody* groundRigidBody1 = new btRigidBody(groundRigidBodyCI);
 
     sr.dynamicsWorld->addRigidBody(groundRigidBody1);
@@ -1113,6 +1116,8 @@ void Engine::initPhysics()
     coCursor->setWorldTransform(temp);
     coCursor->setUserPointer(&cursor);
 
+    //int cursorCollidesWith = COL_NOTHING;
+    //sr.dynamicsWorld->addCollisionObject(coCursor,COL_NOTHING,cursorCollidesWith);
     sr.dynamicsWorld->addCollisionObject(coCursor);
 }
 
@@ -1126,7 +1131,6 @@ glm::mat4 Engine::convertBulletTransformToGLM(const btTransform& transform)
 
 void Engine::checkPhysics()
 {
-
     sr.dynamicsWorld->stepSimulation(1/30.f,10);
 
     btTransform trans;
@@ -1148,8 +1152,8 @@ void Engine::checkPhysics()
         temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
         coCursor->setWorldTransform(temp);
 
+        //heart.rigidBody->
         sr.dynamicsWorld->performDiscreteCollisionDetection();
-
         int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
         for (int i=0;i<numManifolds;i++)
         {
@@ -1158,13 +1162,12 @@ void Engine::checkPhysics()
             const btCollisionObject* obA = contactManifold->getBody0();
             const btCollisionObject* obB = contactManifold->getBody1();
 
+            if (obA==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obB->getUserPointer()) != NULL)) {
 
-
-            if (obA==coCursor && ((obA != NULL) && (obB != NULL))) {
                 static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
                 //std::cout << "Cursor touching stuff \n";
             }
-            if (obB==coCursor && ((obA != NULL) && (obB != NULL))) {
+            if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL)) {
                 static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
             }
 
