@@ -56,6 +56,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <GLFW/glfw3.h>
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
+
 
 using namespace std;
 using namespace TUIO;
@@ -122,7 +124,7 @@ namespace pho {
         AppState appState;
 		RotateTechnique rotTechnique;
         SelectionTechnique selectionTechnique;
-		Technique technique;
+        bool bump=false; //*******************
 
 		GLenum error;
 
@@ -200,7 +202,7 @@ namespace pho {
         pho::Asset* intersectedAsset;
         std::vector<pho::Asset> boxes;
 
-        btCollisionObject* coCursor;
+        btGhostObject* coCursor;
         //input
         bool inputStarted;
 

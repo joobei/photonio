@@ -39,7 +39,7 @@ Engine::Engine(GLFWwindow *window):
     mouseMove(false),
     plane(&sr),
     rotTechnique(screenSpace),
-    technique(planeCasting)
+    bump(false)
 {
 #define SIZE 30                     //Size of the moving average filter
     accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
@@ -159,6 +159,8 @@ void Engine::initResources() {
     //********************  Load Assets ***************************
     //*************************************************************
     cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, false);
+    //sr.dynamicsWorld->removeRigidBody(cursor.rigidBody);
+    //sr.dynamicsWorld->addRigidBody(cursor.rigidBody, COL_NOTHING, COL_NOTHING);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
 
@@ -173,6 +175,7 @@ void Engine::initResources() {
     //plane.receiveShadow = true;
 
     heart = pho::Asset("bump-heart.obj",&normalMap,&sr, true);
+    heart.rigidBody->setRestitution(4);
     //heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
     //heart.receiveShadow = true;
@@ -215,16 +218,9 @@ void Engine::initResources() {
 void Engine::checkEvents() {
 
     checkKeyboard();
-    if (technique == rayCasting ) {
-        checkPolhemus(ray.modelMatrix);
-        if (rayTestWorld(rayOrigin,rayDirection,intersectedAsset)) {
-            intersectedAsset->beingIntersected = true;
-        }
-    }
 
-    if (technique == planeCasting) {
-        checkUDP();
-    }
+    checkUDP();
+
 
     if (flicker.inFlick(flickState::translation)) {
         glm::mat4 flickTransform = flicker.dampenAndGiveMatrix(glm::mat3(plane.modelMatrix));
@@ -838,10 +834,38 @@ void Engine::checkUDP() {
 
                 break;
             case 3:
-                if (tempEvent.state() == true && appState == translate) {
-                    appState = rotate;
-                    rotTechnique = screenSpace;
-                    printf("translate --> rotate (Screenspace)");
+                if (tempEvent.state() && (appState == select)) {
+                    sr.dynamicsWorld->removeCollisionObject(coCursor);
+                    coCursor->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+                    sr.dynamicsWorld->addCollisionObject(coCursor);
+                    std::cout << "Kinematic Object" << std::endl;
+                }
+                if (!tempEvent.state() && (appState == select)) {
+                    sr.dynamicsWorld->removeCollisionObject(coCursor);
+                    coCursor->setCollisionFlags(coCursor->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+                    coCursor->setActivationState(DISABLE_DEACTIVATION);
+                    sr.dynamicsWorld->addCollisionObject(coCursor);
+
+//                    delete coCursor;
+//                    btTransform temp;
+//                    coCursor = new btGhostObject();
+//                    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+//                    btSphereShape* csSphere = new btSphereShape(1.0f);
+//                    coCursor->setCollisionShape(csSphere);
+//                    coCursor->setWorldTransform(temp);
+//                    coCursor->setUserPointer(&cursor);
+//                    coCursor->setActivationState(DISABLE_DEACTIVATION);
+//                    coCursor->setCollisionFlags(coCursor->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+
+//                    sr.dynamicsWorld->addCollisionObject(coCursor);
+
+
+                    std::cout << "No contact response" << std::endl;
+                }
+                if (tempEvent.state() && appState == rotate) {
+                    appState = direct;
+                    rotTechnique = clutch;
+                    printf("translate --> rotate (Direct)");
                 }
                 if (tempEvent.state() == false && appState == rotate) {
                     appState = translate;
@@ -923,7 +947,6 @@ void Engine::checkKeyboard() {
             locationMatch(plane.modelMatrix,cursor.modelMatrix);
             selectedAsset = &cursor;
             appState = select;
-            technique = planeCasting;
             selectionTechnique = virtualHand;
             rotTechnique = screenSpace;
             log("virtualHand");
@@ -932,18 +955,15 @@ void Engine::checkKeyboard() {
         }
 
         if (glfwGetKey(mainWindow,'2') == GLFW_PRESS) {
-
             appState = select;
             selectionTechnique = indieSelectRelative;
-            technique = planeCasting;
             log("RayCasting");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
 
-
         if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {
-            for(int i = 0;i<5;++i) {
+            for(int i = 0;i<15;++i) {
                 pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
                 boxes.push_back(newBox);
             }
@@ -1102,40 +1122,43 @@ void Engine::initPhysics()
     btDefaultMotionState* groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,-10,0)));
 
     btRigidBody::btRigidBodyConstructionInfo
-                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,-0.01,0));
+                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,-10,0));
     btRigidBody* groundRigidBody1 = new btRigidBody(groundRigidBodyCI);
 
-    sr.dynamicsWorld->addRigidBody(groundRigidBody1);
+    sr.dynamicsWorld->addRigidBody(groundRigidBody1,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
+    //sr.collisionWorld->addCollisionObject(groundRigidBody1);
 
     btTransform temp;
 
     btSphereShape* csSphere = new btSphereShape(1.0f);
-    coCursor = new btCollisionObject();
+    coCursor = new btGhostObject();
     temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
+
     coCursor->setCollisionShape(csSphere);
     coCursor->setWorldTransform(temp);
     coCursor->setUserPointer(&cursor);
+    coCursor->setActivationState(DISABLE_DEACTIVATION);
+    coCursor->setCollisionFlags(coCursor->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
 
-    //int cursorCollidesWith = COL_NOTHING;
-    //sr.dynamicsWorld->addCollisionObject(coCursor,COL_NOTHING,cursorCollidesWith);
     sr.dynamicsWorld->addCollisionObject(coCursor);
+
 }
 
 glm::mat4 Engine::convertBulletTransformToGLM(const btTransform& transform)
 {
-        float data[16];
-        transform.getOpenGLMatrix(data);
-        return glm::make_mat4(data);
+    float data[16];
+    transform.getOpenGLMatrix(data);
+    return glm::make_mat4(data);
 }
 
 
 void Engine::checkPhysics()
 {
+
     sr.dynamicsWorld->stepSimulation(1/30.f,10);
 
     btTransform trans;
     box.rigidBody->getMotionState()->getWorldTransform(trans);
-
     box.modelMatrix = convertBulletTransformToGLM(trans);
 
     heart.rigidBody->getMotionState()->getWorldTransform(trans);
@@ -1145,12 +1168,13 @@ void Engine::checkPhysics()
         boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);
         boxes[i].modelMatrix = convertBulletTransformToGLM(trans);
     }
-
+    static int count=0;
     if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
         btTransform temp;
         temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
         coCursor->setWorldTransform(temp);
+        cursor.rigidBody->setWorldTransform(temp);
 
         sr.dynamicsWorld->performDiscreteCollisionDetection();
         int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
@@ -1164,7 +1188,7 @@ void Engine::checkPhysics()
             if (obA==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obB->getUserPointer()) != NULL)) {
 
                 static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
-                //std::cout << "Cursor touching stuff \n";
+                std::cout << ++count << " Cursor touching stuff " << std::endl;
             }
             if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL)) {
                 static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;

@@ -35,10 +35,9 @@ enum DrawingMode {
 #define BIT(x) (1<<(x))
 enum collisiontypes {
     COL_NOTHING = 0, //<Collide with nothing
-    COL_BOX = BIT(0), //<Collide with Boxes
-    COL_WALL = BIT(1), //<Collide with walls
-    COL_CURSOR = BIT(2) //<Collide with cursor
+    COL_EVERYTHING = BIT(0), //<Collide with everything
 };
+
 
 class  LightSource {
 public:

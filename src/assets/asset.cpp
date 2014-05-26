@@ -74,7 +74,9 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
         rigidBody = new btRigidBody(RigidBodyCI);
         rigidBody->setUserPointer(this);
         rigidBody->setActivationState(DISABLE_DEACTIVATION);
-        res->dynamicsWorld->addRigidBody(rigidBody);
+
+        res->dynamicsWorld->addRigidBody(rigidBody, collisiontypes::COL_EVERYTHING, collisiontypes::COL_EVERYTHING);
+        //res->collisionWorld->addCollisionObject(rigidBody);
     }
 
 }
