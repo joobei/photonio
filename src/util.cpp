@@ -48,33 +48,33 @@ void pho::flickManager::addRotate(float angle){
 void pho::flickManager::endFlick(glm::mat3 orientationSnapshot, flickState flickstate){
 
     rotationSnapshot = orientationSnapshot;
-
-    switch (flickstate) {
-    case translation:
-        if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
-            translateTimes = 500;
-            currentlyInTranslateFlick = true;
-            launchPair.x = touchHistory[0].x/20;
-            launchPair.y = touchHistory[0].y/20;
+    if (touchHistory.size() > 1) {
+        switch (flickstate) {
+        case translation:
+            if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
+                translateTimes = 500;
+                currentlyInTranslateFlick = true;
+                launchPair.x = touchHistory[0].x/20;
+                launchPair.y = touchHistory[0].y/20;
+            }
+            break;
+        case flickState::rotation:
+            if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
+                rotateTimes = 1000;
+                currentlyInRotateFlick = true;
+                launchPair.x = touchHistory[0].x;
+                launchPair.y = touchHistory[0].y;
+            }
+            break;
+        case pinchy:
+            if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
+                pinchTimes = 1000;
+                currentlyInPinchFlick = true;
+                launchPinchAngle = angleHistory[0];
+            }
+            break;
         }
-        break;
-    case flickState::rotation:
-        if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
-            rotateTimes = 1000;
-            currentlyInRotateFlick = true;
-            launchPair.x = touchHistory[0].x;
-            launchPair.y = touchHistory[0].y;
-        }
-        break;
-    case pinchy:
-        if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
-            pinchTimes = 1000;
-            currentlyInPinchFlick = true;
-            launchPinchAngle = angleHistory[0];
-        }
-        break;
     }
-
 }
 
 //resets everything

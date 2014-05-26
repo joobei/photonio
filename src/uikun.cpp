@@ -624,8 +624,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             if (tcur->getCursorID() == f1id) {
 
                 p1p = p1c;
-                selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
-                selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getXSpeed()),vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getYSpeed()),vec3(1,0,0)));
 
                 p1c.x = tcur->getX();
                 p1c.y = tcur->getY();
@@ -636,8 +636,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             if (tcur->getCursorID() == f2id) {
 
                 p2p = p2c;
-                selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
-                selectedAsset->rotate(glm::rotate(tcur->getYSpeed()*3.0f,vec3(1,0,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getXSpeed()),vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getYSpeed()),vec3(1,0,0)));
 
                 p2c.x = tcur->getX();
                 p2c.y = tcur->getY();
@@ -682,10 +682,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
                 referenceAngle = atan2((p2p.y - p1p.y) ,(p2p.x - p1p.x));
                 newAngle = atan2((p2c.y - p1c.y),(p2c.x - p1c.x));
 
-                selectedAsset->rotate(glm::rotate((newAngle-referenceAngle)*(-50),vec3(0,0,1)));
+                selectedAsset->rotate(glm::rotate(glm::radians((newAngle-referenceAngle)*(-50)),vec3(0,0,1)));
 
-                selectedAsset->rotate(glm::rotate(ft.x*150,vec3(0,1,0)));
-                selectedAsset->rotate(glm::rotate(ft.y*150,vec3(1,0,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(ft.x*50),vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(ft.y*50),vec3(1,0,0)));
 
                 flicker.addRotate(newAngle-referenceAngle);
 
@@ -1141,15 +1141,6 @@ void Engine::checkPhysics()
 
     sr.dynamicsWorld->stepSimulation(1/30.f,10);
 
-    btTransform trans;
-    heart.rigidBody->getMotionState()->getWorldTransform(trans);
-    heart.modelMatrix = convertBulletTransformToGLM(trans);
-
-    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
-        boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);
-        boxes[i].modelMatrix = convertBulletTransformToGLM(trans);
-    }
-    static int count=0;
     if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
         btTransform temp;
@@ -1160,7 +1151,6 @@ void Engine::checkPhysics()
         int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
         for (int i=0;i<numManifolds;i++)
         {
-            //std::cout << "Number of Manifolds :" << numManifolds << std::endl;
             btPersistentManifold* contactManifold = sr.dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
             const btCollisionObject* obA = contactManifold->getBody0();
             const btCollisionObject* obB = contactManifold->getBody1();
@@ -1168,7 +1158,6 @@ void Engine::checkPhysics()
             if (obA==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obB->getUserPointer()) != NULL)) {
 
                 static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
-                //std::cout << ++count << " Cursor touching stuff " << std::endl;
                 if (doubleClickPerformed)
                 {
                     selectedAsset = static_cast<pho::Asset*>(obB->getUserPointer());
@@ -1182,7 +1171,6 @@ void Engine::checkPhysics()
             }
             if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL)) {
                 static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
-                //std::cout << ++count << " Cursor touching stuff " << std::endl;
                 if (doubleClickPerformed)
                 {
                     selectedAsset = static_cast<pho::Asset*>(obA->getUserPointer());
@@ -1198,6 +1186,22 @@ void Engine::checkPhysics()
 
         }
     }
+
+    btTransform trans;
+
+    if (appState == select) {
+        heart.rigidBody->getMotionState()->getWorldTransform(trans);
+        heart.modelMatrix = convertBulletTransformToGLM(trans);
+
+        for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
+            boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);
+            boxes[i].modelMatrix = convertBulletTransformToGLM(trans);
+        }
+    }
+
+
+
+
 }
 
 bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset*& intersected) {
