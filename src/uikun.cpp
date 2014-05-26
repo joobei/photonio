@@ -179,9 +179,8 @@ void Engine::initResources() {
     //heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
     //heart.receiveShadow = true;
-
-    box = pho::Asset("box.obj",&normalMap,&sr, true);
-    box.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,10,-15));
+    heart.rigidBody->setUserPointer(&heart);
+    sr.dynamicsWorld->addRigidBody(heart.rigidBody);
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -277,7 +276,6 @@ void Engine::render() {
 
     floor.draw();
     heart.draw();
-    box.draw();
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
         boxes[i].draw();
@@ -843,22 +841,7 @@ void Engine::checkUDP() {
                 if (!tempEvent.state() && (appState == select)) {
                     sr.dynamicsWorld->removeCollisionObject(coCursor);
                     coCursor->setCollisionFlags(coCursor->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
-                    coCursor->setActivationState(DISABLE_DEACTIVATION);
                     sr.dynamicsWorld->addCollisionObject(coCursor);
-
-//                    delete coCursor;
-//                    btTransform temp;
-//                    coCursor = new btGhostObject();
-//                    temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
-//                    btSphereShape* csSphere = new btSphereShape(1.0f);
-//                    coCursor->setCollisionShape(csSphere);
-//                    coCursor->setWorldTransform(temp);
-//                    coCursor->setUserPointer(&cursor);
-//                    coCursor->setActivationState(DISABLE_DEACTIVATION);
-//                    coCursor->setCollisionFlags(coCursor->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
-
-//                    sr.dynamicsWorld->addCollisionObject(coCursor);
-
 
                     std::cout << "No contact response" << std::endl;
                 }
@@ -965,7 +948,9 @@ void Engine::checkKeyboard() {
         if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {
             for(int i = 0;i<15;++i) {
                 pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
+                sr.dynamicsWorld->addRigidBody(newBox.rigidBody);
                 boxes.push_back(newBox);
+                newBox.rigidBody->setUserPointer(&boxes.back());
             }
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
@@ -1033,7 +1018,6 @@ void Engine::shadowMapRender() {
 
     if ((appState == select) && (selectionTechnique == virtualHand)) cursor.drawFromLight();
     heart.drawFromLight();
-    box.drawFromLight();
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
         boxes[i].drawFromLight();
@@ -1158,9 +1142,6 @@ void Engine::checkPhysics()
     sr.dynamicsWorld->stepSimulation(1/30.f,10);
 
     btTransform trans;
-    box.rigidBody->getMotionState()->getWorldTransform(trans);
-    box.modelMatrix = convertBulletTransformToGLM(trans);
-
     heart.rigidBody->getMotionState()->getWorldTransform(trans);
     heart.modelMatrix = convertBulletTransformToGLM(trans);
 
@@ -1174,7 +1155,6 @@ void Engine::checkPhysics()
         btTransform temp;
         temp.setFromOpenGLMatrix(glm::value_ptr(cursor.modelMatrix));
         coCursor->setWorldTransform(temp);
-        cursor.rigidBody->setWorldTransform(temp);
 
         sr.dynamicsWorld->performDiscreteCollisionDetection();
         int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
@@ -1188,25 +1168,34 @@ void Engine::checkPhysics()
             if (obA==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obB->getUserPointer()) != NULL)) {
 
                 static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
-                std::cout << ++count << " Cursor touching stuff " << std::endl;
-            }
-            if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL)) {
-                static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
-            }
+                //std::cout << ++count << " Cursor touching stuff " << std::endl;
+                if (doubleClickPerformed)
+                {
+                    selectedAsset = static_cast<pho::Asset*>(obB->getUserPointer());
 
-
-            if (doubleClickPerformed)
-            {
-                //selectedAsset = it->second;
-                if (intersectedAsset != &cursor) {
                     grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
                     plane.modelMatrix = selectedAsset->modelMatrix;
                     appState = translate;
                     doubleClickPerformed = false;
-                    sr.dynamicsWorld->removeRigidBody(heart.rigidBody);
+                    sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
                 }
-                break;
             }
+            if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL)) {
+                static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
+                //std::cout << ++count << " Cursor touching stuff " << std::endl;
+                if (doubleClickPerformed)
+                {
+                    selectedAsset = static_cast<pho::Asset*>(obA->getUserPointer());
+
+                    grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
+                    plane.modelMatrix = selectedAsset->modelMatrix;
+                    appState = translate;
+                    doubleClickPerformed = false;
+                    sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
+                }
+            }
+
+
         }
     }
 }

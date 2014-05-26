@@ -197,7 +197,6 @@ namespace pho {
         pho::Plane plane;
         pho::Asset ray;
         pho::Asset floor;
-        pho::Asset box;
         pho::Asset* selectedAsset;
         pho::Asset* intersectedAsset;
         std::vector<pho::Asset> boxes;

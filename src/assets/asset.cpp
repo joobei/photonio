@@ -72,10 +72,10 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
         collisionShape->calculateLocalInertia(mass,fallInertia);
         btRigidBody::btRigidBodyConstructionInfo RigidBodyCI(mass,motionState,collisionShape,fallInertia);
         rigidBody = new btRigidBody(RigidBodyCI);
-        rigidBody->setUserPointer(this);
+        //rigidBody->setUserPointer(this);
         rigidBody->setActivationState(DISABLE_DEACTIVATION);
 
-        res->dynamicsWorld->addRigidBody(rigidBody, collisiontypes::COL_EVERYTHING, collisiontypes::COL_EVERYTHING);
+        //res->dynamicsWorld->addRigidBody(rigidBody, collisiontypes::COL_EVERYTHING, collisiontypes::COL_EVERYTHING);
         //res->collisionWorld->addCollisionObject(rigidBody);
     }
 
@@ -225,7 +225,7 @@ void pho::Asset::draw() {
         scaleMatrix = glm::scale(glm::mat4(),glm::vec3(1.05,1.05,1.05));
         res->flatShader.use();
         res->flatShader["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
-        res->flatShader["color"] = glm::vec4(1,0,0,1);
+        res->flatShader["color"] = glm::vec4(0,1,0,1);
 
         for (std::vector<pho::MyMesh>::size_type i = 0; i != meshes.size(); i++)
         {
