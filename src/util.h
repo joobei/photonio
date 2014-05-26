@@ -57,7 +57,7 @@ enum RotateTechnique { //rotTechnique
 
 enum SelectionTechnique {
     virtualHand,
-    indieSelectRelative,
+    twod,
     raySelect
 };
 

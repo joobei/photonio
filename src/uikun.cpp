@@ -243,27 +243,27 @@ void Engine::checkEvents() {
     //Joystick
     if(JoystickPresent) { checkSpaceNavigator();}
 
-    /*if ((appState == select) && (selectionTechnique == indieSelectRelative)) {
+    if ((appState == select) && (selectionTechnique == twod)) {
         if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
         {
             intersectedAsset->beingIntersected = true;
         }
-     }*/
+    }
 
     cursor.updateMotionState();
 
     checkPhysics();
 
     if(switchOnNextFrame) {
-    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
-    //Put 2d cursor where object was dropped:
-    //1st. calculate clip space coordinates
-    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*heart.modelMatrix*glm::vec4(0,0,0,1);
-    //2nd. convert it in normalized device coordinates by dividing with w
-    newtp/=newtp.w;
-    touchPoint.x = newtp.x;
-    touchPoint.y = newtp.y;
-    switchOnNextFrame = false;
+        pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+        //Put 2d cursor where object was dropped:
+        //1st. calculate clip space coordinates
+        glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*heart.modelMatrix*glm::vec4(0,0,0,1);
+        //2nd. convert it in normalized device coordinates by dividing with w
+        newtp/=newtp.w;
+        touchPoint.x = newtp.x;
+        touchPoint.y = newtp.y;
+        switchOnNextFrame = false;
     }
 }
 
@@ -442,27 +442,9 @@ void Engine::shutdown() {
     //psmove_disconnect(move);
 }
 
-void Engine::addTuioObject(TuioObject *tobj) {
-    if (verbose)
-        std::cout << "add obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ") "<< tobj->getX() << " " << tobj->getY() << " " << tobj->getAngle() << std::endl;
-}
-
-void Engine::updateTuioObject(TuioObject *tobj) {
-
-    if (verbose)
-        std::cout << "set obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ") "<< tobj->getX() << " " << tobj->getY() << " " << tobj->getAngle()
-                  << " " << tobj->getMotionSpeed() << " " << tobj->getRotationSpeed() << " " << tobj->getMotionAccel() << " " << tobj->getRotationAccel() << std::endl;
-
-}
-
-void Engine::removeTuioObject(TuioObject *tobj) {
-
-    if (verbose)
-        std::cout << "del obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ")" << std::endl;
-}
 
 void Engine::addTuioCursor(TuioCursor *tcur) {
-
+    btTransform temp;
     inputStarted = true;
     float x,y;
     x = tcur->getX();
@@ -494,39 +476,43 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
             if ((appState == translate) || (appState == rotate)) {
 
-                if (selectionTechnique == virtualHand) {
-                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])+grabbedVector ,1);                    
+                if (selectionTechnique == virtualHand)
+                {
+                    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
+                    selectedAsset->rigidBody->setWorldTransform(temp);
+                    sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
+                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])/*+grabbedVector*/,1);
                     selectedAsset = &cursor;
                     pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
-                    //sr.collisionWorld->addCollisionObject(coCursor);
+
                 }
-                else {
-                    //sr.collisionWorld->addCollisionObject(coCursor);
-                    locationMatch(cursor.modelMatrix,heart.modelMatrix);
-                    locationMatch(plane.modelMatrix,cursor.modelMatrix);
-                    selectedAsset = &cursor;
-                    appState = select;
-
-                    //sr.collisionWorld->performDiscreteCollisionDetection();
-
-                    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+                if (selectionTechnique == twod)
+                {
+                    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
+                    selectedAsset->rigidBody->setWorldTransform(temp);
+                    sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
+                    //                  locationMatch(cursor.modelMatrix,heart.modelMatrix);
+                    //                  locationMatch(plane.modelMatrix,cursor.modelMatrix);
+                    //                  pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
 
                     //Put 2d cursor where object was dropped:
                     //1st. calculate clip space coordinates
-                    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*heart.modelMatrix*glm::vec4(0,0,0,1);
+                    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*selectedAsset->modelMatrix*glm::vec4(0,0,0,1);
                     //2nd. convert it in normalized device coordinates by dividing with w
                     newtp/=newtp.w;
                     touchPoint.x = newtp.x;
                     touchPoint.y = newtp.y;
+                    selectedAsset = &cursor;
+
 
                 }
                 doubleClickPerformed = false;
                 appState = select;
             }
 
-            if((appState == select) && (selectionTechnique != virtualHand) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset)) {
-                   selectedAsset = intersectedAsset;
-                   appState = translate;
+            if((appState == select) && (selectionTechnique != virtualHand) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset) && doubleClickPerformed) {
+                selectedAsset = intersectedAsset;
+                appState = translate;
             }
         }
     }
@@ -535,10 +521,11 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if ((numberOfCursors == 2) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset) && (selectionTechnique !=virtualHand)) {
+        if ((numberOfCursors == 2) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset) && (selectionTechnique ==twod)) {
             appState = translate;
             selectedAsset = intersectedAsset;
-            pho::locationMatch(plane.modelMatrix,intersectedAsset->modelMatrix);
+            sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
+            pho::locationMatch(plane.modelMatrix,selectedAsset->modelMatrix);
             break;
         }
         break;
@@ -596,7 +583,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if (selectionTechnique == indieSelectRelative) {
+        if (selectionTechnique == twod) {
             touchPoint.x += tcur->getXSpeed()/30;
             touchPoint.y += -1*tcur->getYSpeed()/30;
             break;
@@ -732,51 +719,51 @@ btVector3 Engine::getRayTo(glm::vec2 xy)
     //btVector3	DemoApplication::getRayTo(int x,int y)
 
 
-        float top = 1.f;
-        float bottom = -1.f;
-        float nearPlane = 1.f;
-        float tanFov = (top-bottom)*0.5f / nearPlane;
-        float fov = btScalar(2.0) * btAtan(tanFov);
+    float top = 1.f;
+    float bottom = -1.f;
+    float nearPlane = 1.f;
+    float tanFov = (top-bottom)*0.5f / nearPlane;
+    float fov = btScalar(2.0) * btAtan(tanFov);
 
-        btVector3 rayFrom = btVector3(xy.x,xy.y,0);
-        glm::vec3 rf = glm::mat3(sr.viewMatrix)*glm::vec3(0,0,-1);
-        btVector3 rayForward = btVector3(rf.x,rf.y,rf.z);
+    btVector3 rayFrom = btVector3(xy.x,xy.y,0);
+    glm::vec3 rf = glm::mat3(sr.viewMatrix)*glm::vec3(0,0,-1);
+    btVector3 rayForward = btVector3(rf.x,rf.y,rf.z);
 
-        rayForward.normalize();
-        float farPlane = -10000.f;
-        rayForward*= farPlane;
+    rayForward.normalize();
+    float farPlane = -10000.f;
+    rayForward*= farPlane;
 
-        btVector3 rightOffset;
-        btVector3 vertical = btVector3(0,1,0);
+    btVector3 rightOffset;
+    btVector3 vertical = btVector3(0,1,0);
 
-        btVector3 hor;
-        hor = rayForward.cross(vertical);
-        hor.normalize();
-        vertical = hor.cross(rayForward);
-        vertical.normalize();
+    btVector3 hor;
+    hor = rayForward.cross(vertical);
+    hor.normalize();
+    vertical = hor.cross(rayForward);
+    vertical.normalize();
 
-        float tanfov = tanf(0.5f*fov);
-
-
-        hor *= 2.f * farPlane * tanfov;
-        vertical *= 2.f * farPlane * tanfov;
-
-        btScalar aspect;
-
-        aspect = WINDOW_SIZE_X / (btScalar)WINDOW_SIZE_Y;
-
-        hor*=aspect;
+    float tanfov = tanf(0.5f*fov);
 
 
-        btVector3 rayToCenter = rayFrom + rayForward;
-        btVector3 dHor = hor * 1.f/float(WINDOW_SIZE_X);
-        btVector3 dVert = vertical * 1.f/float(WINDOW_SIZE_Y);
+    hor *= 2.f * farPlane * tanfov;
+    vertical *= 2.f * farPlane * tanfov;
+
+    btScalar aspect;
+
+    aspect = WINDOW_SIZE_X / (btScalar)WINDOW_SIZE_Y;
+
+    hor*=aspect;
 
 
-        btVector3 rayTo = rayToCenter - 0.5f * hor + 0.5f * vertical;
-        rayTo += btScalar(xy.x) * dHor;
-        rayTo -= btScalar(xy.y) * dVert;
-        return rayTo;
+    btVector3 rayToCenter = rayFrom + rayForward;
+    btVector3 dHor = hor * 1.f/float(WINDOW_SIZE_X);
+    btVector3 dVert = vertical * 1.f/float(WINDOW_SIZE_Y);
+
+
+    btVector3 rayTo = rayToCenter - 0.5f * hor + 0.5f * vertical;
+    rayTo += btScalar(xy.x) * dHor;
+    rayTo -= btScalar(xy.y) * dVert;
+    return rayTo;
 }
 
 void Engine::refresh(TuioTime frameTime) {
@@ -935,14 +922,17 @@ void Engine::checkKeyboard() {
             log("virtualHand");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+            sr.dynamicsWorld->addCollisionObject(coCursor);
         }
 
         if (glfwGetKey(mainWindow,'2') == GLFW_PRESS) {
             appState = select;
-            selectionTechnique = indieSelectRelative;
-            log("RayCasting");
+            selectionTechnique = twod;
+            selectedAsset == &cursor;
+            log("2D Selection");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
+            sr.dynamicsWorld->removeCollisionObject(coCursor);
         }
 
         if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {
@@ -1106,7 +1096,7 @@ void Engine::initPhysics()
     btDefaultMotionState* groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,-10,0)));
 
     btRigidBody::btRigidBodyConstructionInfo
-                   groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,-10,0));
+            groundRigidBodyCI(0,groundMotionState,groundShape,btVector3(0,-10,0));
     btRigidBody* groundRigidBody1 = new btRigidBody(groundRigidBodyCI);
 
     sr.dynamicsWorld->addRigidBody(groundRigidBody1,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
@@ -1207,99 +1197,120 @@ void Engine::checkPhysics()
 bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset*& intersected) {
 
     // The ray Start and End positions, in Normalized Device Coordinates (Have you read Tutorial 4 ?)
-        glm::vec4 lRayStart_NDC(
-            normalizedX,
-            normalizedY,
-            -1.0, // The near plane maps to Z=-1 in Normalized Device Coordinates
-            1.0f
-        );
-        glm::vec4 lRayEnd_NDC(
-                    normalizedX,
-                    normalizedY,
-            0.0,
-            1.0f
-        );
+    glm::vec4 lRayStart_NDC(
+                normalizedX,
+                normalizedY,
+                -1.0, // The near plane maps to Z=-1 in Normalized Device Coordinates
+                1.0f
+                );
+    glm::vec4 lRayEnd_NDC(
+                normalizedX,
+                normalizedY,
+                0.0,
+                1.0f
+                );
 
 
-        // The Projection matrix goes from Camera Space to NDC.
-        // So inverse(ProjectionMatrix) goes from NDC to Camera Space.
-        glm::mat4 InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
+    // The Projection matrix goes from Camera Space to NDC.
+    // So inverse(ProjectionMatrix) goes from NDC to Camera Space.
+    glm::mat4 InverseProjectionMatrix = glm::inverse(sr.projectionMatrix);
 
-        // The View Matrix goes from World Space to Camera Space.
-        // So inverse(ViewMatrix) goes from Camera Space to World Space.
-        glm::mat4 InverseViewMatrix = glm::inverse(sr.viewMatrix);
+    // The View Matrix goes from World Space to Camera Space.
+    // So inverse(ViewMatrix) goes from Camera Space to World Space.
+    glm::mat4 InverseViewMatrix = glm::inverse(sr.viewMatrix);
 
-        glm::vec4 lRayStart_camera = InverseProjectionMatrix * lRayStart_NDC;    lRayStart_camera/=lRayStart_camera.w;
-        glm::vec4 lRayStart_world  = InverseViewMatrix       * lRayStart_camera; lRayStart_world /=lRayStart_world .w;
-        glm::vec4 lRayEnd_camera   = InverseProjectionMatrix * lRayEnd_NDC;      lRayEnd_camera  /=lRayEnd_camera  .w;
-        glm::vec4 lRayEnd_world    = InverseViewMatrix       * lRayEnd_camera;   lRayEnd_world   /=lRayEnd_world   .w;
+    glm::vec4 lRayStart_camera = InverseProjectionMatrix * lRayStart_NDC;    lRayStart_camera/=lRayStart_camera.w;
+    glm::vec4 lRayStart_world  = InverseViewMatrix       * lRayStart_camera; lRayStart_world /=lRayStart_world .w;
+    glm::vec4 lRayEnd_camera   = InverseProjectionMatrix * lRayEnd_NDC;      lRayEnd_camera  /=lRayEnd_camera  .w;
+    glm::vec4 lRayEnd_world    = InverseViewMatrix       * lRayEnd_camera;   lRayEnd_world   /=lRayEnd_world   .w;
 
 
-        glm::vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
-        lRayDir_world = glm::normalize(lRayDir_world);
+    glm::vec3 lRayDir_world(lRayEnd_world - lRayStart_world);
+    lRayDir_world = glm::normalize(lRayDir_world);
 
-        return rayTestWorld(glm::vec3(lRayStart_world),lRayDir_world,intersected);
+    return rayTestWorld(glm::vec3(lRayStart_world),lRayDir_world,intersected);
 
 }
 
 bool Engine::rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset*& intersected) {
 
-        glm::vec3 out_origin = origin;
-        glm::vec3 out_direction = direction;
+    glm::vec3 out_origin = origin;
+    glm::vec3 out_direction = direction;
 
-        out_direction = out_direction*1000.0f;
+    out_direction = out_direction*1000.0f;
 
-        btDynamicsWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
-        sr.dynamicsWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
+    btDynamicsWorld::ClosestRayResultCallback RayCallback(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z));
+    sr.dynamicsWorld->rayTest(btVector3(out_origin.x, out_origin.y, out_origin.z), btVector3(out_direction.x, out_direction.y, out_direction.z), RayCallback);
 
-        if (RayCallback.hasHit()) {
-            // !!!!!!!!!!!!!!!!!following line does not give pointer !!!!!!!!!!!!!!!!!
-            intersected = static_cast<pho::Asset*>(RayCallback.m_collisionObject->getUserPointer());
-            return true;
-        }
-        else {return false;}
+    if (RayCallback.hasHit()) {
+        // !!!!!!!!!!!!!!!!!following line does not give pointer !!!!!!!!!!!!!!!!!
+        intersected = static_cast<pho::Asset*>(RayCallback.m_collisionObject->getUserPointer());
+        if (intersected != NULL) { return true;}
+        else {return false; }
+    }
+    else {return false;}
 }
 
 
 bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
 
-        boost::mutex::scoped_lock lock(ioMutex);
-        //SERIAL Queue
-        while(!eventQueue.isSerialEmpty()) {
-                boost::array<float,7> temp = eventQueue.serialPop();
+    boost::mutex::scoped_lock lock(ioMutex);
+    //SERIAL Queue
+    while(!eventQueue.isSerialEmpty()) {
+        boost::array<float,7> temp = eventQueue.serialPop();
 
-                vec3 position;
-                glm::quat orientation;
-                mat4 transform;
+        vec3 position;
+        glm::quat orientation;
+        mat4 transform;
 
-                //position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
-                position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
-                position += vec3(-0.32,-0.25f,-0.5f);
+        //position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
+        position = vec3(temp[0]/100,temp[1]/100,temp[2]/100);
+        position += vec3(-0.32,-0.25f,-0.5f);
 
-                orientation.w = temp[3];
-                orientation.x = temp[4];
-                orientation.y = temp[5];
-                orientation.z = temp[6];
+        orientation.w = temp[3];
+        orientation.x = temp[4];
+        orientation.y = temp[5];
+        orientation.z = temp[6];
 
-                //transform=glm::translate(transform,position);
+        //transform=glm::translate(transform,position);
 
-                transform=glm::toMat4(orientation);
+        transform=glm::toMat4(orientation);
 
-                //Rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
-                transform = transform*glm::toMat4(glm::angleAxis(-90.0f,vec3(0,0,1)));  //multiply from the right --- WRONG!!!!!! but works for the time being
+        //Rotate the matrix from the Polhemus tracker so that we can mount it on the wii-mote with the cable running towards the floor.
+        transform = transform*glm::toMat4(glm::angleAxis(-90.0f,vec3(0,0,1)));  //multiply from the right --- WRONG!!!!!! but works for the time being
 
-                transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
-                transform[3][1] = position.y;
-                transform[3][2] = position.z;
+        transform[3][0] = position.x; //add position to the matrix (raw, unrotated)
+        transform[3][1] = position.y;
+        transform[3][2] = position.z;
 
-                modelMatrix = transform;
+        modelMatrix = transform;
 
-                rayOrigin = position;
-                rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
+        rayOrigin = position;
+        rayDirection = glm::mat3(transform)*glm::vec3(0,0,-1);
 
-                return true;
-        }
+        return true;
+    }
 
-        lock.unlock();
-        return false;
+    lock.unlock();
+    return false;
+}
+
+
+void Engine::addTuioObject(TuioObject *tobj) {
+    if (verbose)
+        std::cout << "add obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ") "<< tobj->getX() << " " << tobj->getY() << " " << tobj->getAngle() << std::endl;
+}
+
+void Engine::updateTuioObject(TuioObject *tobj) {
+
+    if (verbose)
+        std::cout << "set obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ") "<< tobj->getX() << " " << tobj->getY() << " " << tobj->getAngle()
+                  << " " << tobj->getMotionSpeed() << " " << tobj->getRotationSpeed() << " " << tobj->getMotionAccel() << " " << tobj->getRotationAccel() << std::endl;
+
+}
+
+void Engine::removeTuioObject(TuioObject *tobj) {
+
+    if (verbose)
+        std::cout << "del obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ")" << std::endl;
 }
