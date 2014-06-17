@@ -107,7 +107,7 @@ bool pho::flickManager::inFlick(flickState flickstate) {
     case translation:
         return currentlyInTranslateFlick;
         break;
-    case rotate:
+    case rotation:
         return currentlyInRotateFlick;
         break;
     case pinchy:

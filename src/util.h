@@ -37,7 +37,7 @@ void log(const char *message);
 
 enum AppState {
     select,
-    intersect,
+    //intersect,
     translate,
     rotate,
     direct

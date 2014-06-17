@@ -469,13 +469,55 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     double difference = elapsed_times.wall-previousTime.wall;
 
     if (numberOfCursors == 1 ) {
-        if (difference < 150000000) {  //if doubleClick
-            if((appState == select) && (selectionTechnique == virtualHand)) {
-                doubleClickPerformed = true;
-            }  //<--- this had to be moved before the next one because appstate select was the same and doubleClickPerformed was done twice
+        if (difference < 150000000) { //doubleclick
 
-            if ((appState == translate) || (appState == rotate)) {
+            //doubleclick
+            switch(appState) {
 
+            case select:
+                if (selectionTechnique == virtualHand) {
+
+                    sr.dynamicsWorld->performDiscreteCollisionDetection();
+                    int numManifolds = sr.dynamicsWorld->getDispatcher()->getNumManifolds();
+                    for (int i=0;i<numManifolds;i++)
+                    {
+                        btPersistentManifold* contactManifold = sr.dynamicsWorld->getDispatcher()->getManifoldByIndexInternal(i);
+                        const btCollisionObject* obA = contactManifold->getBody0();
+                        const btCollisionObject* obB = contactManifold->getBody1();
+
+                        if (obA==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obB->getUserPointer()) != NULL))
+                        {
+                            static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
+                            selectedAsset = static_cast<pho::Asset*>(obB->getUserPointer());
+
+                            grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
+                            plane.modelMatrix = selectedAsset->modelMatrix;
+                            appState = translate;
+
+                            sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
+                        }
+                        if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL))
+                        {
+                            static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
+                            selectedAsset = static_cast<pho::Asset*>(obA->getUserPointer());
+
+                            grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
+                            plane.modelMatrix = selectedAsset->modelMatrix;
+                            appState = translate;
+
+                            sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
+                        }
+                    }
+
+                }
+                if (selectionTechnique == twod && rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
+                {
+                    selectedAsset = intersectedAsset;
+                    appState = translate;
+                    sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
+                }
+                break;
+            default:
                 if (selectionTechnique == virtualHand)
                 {
                     temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
@@ -503,17 +545,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                     touchPoint.x = newtp.x;
                     touchPoint.y = newtp.y;
                     selectedAsset = &cursor;
-
-
                 }
-                doubleClickPerformed = false;
                 appState = select;
-            }
-
-            if((appState == select) && (selectionTechnique != virtualHand) && rayTest(touchPoint.x,touchPoint.y,intersectedAsset) && doubleClickPerformed) {
-                selectedAsset = intersectedAsset;
-                appState = translate;
-            }
+                break;
+            }            
         }
     }
     previousTime = elapsed_times;
@@ -611,8 +646,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             if (tcur->getCursorID() == f1id) {
 
                 p1p = p1c;
-                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getXSpeed()),vec3(0,1,0)));
-                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getYSpeed()),vec3(1,0,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getXSpeed()*2),vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getYSpeed()*2),vec3(1,0,0)));
 
                 p1c.x = tcur->getX();
                 p1c.y = tcur->getY();
@@ -928,7 +963,7 @@ void Engine::checkKeyboard() {
         if (glfwGetKey(mainWindow,'2') == GLFW_PRESS) {
             appState = select;
             selectionTechnique = twod;
-            selectedAsset == &cursor;
+            selectedAsset = &cursor;
             log("2D Selection");
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
@@ -939,7 +974,7 @@ void Engine::checkKeyboard() {
             for(int i = 0;i<15;++i) {
                 pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
                 sr.dynamicsWorld->addRigidBody(newBox.rigidBody);
-                boxes.push_back(newBox);
+                boxes.push_back(newBox);        
                 newBox.rigidBody->setUserPointer(&boxes.back());
             }
             keyPressOK = false;
@@ -1024,55 +1059,43 @@ void Engine::shadowMapRender() {
 void Engine::checkSpaceNavigator() { 
 
 #define TRSCALE 2.0f
-#define RTSCALE 5.0f
-
-    float position[6];
+#define RTSCALE 0.5f
     unsigned char buttons[2];
-    int* arraySize;
-    std::fill_n(position,6,0.0f);
+    int arraySize{};
+    auto const position(glfwGetJoystickAxes(GLFW_JOYSTICK_1,&arraySize));
 
-    if (*glfwGetJoystickAxes( GLFW_JOYSTICK_1, arraySize) == 6 ) {
-        //inputStarted = true;
+    if (glfwGetJoystickButtons(GLFW_JOYSTICK_1,&arraySize)[0] == GLFW_PRESS)
+    {
+        navmode = false;
+        std::cout << "Asset" << std::endl;
+    }
+    if (glfwGetJoystickButtons(GLFW_JOYSTICK_1,&arraySize)[1] == GLFW_PRESS)
+    {
+        navmode =true;
+        std::cout << "View" << std::endl;
+    }
 
-        if (glfwGetJoystickButtons(GLFW_JOYSTICK_1,arraySize)[0] == GLFW_PRESS) {
+
+        if (navmode)
+        {
 
             sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
             sr.viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*sr.viewMatrix;
-            sr.viewMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0))*sr.viewMatrix;
+            sr.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.viewMatrix;
             sr.viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
+            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
         }
-        else {
+        else
+        {
             selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
             selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*selectedAsset->modelMatrix;
-            selectedAsset->modelMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*selectedAsset->modelMatrix;
-            selectedAsset->rotate(glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0)));
+            selectedAsset->modelMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*selectedAsset->modelMatrix;
+            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0)));
             selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
-            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0)));
-
-            //sr.light.viewMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*sr.light.viewMatrix;
-            //sr.light.viewMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*sr.light.viewMatrix;
-            //sr.light.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.light.viewMatrix;
-
-            //glm::vec4 tempPosition = sr.light.viewMatrix[3];
-            //sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.light.viewMatrix;
-            //sr.light.viewMatrix[3] = tempPosition;
-
-            //tempPosition = sr.light.viewMatrix[3];
-            //sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,0,1))*sr.light.viewMatrix;
-            //sr.light.viewMatrix[3] = tempPosition;
-
-            //tempPosition = sr.light.viewMatrix[3];
-            //sr.light.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(1,0,0))*sr.light.viewMatrix;
-            //sr.light.viewMatrix[3] = tempPosition;
-
-
-            //btTransform objTrans;
-            //objTrans.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
-            //coCursor->setWorldTransform(objTrans);
+            selectedAsset->rotate(glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0)));
         }
-    }
+
 
 }
 
@@ -1146,34 +1169,11 @@ void Engine::checkPhysics()
             const btCollisionObject* obB = contactManifold->getBody1();
 
             if (obA==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obB->getUserPointer()) != NULL)) {
-
-                static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
-                if (doubleClickPerformed)
-                {
-                    selectedAsset = static_cast<pho::Asset*>(obB->getUserPointer());
-
-                    grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
-                    plane.modelMatrix = selectedAsset->modelMatrix;
-                    appState = translate;
-                    doubleClickPerformed = false;
-                    sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
-                }
+                static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;   
             }
             if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL)) {
                 static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
-                if (doubleClickPerformed)
-                {
-                    selectedAsset = static_cast<pho::Asset*>(obA->getUserPointer());
-
-                    grabbedVector = glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]);
-                    plane.modelMatrix = selectedAsset->modelMatrix;
-                    appState = translate;
-                    doubleClickPerformed = false;
-                    sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
-                }
             }
-
-
         }
     }
 
@@ -1188,9 +1188,6 @@ void Engine::checkPhysics()
             boxes[i].modelMatrix = convertBulletTransformToGLM(trans);
         }
     }
-
-
-
 
 }
 

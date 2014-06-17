@@ -111,6 +111,7 @@ namespace pho {
 		void checkUDP();
 		void checkKeyboard();
 		void checkSpaceNavigator();
+        bool navmode = false;
         void initPhysics();
         void checkPhysics();
         bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset*& intersected);
