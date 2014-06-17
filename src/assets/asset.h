@@ -259,14 +259,15 @@ public:
     glm::mat4* viewMatrix; //public because shadow map render function updates it to the pointlight matrix temporarily
     sharedResources* res;
     btRigidBody* rigidBody;
+    void setClipPlane(glm::vec4 plane);
 protected:
     void upload();
     glm::mat4* projectionMatrix;
     glm::mat4* biasMatrix;
     std::vector<MyMesh> meshes;
     const aiScene* scene;
-    pho::Shader* shader;
     GLuint simpleVAO;
+    pho::Shader* shader;
 };
 }
 

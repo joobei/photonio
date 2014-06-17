@@ -122,6 +122,8 @@ namespace pho {
 		std::map<std::string, GLuint> textureIdMap;	
 		bool LoadGLTextures(const aiScene* scene);
 
+        bool clipping=false;
+
         AppState appState;
 		RotateTechnique rotTechnique;
         SelectionTechnique selectionTechnique;

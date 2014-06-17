@@ -342,6 +342,12 @@ void pho::Asset::setScale(float scaleFactor)
     scaleMatrix = glm::scale(glm::mat4(1),glm::vec3(scaleFactor,scaleFactor,scaleFactor));
 }
 
+void pho::Asset::setClipPlane(glm::vec4 plane)
+{
+    shader->use();
+    shader[0]["ClipPlane"] = plane;
+}
+
 
 pho::MyMesh::MyMesh()
 {

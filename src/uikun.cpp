@@ -274,19 +274,41 @@ void Engine::render() {
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-    floor.draw();
-    heart.draw();
+floor.draw();
+
+    if (clipping)
+    {
+        glEnable(GL_CLIP_DISTANCE0);
+
+        glm::vec3 normal = glm::vec3(0,1,0);
+        normal = glm::mat3(plane.modelMatrix)*normal;
+        //glm::normalize(normal);
+
+        glm::vec4 cplane = {normal.x, normal.y, normal.z, 1};
+        heart.setClipPlane(cplane);
+    }
+
+        heart.draw();
+
+
+    if (clipping) {
+        glDisable(GL_CLIP_DISTANCE0);
+    }
+
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
         boxes[i].draw();
     }
 
 
+
     if (appState == select) {
-        if (selectionTechnique == virtualHand) {
+        if (selectionTechnique == virtualHand && !clipping) {
             cursor.draw();
         }
-        else {
+
+        if (selectionTechnique == twod)
+        {
             sr.flatShader.use();
 
             //sr.flatShader["mvp"] = sr.projectionMatrix*sr.viewMatrix*glm::mat4();
@@ -854,13 +876,17 @@ void Engine::checkUDP() {
 
                 break;
             case 3:
-                if (tempEvent.state() && (appState == select)) {
+                if (tempEvent.state() && (appState == select) && !clipping) {
                     sr.dynamicsWorld->removeCollisionObject(coCursor);
                     coCursor->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
                     sr.dynamicsWorld->addCollisionObject(coCursor);
                     std::cout << "Kinematic Object" << std::endl;
                 }
-                if (!tempEvent.state() && (appState == select)) {
+                if (tempEvent.state() && (appState == translate)) {
+                    //sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
+                    clipping = !clipping;
+                }
+                if (!tempEvent.state() && (appState == select) && !clipping) {
                     sr.dynamicsWorld->removeCollisionObject(coCursor);
                     coCursor->setCollisionFlags(coCursor->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
                     sr.dynamicsWorld->addCollisionObject(coCursor);
@@ -977,6 +1003,12 @@ void Engine::checkKeyboard() {
                 boxes.push_back(newBox);        
                 newBox.rigidBody->setUserPointer(&boxes.back());
             }
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+        }
+
+        if(glfwGetKey(mainWindow,'9') == GLFW_PRESS) {
+            clipping = !clipping;
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
