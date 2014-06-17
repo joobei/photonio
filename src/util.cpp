@@ -60,7 +60,7 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot, flickState flick
             break;
         case flickState::rotation:
             if ((glm::abs(touchHistory[0].x) > 5.0f) || (glm::abs(touchHistory[0].y) > 5.0f)) {
-                rotateTimes = 1000;
+                rotateTimes = 500;
                 currentlyInRotateFlick = true;
                 launchPair.x = touchHistory[0].x;
                 launchPair.y = touchHistory[0].y;
@@ -68,7 +68,7 @@ void pho::flickManager::endFlick(glm::mat3 orientationSnapshot, flickState flick
             break;
         case pinchy:
             if ((glm::abs(touchHistory[0].x) > 2.0f) || (glm::abs(touchHistory[0].y) > 2.0f)) {
-                pinchTimes = 1000;
+                pinchTimes = 5000;
                 currentlyInPinchFlick = true;
                 launchPinchAngle = angleHistory[0];
             }

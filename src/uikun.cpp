@@ -236,8 +236,8 @@ void Engine::checkEvents() {
 
     if (flicker.inFlick(rotation)){
         glm::vec2 rotation = flicker.dampenAndGiveRotationMatrix();
-        selectedAsset->rotate(glm::rotate(rotation.x*3.0f,vec3(0,1,0)));
-        selectedAsset->rotate(glm::rotate(rotation.y*3.0f,vec3(1,0,0)));
+        selectedAsset->rotate(glm::rotate(glm::radians(rotation.x),vec3(0,1,0)));
+        selectedAsset->rotate(glm::rotate(glm::radians(rotation.y),vec3(1,0,0)));
     }
 
     //Joystick
