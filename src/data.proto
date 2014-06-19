@@ -3,14 +3,8 @@ option optimize_for = LITE_RUNTIME;
 package keimote;
 
 enum MsgType {
-MAG = 0;
-ACCEL = 1;
-GYRO = 2;
-TOUCH = 3;
+ROTATION = 0;
 BUTTON = 4;
-TOUCH2 = 5;
-TOUCH3 = 6;
-TOUCH4 = 7;
 }
 
 message PhoneEvent {
@@ -19,20 +13,9 @@ required MsgType type = 1;
 optional float x = 2;
 optional float y = 3;
 optional float z = 4;
-optional int32 xx = 5;
-optional int32 yy = 6;
+optional float w = 5;
 optional int32 buttontype = 7;
 optional bool state = 8;
-optional float w =9;
-optional float m11 =10;
-optional float m12 =11;
-optional float m13 =12;
-optional float m21 =13;
-optional float m22 =14;
-optional float m23 =15;
-optional float m31 =16;
-optional float m32 =17;
-optional float m33 =18;
 }
 
 

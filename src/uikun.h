@@ -84,10 +84,10 @@ namespace pho {
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        //static const int WINDOW_SIZE_X = 1920;
-        //static const int WINDOW_SIZE_Y = 1080;
-        static const int WINDOW_SIZE_X = 1280;
-        static const int WINDOW_SIZE_Y = 720;
+        static const int WINDOW_SIZE_X = 1680;
+        static const int WINDOW_SIZE_Y = 1050;
+        //static const int WINDOW_SIZE_X = 1280;
+        //static const int WINDOW_SIZE_Y = 720;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -117,6 +117,7 @@ namespace pho {
         bool rayTest(const float &normalizedX,const float &normalizedY, pho::Asset*& intersected);
         bool rayTestWorld(const glm::vec3 &origin,const glm::vec3 &direction, pho::Asset*& intersected);
 
+        int clipDistance = 1;
 		// map image filenames to textureIds
 		// pointer to texture Array
 		std::map<std::string, GLuint> textureIdMap;	
@@ -135,9 +136,8 @@ namespace pho {
 		mat3 axisChange;
 		mat4 trackerMatrix;
 		mat3 orientation3;
-		vec3 acc,ma,gyro;
+        vec3 rotationVector;
 		bool calibrate;
-		bool gyroData;
 		
 		glm::vec3 cameraPosition;
 		glm::vec3 cameraDirection;
@@ -177,7 +177,7 @@ namespace pho {
 		glm::vec3 previousVector;
 
 		EventQueue eventQueue;
-		SPUC::running_average<float> accelerometerX,accelerometerY,accelerometerZ,magnetometerX,magnetometerY,magnetometerZ;
+        SPUC::running_average<float> rotationVectorAVGX,rotationVectorAVGY,rotationVectorAVGZ;
 
         sharedResources sr;
 

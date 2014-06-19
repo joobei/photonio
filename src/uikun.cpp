@@ -42,12 +42,9 @@ Engine::Engine(GLFWwindow *window):
     bump(false)
 {
 #define SIZE 30                     //Size of the moving average filter
-    accelerometerX.set_size(SIZE);  //Around 30 is good performance without gyro
-    accelerometerY.set_size(SIZE);
-    accelerometerZ.set_size(SIZE);
-    magnetometerX.set_size(SIZE);
-    magnetometerY.set_size(SIZE);
-    magnetometerZ.set_size(SIZE);
+    rotationVectorAVGX.set_size(SIZE);  //Around 30 is good performance without gyro
+    rotationVectorAVGY.set_size(SIZE);
+    rotationVectorAVGZ.set_size(SIZE);
 
     errorLog.open("error.log",std::ios_base::app);
 
@@ -66,13 +63,12 @@ Engine::Engine(GLFWwindow *window):
 
     netThread = new boost::thread(boost::bind(&boost::asio::io_service::run, &ioservice));
 
-    gyroData = false;
     objectHit=false;
     sphereHit=false;
 
-    axisChange[0][0] = 1; axisChange[0][1] =  0;  axisChange[0][2] =  0;
-    axisChange[1][0] = 0; axisChange[1][1] =  0;  axisChange[1][2] =  1;
-    axisChange[2][0] = 0; axisChange[2][1] =  -1;  axisChange[2][2] = 0;
+    axisChange[0][0] = 0; axisChange[0][1] = 0;  axisChange[0][2] = -1;
+    axisChange[1][0] = 1; axisChange[1][1] = 0;  axisChange[1][2] = 0;
+    axisChange[2][0] = 0; axisChange[2][1] = -1;  axisChange[2][2] = 0;
 
     tf = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
 
@@ -216,6 +212,11 @@ void Engine::initResources() {
 //and consumes them all
 void Engine::checkEvents() {
 
+    //renew userpointers
+    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
+        boxes[i].rigidBody->setUserPointer(&boxes[i]);
+    }
+
     checkKeyboard();
 
     checkUDP();
@@ -282,9 +283,9 @@ floor.draw();
 
         glm::vec3 normal = glm::vec3(0,1,0);
         normal = glm::mat3(plane.modelMatrix)*normal;
-        //glm::normalize(normal);
 
-        glm::vec4 cplane = {normal.x, normal.y, normal.z, 1};
+
+        glm::vec4 cplane = {normal.x, normal.y, normal.z, clipDistance};
         heart.setClipPlane(cplane);
     }
 
@@ -336,39 +337,37 @@ floor.draw();
     glfwSwapBuffers(mainWindow);
 }
 
+
+
+
+
+
 bool Engine::computeRotationMatrix() {
 
-    vec3 H = glm::cross(ma,acc);
+    glm::quat Q;
 
-    float normH = (float) glm::length(H);
+    Q[0] = 1 - rotationVector[0]*rotationVector[0] - rotationVector[1]*rotationVector[1] - rotationVector[2]*rotationVector[2];
+    Q[0] = (Q[0] > 0) ? (float)glm::sqrt(Q[0]) : 0;
 
-    if (normH<0.1f) return false;
+    Q[1] = rotationVector[0];
+    Q[2] = rotationVector[1];
+    Q[3] = rotationVector[2];
 
-    float invH = 1.0f / normH;
+    glm::mat3 temp = glm::mat3_cast(Q);
+//    axisChange = glm::mat3();
+    orientation = glm::mat4(axisChange*temp);
 
-    H *= invH;
+    heart.modelMatrix = orientation;
 
-    float invA = 1.0f / (float) glm::length(acc);
+//    orientation = glm::inverse(orientation);
 
-    acc *= invA;
 
-    vec3 M = glm::cross(acc,H);
+//    if (calibrate) {
+//        calibration = glm::inverse(orientation);
+//        calibrate = !calibrate;
+//    }
 
-    orientation[0][0] = H.x;   orientation[0][1] = H.y;   orientation[0][2] = H.z;
-    orientation[1][0] = M.x;   orientation[1][1] = M.y;   orientation[1][2] = M.z;
-    orientation[2][0] = acc.x; orientation[2][1] = acc.y; orientation[2][2] = acc.z;
-
-    orientation = glm::rotate(orientation, glm::degrees((float)M_PI/2),vec3(1,0,0));
-    orientation = glm::inverse(orientation);
-    orientation = glm::rotate(orientation, glm::degrees((float)M_PI/2),vec3(1,0,0));
-
-    if (calibrate) {
-        calibration = glm::inverse(orientation);
-        calibrate = !calibrate;
-    }
-
-    orientation = calibration*orientation;
-
+//    orientation = calibration*orientation;
     return true;
 }
 
@@ -839,25 +838,18 @@ void Engine::checkUDP() {
 
         //check event to see what type it is
         switch (tempEvent.type()) {
-        case keimote::ACCEL:
-            accelerometerX.update(tempEvent.x());
-            accelerometerY.update(tempEvent.y());
-            accelerometerZ.update(tempEvent.z());
+        case keimote::ROTATION:
+//            rotationVectorAVGX.update(tempEvent.x());
+//            rotationVectorAVGY.update(tempEvent.y());
+//            rotationVectorAVGZ.update(tempEvent.z());
 
-            acc.x = accelerometerX.get_result();
-            acc.y = accelerometerY.get_result();
-            acc.z = accelerometerZ.get_result();
+//            rotationVector.x = rotationVectorAVGX.get_result();
+//            rotationVector.y = rotationVectorAVGY.get_result();
+//            rotationVector.z = rotationVectorAVGZ.get_result();
 
-            break;
-        case keimote::MAG:
-            magnetometerX.update(tempEvent.x());
-            magnetometerY.update(tempEvent.y());
-            magnetometerZ.update(tempEvent.z());
-
-            ma.x = magnetometerX.get_result();
-            ma.y = magnetometerY.get_result();
-            ma.z = magnetometerZ.get_result();
-
+            rotationVector.x = tempEvent.x();
+            rotationVector.y = tempEvent.y();
+            rotationVector.z = tempEvent.z();
             break;
         case keimote::BUTTON:
             switch (tempEvent.buttontype()) {
@@ -1184,7 +1176,7 @@ glm::mat4 Engine::convertBulletTransformToGLM(const btTransform& transform)
 void Engine::checkPhysics()
 {
 
-    sr.dynamicsWorld->stepSimulation(1/30.f,10);
+    sr.dynamicsWorld->stepSimulation(1/25.f,10);  //default 1/30
 
     if ((appState == select ) && (selectionTechnique == virtualHand)) {
 
@@ -1212,8 +1204,8 @@ void Engine::checkPhysics()
     btTransform trans;
 
     if (appState == select) {
-        heart.rigidBody->getMotionState()->getWorldTransform(trans);
-        heart.modelMatrix = convertBulletTransformToGLM(trans);
+        //heart.rigidBody->getMotionState()->getWorldTransform(trans);
+        //heart.modelMatrix = convertBulletTransformToGLM(trans);
 
         for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
             boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);
