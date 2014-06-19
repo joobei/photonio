@@ -41,7 +41,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #include <boost/scoped_array.hpp>
 #include "eventQueue.h"
 #include "asio.h"
-#include "spuc/generic/running_average.h"
 //#include "arcball.h"
 #include "asset.h"
 #include "TUIO/TuioClient.h"
@@ -84,10 +83,10 @@ namespace pho {
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        static const int WINDOW_SIZE_X = 1680;
-        static const int WINDOW_SIZE_Y = 1050;
-        //static const int WINDOW_SIZE_X = 1280;
-        //static const int WINDOW_SIZE_Y = 720;
+        //static const int WINDOW_SIZE_X = 1680;
+        //static const int WINDOW_SIZE_Y = 1050;
+        static const int WINDOW_SIZE_X = 1280;
+        static const int WINDOW_SIZE_Y = 720;
 
 		void mouseButtonCallback(int x, int y);
 		void mouseMoveCallback(int x, int y);
@@ -177,7 +176,6 @@ namespace pho {
 		glm::vec3 previousVector;
 
 		EventQueue eventQueue;
-        SPUC::running_average<float> rotationVectorAVGX,rotationVectorAVGY,rotationVectorAVGZ;
 
         sharedResources sr;
 

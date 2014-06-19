@@ -41,11 +41,6 @@ Engine::Engine(GLFWwindow *window):
     rotTechnique(screenSpace),
     bump(false)
 {
-#define SIZE 30                     //Size of the moving average filter
-    rotationVectorAVGX.set_size(SIZE);  //Around 30 is good performance without gyro
-    rotationVectorAVGY.set_size(SIZE);
-    rotationVectorAVGZ.set_size(SIZE);
-
     errorLog.open("error.log",std::ios_base::app);
 
     tuioClient = new TuioClient(3333);
@@ -67,8 +62,8 @@ Engine::Engine(GLFWwindow *window):
     sphereHit=false;
 
     axisChange[0][0] = 0; axisChange[0][1] = 0;  axisChange[0][2] = -1;
-    axisChange[1][0] = 1; axisChange[1][1] = 0;  axisChange[1][2] = 0;
-    axisChange[2][0] = 0; axisChange[2][1] = -1;  axisChange[2][2] = 0;
+    axisChange[1][0] = 0; axisChange[1][1] = 1;  axisChange[1][2] = 0;
+    axisChange[2][0] = 1; axisChange[2][1] = 0;  axisChange[2][2] = 0;
 
     tf = new boost::posix_time::time_facet("%d-%b-%Y %H:%M:%S");
 
@@ -350,25 +345,27 @@ bool Engine::computeRotationMatrix() {
     Q[0] = (Q[0] > 0) ? (float)glm::sqrt(Q[0]) : 0;
 
     Q[1] = rotationVector[0];
-    Q[2] = rotationVector[1];
-    Q[3] = rotationVector[2];
+    Q[2] = rotationVector[2];
+    Q[3] = rotationVector[1];
 
     glm::mat3 temp = glm::mat3_cast(Q);
-//    axisChange = glm::mat3();
-    orientation = glm::mat4(axisChange*temp);
+    //    axisChange = glm::mat3();
+    orientation = glm::mat4(temp*axisChange);
+//    orientation = glm::mat4(temp);
 
-    heart.modelMatrix = orientation;
 
 //    orientation = glm::inverse(orientation);
 
 
-//    if (calibrate) {
-//        calibration = glm::inverse(orientation);
-//        calibrate = !calibrate;
-//    }
+   if (calibrate) {
+        calibration = glm::inverse(orientation);
+        calibrate = !calibrate;
 
-//    orientation = calibration*orientation;
-    return true;
+    }
+
+   orientation = calibration*orientation;
+   heart.modelMatrix = orientation;
+   return true;
 }
 
 void Engine::mouseButtonCallback(int button, int state) {
