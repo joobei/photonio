@@ -199,7 +199,7 @@ namespace pho {
         pho::Asset* selectedAsset;
         pho::Asset* intersectedAsset;
         pho::Asset* clippedAsset;
-        std::vector<pho::Asset> boxes;
+        std::deque<pho::Asset> boxes;
 
         btGhostObject* coCursor;
         //input

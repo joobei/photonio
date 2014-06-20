@@ -1174,7 +1174,7 @@ glm::mat4 Engine::convertBulletTransformToGLM(const btTransform& transform)
 void Engine::checkPhysics()
 {
 
-    sr.dynamicsWorld->stepSimulation(1/25.f,10);  //default 1/30
+    sr.dynamicsWorld->stepSimulation(1/30.f,10);  //default 1/30
 
     if ((appState == select ) && (selectionTechnique == virtualHand)) {
 

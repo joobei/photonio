@@ -72,11 +72,11 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
         collisionShape->calculateLocalInertia(mass,fallInertia);
         btRigidBody::btRigidBodyConstructionInfo RigidBodyCI(mass,motionState,collisionShape,fallInertia);
         rigidBody = new btRigidBody(RigidBodyCI);
-        //rigidBody->setUserPointer(this);
-        //rigidBody->setActivationState(DISABLE_DEACTIVATION);
+//        rigidBody->setUserPointer(this);
+//        rigidBody->setActivationState(DISABLE_DEACTIVATION);
 
-        //res->dynamicsWorld->addRigidBody(rigidBody, collisiontypes::COL_EVERYTHING, collisiontypes::COL_EVERYTHING);
-        //res->collisionWorld->addCollisionObject(rigidBody);
+//        res->dynamicsWorld->addRigidBody(rigidBody, collisiontypes::COL_EVERYTHING, collisiontypes::COL_EVERYTHING);
+//        res->collisionWorld->addCollisionObject(rigidBody);
     }
 
 }
