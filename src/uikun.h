@@ -201,6 +201,9 @@ namespace pho {
         pho::Asset* clippedAsset;
         std::deque<pho::Asset> boxes;
 
+        void selectAsset(pho::Asset asset);
+        void deselect();
+
         btGhostObject* coCursor;
         //input
         bool inputStarted;

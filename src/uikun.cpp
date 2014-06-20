@@ -425,7 +425,6 @@ void Engine::shutdown() {
 
 
 void Engine::addTuioCursor(TuioCursor *tcur) {
-    btTransform temp;
     inputStarted = true;
     float x,y;
     x = tcur->getX();
@@ -450,11 +449,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     double difference = elapsed_times.wall-previousTime.wall;
 
     if (numberOfCursors == 1 ) {
-        if (difference < 150000000) { //doubleclick
+        if (difference < 170000000) { //doubleclick
 
             //doubleclick
             switch(appState) {
-
             case select:
                 if (selectionTechnique == virtualHand) {
 
@@ -498,36 +496,8 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                     sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
                 }
                 break;
-            default:
-                if (selectionTechnique == virtualHand)
-                {
-                    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
-                    selectedAsset->rigidBody->setWorldTransform(temp);
-                    sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
-                    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])/*+grabbedVector*/,1);
-                    selectedAsset = &cursor;
-                    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
-
-                }
-                if (selectionTechnique == twod)
-                {
-                    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
-                    selectedAsset->rigidBody->setWorldTransform(temp);
-                    sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
-                    //                  locationMatch(cursor.modelMatrix,heart.modelMatrix);
-                    //                  locationMatch(plane.modelMatrix,cursor.modelMatrix);
-                    //                  pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
-
-                    //Put 2d cursor where object was dropped:
-                    //1st. calculate clip space coordinates
-                    glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*selectedAsset->modelMatrix*glm::vec4(0,0,0,1);
-                    //2nd. convert it in normalized device coordinates by dividing with w
-                    newtp/=newtp.w;
-                    touchPoint.x = newtp.x;
-                    touchPoint.y = newtp.y;
-                    selectedAsset = &cursor;
-                }
-                appState = select;
+            case translate:
+                deselect();
                 break;
             }
         }
@@ -1312,6 +1282,52 @@ bool Engine::checkPolhemus(glm::mat4 &modelMatrix) {
 
     lock.unlock();
     return false;
+}
+
+void Engine::selectAsset(Asset asset)
+{
+
+}
+
+void Engine::deselect()
+{
+    btTransform temp;
+    vec3 pos = vec3(selectedAsset->modelMatrix[3]);
+    glm::quat Q = glm::quat_cast(selectedAsset->modelMatrix);
+    btDefaultMotionState* motionState =
+            new btDefaultMotionState(
+                btTransform(btQuaternion(Q.x,Q.y,Q.z,Q.w),
+                            btVector3(pos.x,pos.y,pos.z)));
+
+    if (selectionTechnique == virtualHand)
+    {
+//    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
+    selectedAsset->rigidBody->setMotionState(motionState);
+    sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
+    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])/*+grabbedVector*/,1);
+    selectedAsset = &cursor;
+    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+    }
+
+    if (selectionTechnique == twod)
+    {
+        temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
+        selectedAsset->rigidBody->setWorldTransform(temp);
+        sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
+        //                  locationMatch(cursor.modelMatrix,heart.modelMatrix);
+        //                  locationMatch(plane.modelMatrix,cursor.modelMatrix);
+        //                  pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+
+        //Put 2d cursor where object was dropped:
+        //1st. calculate clip space coordinates
+        glm::vec4 newtp = sr.projectionMatrix*sr.viewMatrix*selectedAsset->modelMatrix*glm::vec4(0,0,0,1);
+        //2nd. convert it in normalized device coordinates by dividing with w
+        newtp/=newtp.w;
+        touchPoint.x = newtp.x;
+        touchPoint.y = newtp.y;
+        selectedAsset = &cursor;
+    }
+    appState = select;
 }
 
 
