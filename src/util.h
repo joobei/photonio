@@ -37,10 +37,9 @@ void log(const char *message);
 
 enum AppState {
     select,
-    //intersect,
     translate,
     rotate,
-    direct
+    direct,
 };
 
 enum flickState {

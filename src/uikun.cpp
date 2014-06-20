@@ -29,7 +29,6 @@ using namespace std;
 
 Engine::Engine(GLFWwindow *window):
     mainWindow(window),
-    calibrate(false),
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
@@ -208,9 +207,9 @@ void Engine::initResources() {
 void Engine::checkEvents() {
 
     //renew userpointers
-    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
-        boxes[i].rigidBody->setUserPointer(&boxes[i]);
-    }
+//    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
+//        boxes[i].rigidBody->setUserPointer(&boxes[i]);
+//    }
 
     checkKeyboard();
 
@@ -276,16 +275,16 @@ void Engine::render() {
     {
         glEnable(GL_CLIP_DISTANCE0);
 
-        glm::vec3 normal = glm::vec3(0,1,0);
-        normal = glm::mat3(plane.modelMatrix)*normal;
-
-
-        glm::vec4 cplane = {normal.x, normal.y, normal.z, clipDistance};
-        heart.setClipPlane(cplane);
+        glm::vec3 normal = glm::vec3(0,-1,0);
+        normal = normal*glm::mat3(plane.modelMatrix);
+        glm::normalize(normal);
+        clipDistance = glm::length(glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]));
+        glm::vec4 cliplane = {normal.x, normal.y, normal.z, clipDistance};
+//        glm::vec4 cplane = {normal.x, normal.y, normal.z, 3};
+        heart.setClipPlane(cliplane);
     }
 
     heart.draw();
-
 
     if (clipping) {
         glDisable(GL_CLIP_DISTANCE0);
@@ -575,7 +574,11 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
             consumed = true;
         }
+        break;
+    default:
+        break;
     }
+
     if (verbose)
         std::cout << "add cur " << tcur->getCursorID() << " (" <<  tcur->getSessionID() << ") " << tcur->getX() << " " << tcur->getY() << std::endl;
 }
@@ -599,6 +602,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     float newAngle;
 
     switch (appState) {
+    case direct:
+        break;
     case select:
         if (selectionTechnique == twod) {
             touchPoint.x += tcur->getXSpeed()/30;
@@ -622,6 +627,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
         //*********************   ROTATE  ****************************
     case rotate:
         switch (rotTechnique) {
+        case clutch:
+            break;
         case screenSpace:
             if (flicker.inFlick(rotation)) { flicker.stopFlick(rotation); } //probably have come back from a pinch flick so need to stop the flick?? test without.
 
@@ -709,12 +716,15 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
 
     switch (appState) {
     case select:
-        if (selectionTechnique != virtualHand) break;
+        if (selectionTechnique != virtualHand)
+            break;
     case translate:
         flicker.endFlick(glm::mat3(orientation),translation);
         break;
     case rotate:
         switch (rotTechnique) {
+        case clutch:
+            break;
         case screenSpace:
             flicker.endFlick(glm::mat3(orientation),rotation);
             break;
@@ -724,6 +734,8 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
             flicker.endFlick(glm::mat3(orientation),pinchy);
             break;
         }
+        break;
+    default:
         break;
     }
 
@@ -814,11 +826,6 @@ void Engine::checkUDP() {
             temp = glm::mat3_cast(Q);
             orientation = glm::mat4(temp*axisChange);
 
-            if (calibrate) {
-                calibration = glm::inverse(orientation);
-                calibrate = !calibrate;
-            }
-
             orientation = calibration*orientation;
 
             //apply to plane
@@ -830,7 +837,7 @@ void Engine::checkUDP() {
         case keimote::BUTTON:
             switch (tempEvent.buttontype()) {
             case 1:
-                calibrate = true;
+                calibration = glm::inverse(orientation);
                 break;
             case 2:
                 if (tempEvent.state() == true && appState == translate) {
@@ -852,7 +859,16 @@ void Engine::checkUDP() {
                 }
                 if (tempEvent.state() && (appState == translate)) {
                     //sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
-                    clipping = !clipping;
+                    if (selectedAsset == &cursor)
+                    {
+                        selectedAsset = clippedAsset;
+                    }
+                    else {
+                        clippedAsset = selectedAsset;
+                        selectedAsset = &cursor;
+                        clipping = true;
+                    }
+
                 }
                 if (!tempEvent.state() && (appState == select) && !clipping) {
                     sr.dynamicsWorld->removeCollisionObject(coCursor);
@@ -872,7 +888,6 @@ void Engine::checkUDP() {
 
                 break;
             default:
-                calibrate = true;
                 break;
             }
             break;
@@ -915,9 +930,9 @@ void Engine::checkKeyboard() {
 
         }
         if (glfwGetKey(mainWindow,GLFW_KEY_SPACE)) {
+            calibration = glm::inverse(orientation);
+            selectedAsset=&cursor;
             selectedAsset->modelMatrix = glm::translate(glm::vec3(0,0,-15));
-            cursor.modelMatrix = glm::translate(glm::vec3(0,0,-5));
-            heart.modelMatrix = glm::translate(glm::vec3(-5,10,-15));
             plane.modelMatrix = cursor.modelMatrix;
             flicker.stopFlick(translation);
             flicker.stopFlick(rotation);
@@ -956,6 +971,19 @@ void Engine::checkKeyboard() {
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
             sr.dynamicsWorld->removeCollisionObject(coCursor);
+        }
+
+        if (glfwGetKey(mainWindow,'3') == GLFW_PRESS) {
+            clipDistance +=1;
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+
+        }
+        if (glfwGetKey(mainWindow,'4') == GLFW_PRESS) {
+            clipDistance -=1;
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+
         }
 
         if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {

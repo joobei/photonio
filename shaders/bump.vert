@@ -18,6 +18,7 @@ uniform vec4 ClipPlane;
 
 uniform mat4 mvp;
 uniform mat4 modelview;
+uniform mat4 model;
 uniform mat4 shadowMatrix;
 
 uniform vec4 light_position;
@@ -35,5 +36,5 @@ void main()
     Vertex_LightDir = light_position - view_vertex;
     Vertex_EyeVec = -view_vertex;
 
-    gl_ClipDistance[0] = dot(mvp * vec4(in_Position,0), ClipPlane);
+    gl_ClipDistance[0] = dot(model * vec4(in_Position,0), ClipPlane);
 }

@@ -135,7 +135,6 @@ namespace pho {
 		mat4 trackerMatrix;
 		mat3 orientation3;
         vec3 rotationVector;
-		bool calibrate;
 		
 		glm::vec3 cameraPosition;
 		glm::vec3 cameraDirection;
@@ -199,6 +198,7 @@ namespace pho {
         pho::Asset floor;
         pho::Asset* selectedAsset;
         pho::Asset* intersectedAsset;
+        pho::Asset* clippedAsset;
         std::vector<pho::Asset> boxes;
 
         btGhostObject* coCursor;
