@@ -79,7 +79,7 @@ Engine::Engine(GLFWwindow *window):
 }
 
 void Engine::initResources() {
-    std::string shaderpath; //this is only needed at runtime whereas asssetpath might be needed later
+    std::string shaderpath; //this is only needed at init time whereas asssetpath might be needed later
 
     //find the path where the shaders are stored ("shaderpath" file created by cmake with configure_file)
     if (boost::filesystem::exists("shaderpath")) {
@@ -270,7 +270,7 @@ void Engine::render() {
     CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
-floor.draw();
+    floor.draw();
 
     if (clipping)
     {
@@ -284,7 +284,7 @@ floor.draw();
         heart.setClipPlane(cplane);
     }
 
-        heart.draw();
+    heart.draw();
 
 
     if (clipping) {
@@ -330,42 +330,6 @@ floor.draw();
     }
 
     glfwSwapBuffers(mainWindow);
-}
-
-
-
-
-
-
-bool Engine::computeRotationMatrix() {
-
-    glm::quat Q;
-
-    Q[0] = 1 - rotationVector[0]*rotationVector[0] - rotationVector[1]*rotationVector[1] - rotationVector[2]*rotationVector[2];
-    Q[0] = (Q[0] > 0) ? (float)glm::sqrt(Q[0]) : 0;
-
-    Q[1] = rotationVector[0];
-    Q[2] = rotationVector[2];
-    Q[3] = rotationVector[1];
-
-    glm::mat3 temp = glm::mat3_cast(Q);
-    //    axisChange = glm::mat3();
-    orientation = glm::mat4(temp*axisChange);
-//    orientation = glm::mat4(temp);
-
-
-//    orientation = glm::inverse(orientation);
-
-
-   if (calibrate) {
-        calibration = glm::inverse(orientation);
-        calibrate = !calibrate;
-
-    }
-
-   orientation = calibration*orientation;
-   heart.modelMatrix = orientation;
-   return true;
 }
 
 void Engine::mouseButtonCallback(int button, int state) {
@@ -566,7 +530,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                 }
                 appState = select;
                 break;
-            }            
+            }
         }
     }
     previousTime = elapsed_times;
@@ -771,7 +735,6 @@ btVector3 Engine::getRayTo(glm::vec2 xy)
 {
     //btVector3	DemoApplication::getRayTo(int x,int y)
 
-
     float top = 1.f;
     float bottom = -1.f;
     float nearPlane = 1.f;
@@ -824,10 +787,12 @@ void Engine::refresh(TuioTime frameTime) {
 }
 
 void Engine::checkUDP() {
-    glm::mat4 newLocationMatrix;
-    glm::vec3 newLocationVector;
+    glm::quat Q; //to hold the quaternion generated from the location vector
+    glm::mat3 temp; //to hold converted rotation matrix
     //UDP queue
-    boost::mutex::scoped_lock lock(ioMutex);
+
+//    boost::mutex::scoped_lock lock(ioMutex);
+
     while (!eventQueue.isEmpty()) {
         //assign event to local temp var
         keimote::PhoneEvent tempEvent;
@@ -836,17 +801,31 @@ void Engine::checkUDP() {
         //check event to see what type it is
         switch (tempEvent.type()) {
         case keimote::ROTATION:
-//            rotationVectorAVGX.update(tempEvent.x());
-//            rotationVectorAVGY.update(tempEvent.y());
-//            rotationVectorAVGZ.update(tempEvent.z());
-
-//            rotationVector.x = rotationVectorAVGX.get_result();
-//            rotationVector.y = rotationVectorAVGY.get_result();
-//            rotationVector.z = rotationVectorAVGZ.get_result();
-
             rotationVector.x = tempEvent.x();
             rotationVector.y = tempEvent.y();
             rotationVector.z = tempEvent.z();
+
+            Q[0] = 1 - rotationVector[0]*rotationVector[0] - rotationVector[1]*rotationVector[1] - rotationVector[2]*rotationVector[2];
+            Q[0] = (Q[0] > 0) ? (float)glm::sqrt(Q[0]) : 0;
+
+
+            Q[1] = rotationVector[0]; Q[2] = rotationVector[2]; Q[3] = rotationVector[1]; //NEXUS 5
+
+            temp = glm::mat3_cast(Q);
+            orientation = glm::mat4(temp*axisChange);
+
+            if (calibrate) {
+                calibration = glm::inverse(orientation);
+                calibrate = !calibrate;
+            }
+
+            orientation = calibration*orientation;
+
+            //apply to plane
+            plane.modelMatrix[0][0] = orientation[0][0]; plane.modelMatrix[0][1] = orientation[0][1]; plane.modelMatrix[0][2] = orientation[0][2];
+            plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; plane.modelMatrix[1][2] = orientation[1][2];
+            plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2];
+
             break;
         case keimote::BUTTON:
             switch (tempEvent.buttontype()) {
@@ -896,14 +875,8 @@ void Engine::checkUDP() {
                 calibrate = true;
                 break;
             }
-
+            break;
         };
-        //apply matrix to plane
-        if (computeRotationMatrix()) {
-            plane.modelMatrix[0][0] = orientation[0][0]; plane.modelMatrix[0][1] = orientation[0][1]; plane.modelMatrix[0][2] = orientation[0][2];
-            plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; plane.modelMatrix[1][2] = orientation[1][2];
-            plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2];
-        }
     }
 }
 
@@ -989,7 +962,7 @@ void Engine::checkKeyboard() {
             for(int i = 0;i<15;++i) {
                 pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
                 sr.dynamicsWorld->addRigidBody(newBox.rigidBody);
-                boxes.push_back(newBox);        
+                boxes.push_back(newBox);
                 newBox.rigidBody->setUserPointer(&boxes.back());
             }
             keyPressOK = false;
@@ -1097,25 +1070,25 @@ void Engine::checkSpaceNavigator() {
     }
 
 
-        if (navmode)
-        {
+    if (navmode)
+    {
 
-            sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
-            sr.viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*sr.viewMatrix;
-            sr.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*sr.viewMatrix;
-            sr.viewMatrix = glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
-        }
-        else
-        {
-            selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
-            selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*selectedAsset->modelMatrix;
-            selectedAsset->modelMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*selectedAsset->modelMatrix;
-            selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0)));
-            selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
-            selectedAsset->rotate(glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0)));
-        }
+        sr.viewMatrix = glm::translate(vec3(-1*position[0]*TRSCALE,0,0))*sr.viewMatrix;
+        sr.viewMatrix = glm::translate(vec3(0,position[2]*TRSCALE,0))*sr.viewMatrix;
+        sr.viewMatrix = glm::translate(vec3(0,0,-1*position[1]*TRSCALE))*sr.viewMatrix;
+        sr.viewMatrix = glm::rotate(RTSCALE*position[5],glm::vec3(0,1,0))*sr.viewMatrix;
+        sr.viewMatrix = glm::rotate(RTSCALE*-1*position[4],glm::vec3(0,0,1))*sr.viewMatrix;
+        sr.viewMatrix = glm::rotate(RTSCALE*-1*position[3],glm::vec3(1,0,0))*sr.viewMatrix;
+    }
+    else
+    {
+        selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
+        selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*selectedAsset->modelMatrix;
+        selectedAsset->modelMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*selectedAsset->modelMatrix;
+        selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0)));
+        selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
+        selectedAsset->rotate(glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0)));
+    }
 
 
 }
@@ -1190,7 +1163,7 @@ void Engine::checkPhysics()
             const btCollisionObject* obB = contactManifold->getBody1();
 
             if (obA==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obB->getUserPointer()) != NULL)) {
-                static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;   
+                static_cast<pho::Asset*>(obB->getUserPointer())->beingIntersected=true;
             }
             if (obB==coCursor && (obA != NULL) && (obB != NULL) && (static_cast<pho::Asset*>(obA->getUserPointer()) != NULL)) {
                 static_cast<pho::Asset*>(obA->getUserPointer())->beingIntersected=true;
@@ -1201,8 +1174,8 @@ void Engine::checkPhysics()
     btTransform trans;
 
     if (appState == select) {
-        //heart.rigidBody->getMotionState()->getWorldTransform(trans);
-        //heart.modelMatrix = convertBulletTransformToGLM(trans);
+        heart.rigidBody->getMotionState()->getWorldTransform(trans);
+        heart.modelMatrix = convertBulletTransformToGLM(trans);
 
         for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
             boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);

@@ -76,15 +76,14 @@ namespace pho {
 		void recursive_render(const struct aiScene *sc, const struct aiNode* nd);
 		void initResources();
 		void go();
-		bool computeRotationMatrix();
 		void shutdown();
 
 
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-        //static const int WINDOW_SIZE_X = 1680;
-        //static const int WINDOW_SIZE_Y = 1050;
+//        static const int WINDOW_SIZE_X = 1680;
+//        static const int WINDOW_SIZE_Y = 1050;
         static const int WINDOW_SIZE_X = 1280;
         static const int WINDOW_SIZE_Y = 720;
 
