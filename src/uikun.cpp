@@ -207,9 +207,9 @@ void Engine::initResources() {
 void Engine::checkEvents() {
 
     //renew userpointers
-//    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
-//        boxes[i].rigidBody->setUserPointer(&boxes[i]);
-//    }
+    //    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
+    //        boxes[i].rigidBody->setUserPointer(&boxes[i]);
+    //    }
 
     checkKeyboard();
 
@@ -280,7 +280,7 @@ void Engine::render() {
         glm::normalize(normal);
         clipDistance = glm::length(glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]));
         glm::vec4 cliplane = {normal.x, normal.y, normal.z, clipDistance};
-//        glm::vec4 cplane = {normal.x, normal.y, normal.z, 3};
+        //        glm::vec4 cplane = {normal.x, normal.y, normal.z, 3};
         heart.setClipPlane(cliplane);
     }
 
@@ -773,7 +773,7 @@ void Engine::checkUDP() {
     glm::mat3 temp; //to hold converted rotation matrix
     //UDP queue
 
-//    boost::mutex::scoped_lock lock(ioMutex);
+    //    boost::mutex::scoped_lock lock(ioMutex);
 
     while (!eventQueue.isEmpty()) {
         //assign event to local temp var
@@ -1292,21 +1292,18 @@ void Engine::selectAsset(Asset asset)
 void Engine::deselect()
 {
     btTransform temp;
-    vec3 pos = vec3(selectedAsset->modelMatrix[3]);
-    glm::quat Q = glm::quat_cast(selectedAsset->modelMatrix);
-    btDefaultMotionState* motionState =
-            new btDefaultMotionState(
-                btTransform(btQuaternion(Q.x,Q.y,Q.z,Q.w),
-                            btVector3(pos.x,pos.y,pos.z)));
+    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
+    //    vec3 pos = vec3(selectedAsset->modelMatrix[3]);
+    //    glm::quat Q = glm::quat_cast(selectedAsset->modelMatrix);
+    btDefaultMotionState* motionState = new btDefaultMotionState(temp);
 
     if (selectionTechnique == virtualHand)
     {
-//    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
-    sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
-    selectedAsset->rigidBody->setMotionState(motionState);
-    cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])/*+grabbedVector*/,1);
-    selectedAsset = &cursor;
-    pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
+        sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
+        selectedAsset->rigidBody->setMotionState(motionState);
+        cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])/*+grabbedVector*/,1);
+        selectedAsset = &cursor;
+        pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
     }
 
     if (selectionTechnique == twod)
