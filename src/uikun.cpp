@@ -1302,8 +1302,8 @@ void Engine::deselect()
     if (selectionTechnique == virtualHand)
     {
 //    temp.setFromOpenGLMatrix(glm::value_ptr(selectedAsset->modelMatrix));
-    selectedAsset->rigidBody->setMotionState(motionState);
     sr.dynamicsWorld->addRigidBody(selectedAsset->rigidBody);
+    selectedAsset->rigidBody->setMotionState(motionState);
     cursor.modelMatrix[3] = glm::vec4(glm::vec3(selectedAsset->modelMatrix[3])/*+grabbedVector*/,1);
     selectedAsset = &cursor;
     pho::locationMatch(plane.modelMatrix,cursor.modelMatrix);
