@@ -164,7 +164,7 @@ void Engine::initResources() {
     plane.setScale(15.0f);
     //plane.receiveShadow = true;
 
-    heart = pho::Asset("bump-heart.obj",&normalMap,&sr, true);
+    heart = pho::Asset("heart.obj",&normalMap,&sr, true);
     heart.rigidBody->setRestitution(4);
     //heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
