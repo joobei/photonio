@@ -223,6 +223,7 @@ namespace pho {
 		glm::vec2 p1t,p2t;
 		bool both;
 		bool consumed;
+        float lastFingerDistance;
 
         //Flicking
         pho::flickManager flicker;

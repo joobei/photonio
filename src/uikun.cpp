@@ -431,6 +431,14 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
         flicker.stopFlick(flickState::rotation);
     }
 
+    if ((numberOfCursors == 2) && (appState == translate || appState == clipping)) {
+        p2c.x = x;
+        p2c.y = y;
+        f2id = tcur->getCursorID();
+        lastFingerDistance = glm::distance(p2c,p1c);
+        p2p = p2c ;  //when first putting finger down there must be
+    }
+
     boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
     double difference = elapsed_times.wall-previousTime.wall;
 
@@ -498,6 +506,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
             selectedAsset = intersectedAsset;
             sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
             pho::locationMatch(plane.modelMatrix,selectedAsset->modelMatrix);
+            lastFingerDistance = glm::distance(p2c,p1c);
             break;
         }
         break;
@@ -552,6 +561,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     //std::cout << "x: " << x;
     //std::cout << "\t\t y: " << y << std::endl;
 
+    short numberOfCursors = tuioClient->getTuioCursors().size();
     flicker.addTouch(glm::vec2(tcur->getXSpeed(),tcur->getYSpeed()));
 
     vec2 ft;
@@ -567,34 +577,94 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             break;
         }
     case clipping:
-        tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+        if (numberOfCursors == 2)
+        {
+            if (tcur->getCursorID() == f1id) {
+                p1c.x = x;
+                p1c.y = y;
+            }
+
+            if (tcur->getCursorID() == f2id) {
+                p2c.x = x;
+                p2c.y = y;
+            }
+            float currentFingerDistance = glm::distance(p2c,p1c);
+            float distanceTravelled = lastFingerDistance-currentFingerDistance;
+
+            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+            newLocationVector = tempMat*vec3(0,distanceTravelled*10,0); //on the normal to the plane
+
+            if (distanceTravelled < 0.2)
+            {
+                newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+                plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
+//                pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);
+                pho::locationMatch(selectedAsset->clipplaneMatrix,plane.modelMatrix);  //put clipping plane in plane's location
+            }
+
+            lastFingerDistance = currentFingerDistance;
+        }
+        else
+        {
+            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
 #define TFACTORA 5
-        x=(tcur->getXSpeed())/TFACTORA;
-        y=(tcur->getYSpeed())/TFACTORA;
-        //add cursor to queue for flicking
+            x=(tcur->getXSpeed())/TFACTORA;
+            y=(tcur->getYSpeed())/TFACTORA;
+            //add cursor to queue for flicking
 
-        newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-        newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+            newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
+            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
 
-        plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
-        pho::locationMatch(selectedAsset->clipplaneMatrix,plane.modelMatrix);  //put clipping plane in plane's location
+            plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
+            pho::locationMatch(selectedAsset->clipplaneMatrix,plane.modelMatrix);  //put clipping plane in plane's location
+        }
         break;
     case translate:
         //********************* TRANSLATE ****************************
-        tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-#define TFACTORA 5
-        x=(tcur->getXSpeed())/TFACTORA;
-        y=(tcur->getYSpeed())/TFACTORA;
-        //add cursor to queue for flicking
 
-        newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
-        newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
-
-        plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
-        pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
-        if (selectedAsset->clipped)
+        if (numberOfCursors == 2)
         {
-            pho::displace(selectedAsset->clipplaneMatrix,newLocationVector);
+            if (tcur->getCursorID() == f1id) {
+                p1c.x = x;
+                p1c.y = y;
+            }
+
+            if (tcur->getCursorID() == f2id) {
+                p2c.x = x;
+                p2c.y = y;
+            }
+            float currentFingerDistance = glm::distance(p2c,p1c);
+            float distanceTravelled = lastFingerDistance-currentFingerDistance;
+
+            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+            newLocationVector = tempMat*vec3(0,distanceTravelled*10,0); //on the normal to the plane
+
+            if (distanceTravelled < 0.2)
+            {
+                newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+                plane.modelMatrix = newLocationMatrix*plane.modelMatrix;
+                pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);
+            }
+
+            lastFingerDistance = currentFingerDistance;
+        }
+        else
+        {
+
+            tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+            x=(tcur->getXSpeed())/TFACTORA;
+            y=(tcur->getYSpeed())/TFACTORA;
+            //add cursor to queue for flicking
+
+            newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
+            newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+
+            plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
+            pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
+            if (selectedAsset->clipped)
+            {
+                pho::displace(selectedAsset->clipplaneMatrix,newLocationVector);
+            }
         }
         break;
         //*********************   ROTATE  ****************************
@@ -832,6 +902,8 @@ void Engine::checkUDP() {
                 }
                 if (tempEvent.state() == false && appState == rotate) {
                     appState = translate;
+                    lastFingerDistance = glm::distance(p2c,p1c); //fix jumping bug when
+                    //releasing rotation button
                 }
 
                 break;
@@ -867,9 +939,16 @@ void Engine::checkUDP() {
                     if (!selectedAsset->clipped) {
                         selectedAsset->clipplaneMatrix = selectedAsset->modelMatrix;
                         selectedAsset->clipped = true;
+                        plane.modelMatrix = selectedAsset->clipplaneMatrix;
+                        appState = clipping;
                     }
-                    plane.modelMatrix = selectedAsset->clipplaneMatrix;
-                    appState = clipping;
+                    else
+                    {
+                        selectedAsset->clipped = false;
+                        plane.modelMatrix = selectedAsset->modelMatrix;
+                        appState = translate;
+                    }
+
                 }
                 break;
             default:
