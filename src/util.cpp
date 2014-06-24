@@ -19,6 +19,15 @@ void pho::locationMatch(glm::mat4 &target, const glm::mat4 &source) {
     //target[3][0] = source[3][0];
 }
 
+
+void pho::displace(glm::mat4 &target, const glm::vec3 &displacement)
+{
+    target[3][0] += displacement.x;
+    target[3][1] += displacement.y;
+    target[3][2] += displacement.z;
+
+}
+
 pho::flickManager::flickManager() {
     transform = glm::mat4();
     currentlyInTranslateFlick = false;
@@ -186,5 +195,7 @@ void pho::log(const char* message)
 {
      std::cout << message << std::endl;
 }
+
+
 
 

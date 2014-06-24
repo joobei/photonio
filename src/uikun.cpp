@@ -226,8 +226,7 @@ void Engine::checkEvents() {
         glm::mat4 flickTransform = flicker.dampenAndGiveMatrix(glm::mat3(plane.modelMatrix));
         plane.modelMatrix = flickTransform*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
-        //selectedAsset->modelMatrix = flickTransform*selectedAsset->modelMatrix;
-        //plane.modelMatrix = selectedAsset->modelMatrix;
+//        selectedAsset->clipplaneMatrix =flickTransform * selectedAsset->clipplaneMatrix;
     }
 
     if (flicker.inFlick(pinchy)) {
@@ -276,32 +275,7 @@ void Engine::render() {
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     floor.draw();
-
-    if (clipping)
-    {
-        glEnable(GL_CLIP_DISTANCE0);
-
-        glm::vec4 clipplane;
-        glm::vec3 pop; //point on plane
-        glm::vec3 normal = glm::vec3(0,1,0);
-        float D =0;
-
-        normal = glm::mat3(plane.modelMatrix)*normal;
-        pop = glm::vec3(plane.modelMatrix[3]);
-
-        //plane equation
-        D = (normal.x*pop.x+normal.y*pop.y+normal.z*pop.z)*-1;
-//        clipplane = glm::vec4(normal.x*pop.x,normal.y*pop.y,normal.z*pop.z,D);
-        clipplane = glm::vec4(normal,D);
-        heart.setClipPlane(clipplane);
-    }
-
     heart.draw();
-
-    if (clipping) {
-        glDisable(GL_CLIP_DISTANCE0);
-    }
-
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
         boxes[i].draw();
@@ -310,7 +284,7 @@ void Engine::render() {
 
 
     if (appState == select) {
-        if (selectionTechnique == virtualHand && !clipping) {
+        if (selectionTechnique == virtualHand) {
             cursor.draw();
         }
 
@@ -336,7 +310,7 @@ void Engine::render() {
     }
 
 
-    if ((appState == translate) || ((appState == select ) && (selectionTechnique == virtualHand))) {
+    if ((appState == clipping) || (appState == translate) || ((appState == select ) && (selectionTechnique == virtualHand))) {
         plane.draw();
     }
 
@@ -592,6 +566,19 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             touchPoint.y += -1*tcur->getYSpeed()/30;
             break;
         }
+    case clipping:
+        tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
+#define TFACTORA 5
+        x=(tcur->getXSpeed())/TFACTORA;
+        y=(tcur->getYSpeed())/TFACTORA;
+        //add cursor to queue for flicking
+
+        newLocationVector = tempMat*vec3(x,0,y);  //rotate the motion vector from TUIO in the direction of the plane
+        newLocationMatrix = glm::translate(mat4(),newLocationVector);   //Calculate new location by translating object by motion vector
+
+        plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
+        pho::locationMatch(selectedAsset->clipplaneMatrix,plane.modelMatrix);  //put clipping plane in plane's location
+        break;
     case translate:
         //********************* TRANSLATE ****************************
         tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
@@ -605,6 +592,10 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
 
         plane.modelMatrix = newLocationMatrix*plane.modelMatrix;  //translate plane
         pho::locationMatch(selectedAsset->modelMatrix,plane.modelMatrix);  //put cursor in plane's location
+        if (selectedAsset->clipped)
+        {
+            pho::displace(selectedAsset->clipplaneMatrix,newLocationVector);
+        }
         break;
         //*********************   ROTATE  ****************************
     case rotate:
@@ -815,6 +806,12 @@ void Engine::checkUDP() {
             plane.modelMatrix[1][0] = orientation[1][0]; plane.modelMatrix[1][1] = orientation[1][1]; plane.modelMatrix[1][2] = orientation[1][2];
             plane.modelMatrix[2][0] = orientation[2][0]; plane.modelMatrix[2][1] = orientation[2][1]; plane.modelMatrix[2][2] = orientation[2][2];
 
+            if (appState == clipping) { //apply to clipping plane too
+                selectedAsset->clipplaneMatrix[0][0] = orientation[0][0]; selectedAsset->clipplaneMatrix[0][1] = orientation[0][1]; selectedAsset->clipplaneMatrix[0][2] = orientation[0][2];
+                selectedAsset->clipplaneMatrix[1][0] = orientation[1][0]; selectedAsset->clipplaneMatrix[1][1] = orientation[1][1]; selectedAsset->clipplaneMatrix[1][2] = orientation[1][2];
+                selectedAsset->clipplaneMatrix[2][0] = orientation[2][0]; selectedAsset->clipplaneMatrix[2][1] = orientation[2][1]; selectedAsset->clipplaneMatrix[2][2] = orientation[2][2];
+            }
+
             break;
         case keimote::BUTTON:
             switch (tempEvent.buttontype()) {
@@ -827,32 +824,25 @@ void Engine::checkUDP() {
                     rotTechnique = screenSpace;
                     printf("translate --> rotate (Screenspace)");
                 }
+                if (tempEvent.state() == true && appState == clipping) {
+                    locationMatch(plane.modelMatrix,selectedAsset->modelMatrix);
+                    appState = rotate;
+                    rotTechnique = screenSpace;
+                    printf("translate --> rotate (Screenspace)");
+                }
                 if (tempEvent.state() == false && appState == rotate) {
                     appState = translate;
                 }
 
                 break;
             case 3:
-                if (tempEvent.state() && (appState == select) && !clipping) {
+                if (tempEvent.state() && (appState == select)) {
                     sr.dynamicsWorld->removeCollisionObject(coCursor);
                     coCursor->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
                     sr.dynamicsWorld->addCollisionObject(coCursor);
                     std::cout << "Kinematic Object" << std::endl;
                 }
-                if (tempEvent.state() && (appState == translate)) {
-                    //sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
-                    if (selectedAsset == &cursor)
-                    {
-                        selectedAsset = clippedAsset;
-                    }
-                    else {
-                        clippedAsset = selectedAsset;
-                        selectedAsset = &cursor;
-                        clipping = true;
-                    }
-
-                }
-                if (!tempEvent.state() && (appState == select) && !clipping) {
+                if (!tempEvent.state() && (appState == select)) {
                     sr.dynamicsWorld->removeCollisionObject(coCursor);
                     coCursor->setCollisionFlags(coCursor->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
                     sr.dynamicsWorld->addCollisionObject(coCursor);
@@ -868,6 +858,19 @@ void Engine::checkUDP() {
                     appState = translate;
                 }
 
+                break;
+            case 4:
+                if (appState == clipping) {
+                    appState = translate;
+                }
+                else {
+                    if (!selectedAsset->clipped) {
+                        selectedAsset->clipplaneMatrix = selectedAsset->modelMatrix;
+                        selectedAsset->clipped = true;
+                    }
+                    plane.modelMatrix = selectedAsset->clipplaneMatrix;
+                    appState = clipping;
+                }
                 break;
             default:
                 break;
@@ -980,9 +983,8 @@ void Engine::checkKeyboard() {
         }
 
         if(glfwGetKey(mainWindow,'9') == GLFW_PRESS) {
-            clipping = !clipping;
-            keyPressOK = false;
-            keyboardPreviousTime =  elapsed_times;
+//            keyPressOK = false;
+//            keyboardPreviousTime =  elapsed_times;
         }
 
     }
@@ -1183,17 +1185,23 @@ void Engine::checkPhysics()
 
     btTransform trans;
 
-    if (appState == select) {
+    if (selectedAsset != &heart)
+    {
         heart.rigidBody->getMotionState()->getWorldTransform(trans);
         heart.modelMatrix = convertBulletTransformToGLM(trans);
+    }
 
-        for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
+    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++)
+    {
+        if (selectedAsset != &boxes[i])
+        {
             boxes[i].rigidBody->getMotionState()->getWorldTransform(trans);
             boxes[i].modelMatrix = convertBulletTransformToGLM(trans);
         }
     }
-
 }
+
+
 
 bool Engine::rayTest(const float &normalizedX, const float &normalizedY, pho::Asset*& intersected) {
 

@@ -237,7 +237,6 @@ void pho::Asset::draw() {
         beingIntersected = false;
     }
 
-
     shader->use();
     shader[0]["model"] = modelMatrix;
     shader[0]["modelview"] = res->viewMatrix*modelMatrix;
@@ -247,6 +246,20 @@ void pho::Asset::draw() {
     shader[0]["light_position"] = glm::vec4(res->light.position,1);
     shader[0]["light_diffuse"] = res->light.color;
     shader[0]["light_specular"] = glm::vec4(1,1,1,1);
+    if (clipped) {
+        CALL_GL(glEnable(GL_CLIP_DISTANCE0));
+
+        glm::vec4 clipplane;
+        glm::vec3 pop; //point on plane
+        glm::vec3 normal;
+        float D =0;
+        normal = glm::mat3(clipplaneMatrix)*glm::vec3(0,-1,0);
+        pop = glm::vec3(clipplaneMatrix[3]);
+        D = (normal.x*pop.x+normal.y*pop.y+normal.z*pop.z)*-1;
+        clipplane = glm::vec4(normal,D);
+        shader[0]["ClipPlane"] = clipplane;
+
+    }
 
     CALL_GL(glActiveTexture(GL_TEXTURE2));
     CALL_GL(glBindTexture(GL_TEXTURE_2D, res->shadowTexture));
@@ -274,6 +287,10 @@ void pho::Asset::draw() {
 
         CALL_GL(glBindVertexArray(meshes[i].vao));
         CALL_GL(glDrawElements(GL_TRIANGLES,meshes[i].numFaces*3,GL_UNSIGNED_INT,0));
+    }
+
+    if (clipped) {
+        CALL_GL(glDisable(GL_CLIP_DISTANCE0));
     }
 }
 
@@ -340,12 +357,6 @@ void pho::Asset::setPosition(glm::vec3 position)
 void pho::Asset::setScale(float scaleFactor)
 {
     scaleMatrix = glm::scale(glm::mat4(1),glm::vec3(scaleFactor,scaleFactor,scaleFactor));
-}
-
-void pho::Asset::setClipPlane(glm::vec4 plane)
-{
-    shader->use();
-    shader[0]["ClipPlane"] = plane;
 }
 
 

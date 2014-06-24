@@ -259,7 +259,8 @@ public:
     glm::mat4* viewMatrix; //public because shadow map render function updates it to the pointlight matrix temporarily
     sharedResources* res;
     btRigidBody* rigidBody;
-    void setClipPlane(glm::vec4 plane);
+    bool clipped = false;
+    glm::mat4 clipplaneMatrix;
 protected:
     void upload();
     glm::mat4* projectionMatrix;

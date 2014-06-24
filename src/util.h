@@ -40,6 +40,7 @@ enum AppState {
     translate,
     rotate,
     direct,
+    clipping,
 };
 
 enum flickState {
@@ -78,6 +79,7 @@ inline float sssTriangleC(glm::vec2 pa, glm::vec2 pb, glm::vec2 pc) {
 
 std::string readTextFile(std::string filename);
 void locationMatch(glm::mat4 &target,const glm::mat4 &source);
+void displace(glm::mat4 &target, const glm::vec3 &displacement);
 
 class flickManager {
 public:
