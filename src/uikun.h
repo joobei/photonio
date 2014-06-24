@@ -193,6 +193,7 @@ namespace pho {
         //assets
         pho::Asset cursor;
         pho::Asset heart;
+        pho::Asset car;
         pho::Plane plane;
         pho::Asset ray;
         pho::Asset floor;

@@ -33,7 +33,7 @@ Engine::Engine(GLFWwindow *window):
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
     appState(select),
-    selectionTechnique(virtualHand),
+    selectionTechnique(twod),
     inputStarted(false),
     mouseMove(false),
     plane(&sr),
@@ -172,6 +172,12 @@ void Engine::initResources() {
     heart.rigidBody->setUserPointer(&heart);
     sr.dynamicsWorld->addRigidBody(heart.rigidBody);
 
+//    car = pho::Asset("newchair.obj",&normalMap,&sr, true);
+//    car.rigidBody->setRestitution(4);
+//    car.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+//    car.rigidBody->setUserPointer(&car);
+//    sr.dynamicsWorld->addRigidBody(car.rigidBody);
+
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
 
@@ -275,13 +281,19 @@ void Engine::render() {
     {
         glEnable(GL_CLIP_DISTANCE0);
 
-        glm::vec3 normal = glm::vec3(0,-1,0);
-        normal = normal*glm::mat3(plane.modelMatrix);
-        glm::normalize(normal);
-        clipDistance = glm::length(glm::vec3(cursor.modelMatrix[3])-glm::vec3(selectedAsset->modelMatrix[3]));
-        glm::vec4 cliplane = {normal.x, normal.y, normal.z, clipDistance};
-        //        glm::vec4 cplane = {normal.x, normal.y, normal.z, 3};
-        heart.setClipPlane(cliplane);
+        glm::vec4 clipplane;
+        glm::vec3 pop; //point on plane
+        glm::vec3 normal = glm::vec3(0,1,0);
+        float D =0;
+
+        normal = glm::mat3(plane.modelMatrix)*normal;
+        pop = glm::vec3(plane.modelMatrix[3]);
+
+        //plane equation
+        D = (normal.x*pop.x+normal.y*pop.y+normal.z*pop.z)*-1;
+//        clipplane = glm::vec4(normal.x*pop.x,normal.y*pop.y,normal.z*pop.z,D);
+        clipplane = glm::vec4(normal,D);
+        heart.setClipPlane(clipplane);
     }
 
     heart.draw();
