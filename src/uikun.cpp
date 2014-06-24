@@ -102,8 +102,8 @@ void Engine::initResources() {
     //sr.light.direction = glm::vec3(0,0,-1);
     sr.light.direction = glm::vec3(0,-1,0);
     sr.light.color = glm::vec4(1,1,1,1);
-    //sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
-    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,0),glm::vec3(0,0,-1));
+    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,-60),glm::vec3(0,0,-1));
+//    sr.light.viewMatrix = glm::lookAt(sr.light.position,glm::vec3(0,0,0),glm::vec3(0,0,-1));
 
     //*************************************************************
     //********************  Load Shaders **************************
@@ -193,8 +193,8 @@ void Engine::initResources() {
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(glm::radians(perspective), (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
-    cameraPosition = vec3(0,0,0);
-    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,0,-1),vec3(0,1,0));
+    cameraPosition = vec3(0,-10,0);
+    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10,-1),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
     glEnable (GL_BLEND);
@@ -486,6 +486,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
                 if (selectionTechnique == twod && rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
                 {
                     selectedAsset = intersectedAsset;
+                    plane.modelMatrix = selectedAsset->modelMatrix;
                     appState = translate;
                     sr.dynamicsWorld->removeRigidBody(selectedAsset->rigidBody);
                 }
@@ -570,12 +571,6 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
     switch (appState) {
     case direct:
         break;
-    case select:
-        if (selectionTechnique == twod) {
-            touchPoint.x += tcur->getXSpeed()/30;
-            touchPoint.y += -1*tcur->getYSpeed()/30;
-            break;
-        }
     case clipping:
         if (numberOfCursors == 2)
         {
@@ -619,6 +614,12 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             pho::locationMatch(selectedAsset->clipplaneMatrix,plane.modelMatrix);  //put clipping plane in plane's location
         }
         break;
+    case select:
+        if (selectionTechnique == twod) {
+            touchPoint.x += tcur->getXSpeed()/30;
+            touchPoint.y += -1*tcur->getYSpeed()/30;
+            break;
+        }
     case translate:
         //********************* TRANSLATE ****************************
 
@@ -996,12 +997,12 @@ void Engine::checkKeyboard() {
         if (glfwGetKey(mainWindow,GLFW_KEY_SPACE)) {
             calibration = glm::inverse(orientation);
             selectedAsset=&cursor;
-            selectedAsset->modelMatrix = glm::translate(glm::vec3(0,0,-15));
+            selectedAsset->modelMatrix = glm::translate(glm::vec3(0,-10,-15));
             plane.modelMatrix = cursor.modelMatrix;
             flicker.stopFlick(translation);
             flicker.stopFlick(rotation);
             flicker.stopFlick(pinchy);
-            sr.viewMatrix = mat4();
+            sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10,-1),vec3(0,1,0));
             appState = select;
             touchPoint.x=0.0f;
             touchPoint.y=0.0f;
@@ -1208,8 +1209,18 @@ void Engine::initPhysics()
     btRigidBody* groundRigidBody1 = new btRigidBody(groundRigidBodyCI);
 
     sr.dynamicsWorld->addRigidBody(groundRigidBody1,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
-    //sr.collisionWorld->addCollisionObject(groundRigidBody1);
 
+    // **************************************************************************************************
+    groundShape = new btStaticPlaneShape(btVector3(0,0,1),-10);
+    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,0,-48)));
+
+
+    groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(0,groundMotionState,groundShape,btVector3(0,0,-48));
+    btRigidBody* groundRigidBody2 = new btRigidBody(groundRigidBodyCI);
+
+    sr.dynamicsWorld->addRigidBody(groundRigidBody2,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
+
+    // **************************************************************************************************
     btTransform temp;
 
     btSphereShape* csSphere = new btSphereShape(1.0f);
