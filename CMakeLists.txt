@@ -57,6 +57,8 @@ find_library(GL_LIB OpenGL)
 find_library(COCOA_LIB Cocoa)
 find_library(IOKIT_LIB IOKit)
 find_library(CV_LIB CoreVideo)
+find_library(ASSIMP_LIB assimp PATH /Users/jubei/coding/assimp-build/code)
 
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${IOKIT_LIB} ${CV_LIB} ${COCOA_LIB} ${GL_LIB} ${GLFW_LIB} assimp protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath png)
+#target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${IOKIT_LIB} ${CV_LIB} ${COCOA_LIB} ${GL_LIB} ${GLFW_LIB} assimp protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath png)
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES} ${IOKIT_LIB} ${CV_LIB} ${COCOA_LIB} ${GL_LIB} ${GLFW_LIB} ${ASSIMP_LIB} protobuf tuio posix ip osc pthread BulletSoftBody BulletDynamics BulletCollision LinearMath png)
 
