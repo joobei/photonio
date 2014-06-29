@@ -78,7 +78,6 @@ namespace pho {
 		void go();
 		void shutdown();
 
-
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
@@ -221,6 +220,7 @@ namespace pho {
 		float referenceAngle;
 		glm::vec2 p1p,p2p,p1c,p2c;
 		glm::vec2 p1t,p2t;
+        glm::vec2 p1f;
 		bool both;
 		bool consumed;
         float lastFingerDistance;

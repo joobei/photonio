@@ -151,7 +151,7 @@ void Engine::initResources() {
     cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, false);
     //sr.dynamicsWorld->removeRigidBody(cursor.rigidBody);
     //sr.dynamicsWorld->addRigidBody(cursor.rigidBody, COL_NOTHING, COL_NOTHING);
-    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-5));
+    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,-10,-5));
     selectedAsset = &cursor; //when app starts we control the cursor
 
     //floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
@@ -172,14 +172,11 @@ void Engine::initResources() {
     heart.rigidBody->setUserPointer(&heart);
     sr.dynamicsWorld->addRigidBody(heart.rigidBody);
 
-    car = pho::Asset("skull.3ds",&noTextureShader,&sr, true);
-//    car.setScale(10.0f);
-    car.rigidBody->setRestitution(0);
-//    car.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,-10,-15));
-    car.rigidBody->setUserPointer(&car);
-    sr.dynamicsWorld->addRigidBody(car.rigidBody);
-
-//    selectedAsset = &car;
+//    car = pho::Asset("torso.3ds",&normalMap,&sr, false);
+//    car.rigidBody->setRestitution(4);
+//    car.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
+//    car.rigidBody->setUserPointer(&car);
+//    sr.dynamicsWorld->addRigidBody(car.rigidBody);
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -197,7 +194,6 @@ void Engine::initResources() {
     sr.projectionMatrix = glm::perspective(glm::radians(perspective), (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
     cameraPosition = vec3(0,-10,0);
-//    cameraPosition = vec3(0,-10,50);
     sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10,-1),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
@@ -275,13 +271,12 @@ void Engine::render() {
 
     shadowMapRender();
 
-//    CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
-    CALL_GL(glClearColor(.0f,.0f,.0f,0.0f));
+    CALL_GL(glClearColor(1.0f,1.0f,1.0f,0.0f));
     CALL_GL(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
     floor.draw();
     heart.draw();
-    car.draw();
+//    car.draw();
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
         boxes[i].draw();
@@ -415,7 +410,6 @@ void Engine::shutdown() {
     //psmove_disconnect(move);
 }
 
-
 void Engine::addTuioCursor(TuioCursor *tcur) {
     inputStarted = true;
     float x,y;
@@ -530,13 +524,43 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
             p1p = p1c;  //when first putting finger down there must be
             // a previous spot otherwise when the other finger moves it goes crazy
-
+            p1f = p1c; //save 1st touched point
         }
         if (numberOfCursors == 2) {
 
+            if ((p1f.x > 0.8) && (p1f.y < 0.2))
+            {
+
+                rotTechnique = locky;
+                //std::cout << "Lock Y axis" << std::endl;
+            }
+            else if ((p1f.x < 0.2) && (p1f.y > 0.8))
+            {
+
+                rotTechnique = lockx;
+                //std::cout << "Lock X axis" << std::endl;
+            }
+            else if ((p1f.x < 0.6) && (p1f.x > 0.4) && (p1f.y > 0.4) && (p1f.y < 0.6) && (x < 0.6) && (x > 0.4) && (y > 0.4) && (y < 0.6))
+            {
+
+                rotTechnique = lockz;
+                // std::cout << "Lock Z axis" << std::endl;
+            }
+            else
+            {
+
+                rotTechnique = pinch;
+                //std::cout << "pinch rotate" << '\n';
+
+
+                p2p = p2c;   //when first putting finger down there must be
+                // a previous spot otherwise when the other finger moves it goes crazy
+
+                consumed = true;
+            }
+
             flicker.stopFlick(pinchy);
-            rotTechnique = pinch;
-            std::cout << "pinch rotate" << '\n';
+
             p2c.x = tcur->getX();
             p2c.y = tcur->getY();
             f2id = tcur->getCursorID();
@@ -704,9 +728,8 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
                 p2c.y = tcur->getY();
 
             }
-
-
             break;
+        case lockz:
         case pinch:
             // ***  PINCH  **********
 
@@ -754,6 +777,26 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             }
 
             break;
+        case locky:
+            if (tcur->getCursorID() == f2id) {
+
+                p2p = p2c;
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getXSpeed()*2.0f),vec3(0,1,0)));
+                p2c.x = tcur->getX();
+                p2c.y = tcur->getY();
+            }
+            break;
+        case lockx:
+            if (tcur->getCursorID() == f2id) {
+
+                p2p = p2c;
+                //selectedAsset->rotate(glm::rotate(tcur->getXSpeed()*3.0f,vec3(0,1,0)));
+                selectedAsset->rotate(glm::rotate(glm::radians(tcur->getYSpeed()*2.0f),vec3(1,0,0)));
+
+                p2c.x = tcur->getX();
+                p2c.y = tcur->getY();
+            }
+            break;
         }
     }
     if (verbose)
@@ -778,6 +821,9 @@ void Engine::removeTuioCursor(TuioCursor *tcur) {
         case screenSpace:
             flicker.endFlick(glm::mat3(orientation),rotation);
             break;
+        case lockx:
+        case locky:
+        case lockz:
         case pinch:
             rotTechnique = screenSpace;
             //std::cout << "screenSpace" << std::endl;
@@ -1002,12 +1048,8 @@ void Engine::checkKeyboard() {
         }
         if (glfwGetKey(mainWindow,GLFW_KEY_SPACE)) {
             calibration = glm::inverse(orientation);
-            keyPressOK = false;
-            keyboardPreviousTime =  elapsed_times;
         }
-
-        if (glfwGetKey(mainWindow,'9'))
-        {
+        if (glfwGetKey(mainWindow,'9')) {
             selectedAsset=&cursor;
             selectedAsset->modelMatrix = glm::translate(glm::vec3(0,-10,-15));
             plane.modelMatrix = cursor.modelMatrix;
@@ -1051,6 +1093,19 @@ void Engine::checkKeyboard() {
             sr.dynamicsWorld->removeCollisionObject(coCursor);
         }
 
+        if (glfwGetKey(mainWindow,'3') == GLFW_PRESS) {
+            clipDistance +=1;
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+
+        }
+        if (glfwGetKey(mainWindow,'4') == GLFW_PRESS) {
+            clipDistance -=1;
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
+
+        }
+
         if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {
             for(int i = 0;i<15;++i) {
                 pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
@@ -1061,6 +1116,12 @@ void Engine::checkKeyboard() {
             keyPressOK = false;
             keyboardPreviousTime =  elapsed_times;
         }
+
+        if(glfwGetKey(mainWindow,'9') == GLFW_PRESS) {
+//            keyPressOK = false;
+//            keyboardPreviousTime =  elapsed_times;
+        }
+
     }
 }
 
@@ -1169,8 +1230,8 @@ void Engine::checkSpaceNavigator() {
     else
     {
         selectedAsset->modelMatrix = glm::translate(vec3(position[0]*TRSCALE,0,0))*selectedAsset->modelMatrix;
-        selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[1]*TRSCALE,0))*selectedAsset->modelMatrix;
-        selectedAsset->modelMatrix = glm::translate(vec3(0,0,position[2]*TRSCALE))*selectedAsset->modelMatrix;
+        selectedAsset->modelMatrix = glm::translate(vec3(0,-1*position[2]*TRSCALE,0))*selectedAsset->modelMatrix;
+        selectedAsset->modelMatrix = glm::translate(vec3(0,0,position[1]*TRSCALE))*selectedAsset->modelMatrix;
         selectedAsset->rotate(glm::rotate(RTSCALE*-1*position[5],glm::vec3(0,1,0)));
         selectedAsset->rotate(glm::rotate(RTSCALE*position[4],glm::vec3(0,0,1)));
         selectedAsset->rotate(glm::rotate(RTSCALE*position[3],glm::vec3(1,0,0)));
@@ -1205,42 +1266,15 @@ void Engine::initPhysics()
     sr.dynamicsWorld->addRigidBody(groundRigidBody1,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
 
     // **************************************************************************************************
-    groundShape = new btStaticPlaneShape(btVector3(0,0,1),0);
-    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,0,-55)));
+    groundShape = new btStaticPlaneShape(btVector3(0,0,1),-10);
+    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,0,-48)));
 
 
-    groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(0,groundMotionState,groundShape,btVector3(0,0,-55));
+    groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(0,groundMotionState,groundShape,btVector3(0,0,-48));
     btRigidBody* groundRigidBody2 = new btRigidBody(groundRigidBodyCI);
 
     sr.dynamicsWorld->addRigidBody(groundRigidBody2,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
 
-    // **************************************************************************************************
-    groundShape = new btStaticPlaneShape(btVector3(0,0,-1),0);
-    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(0,0,0)));
-
-
-    groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(0,groundMotionState,groundShape,btVector3(0,0,0));
-    btRigidBody* groundRigidBody3 = new btRigidBody(groundRigidBodyCI);
-
-    sr.dynamicsWorld->addRigidBody(groundRigidBody3,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
-    // **************************************************************************************************
-    groundShape = new btStaticPlaneShape(btVector3(1,0,0),0);
-    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(-50,0,0)));
-
-
-    groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(0,groundMotionState,groundShape,btVector3(-50,0,0));
-    btRigidBody* groundRigidBody4 = new btRigidBody(groundRigidBodyCI);
-
-    sr.dynamicsWorld->addRigidBody(groundRigidBody4,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
-    // **************************************************************************************************
-    groundShape = new btStaticPlaneShape(btVector3(-1,0,0),0);
-    groundMotionState = new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(50,0,0)));
-
-
-    groundRigidBodyCI = btRigidBody::btRigidBodyConstructionInfo(0,groundMotionState,groundShape,btVector3(50,0,0));
-    btRigidBody* groundRigidBody5 = new btRigidBody(groundRigidBodyCI);
-
-    sr.dynamicsWorld->addRigidBody(groundRigidBody5,collisiontypes::COL_EVERYTHING,collisiontypes::COL_EVERYTHING);
     // **************************************************************************************************
     btTransform temp;
 
@@ -1300,12 +1334,6 @@ void Engine::checkPhysics()
     {
         heart.rigidBody->getMotionState()->getWorldTransform(trans);
         heart.modelMatrix = convertBulletTransformToGLM(trans);
-    }
-
-    if (selectedAsset != &car)
-    {
-        car.rigidBody->getMotionState()->getWorldTransform(trans);
-        car.modelMatrix = convertBulletTransformToGLM(trans);
     }
 
     for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++)

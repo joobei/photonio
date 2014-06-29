@@ -62,7 +62,7 @@ void main()
     vec3 PN = perturb_normal(N, V, uv);
 
     vec4 tex01_color = texture(diffuseTexture, uv).rgba;
-    vec4 final_color = vec4(0.40* tex01_color.rgb,1*tex01_color.a); //ambient light
+    vec4 final_color = vec4(0.90* tex01_color.rgb,1*tex01_color.a); //ambient light
 
     //float lambertTerm = dot(PN, L);
     float lambertTerm = dot(PN, L);
