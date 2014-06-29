@@ -194,7 +194,7 @@ void Engine::initResources() {
     sr.projectionMatrix = glm::perspective(glm::radians(perspective), (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
     cameraPosition = vec3(0,-10,-15);
-    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10,-16),vec3(0,1,0));
+    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10.3,-16),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
     glEnable (GL_BLEND);
@@ -241,7 +241,8 @@ void Engine::checkEvents() {
     }
 
     //Joystick
-    if(JoystickPresent) { checkSpaceNavigator();}
+//    if(JoystickPresent) { checkSpaceNavigator();}
+    checkSpaceNavigator();
 
     if ((appState == select) && (selectionTechnique == twod)) {
         if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
@@ -423,7 +424,7 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
     //std::cout << "Added cursor, Current NoOfCursors " << numberOfCursors << std::endl;
 
     //notify flick manager of a new gesture starting
-    if (numberOfCursors == 1 && ( appState == translate || appState == select)) {
+    if (numberOfCursors == 1 && ( appState == translate || appState == select || appState == clipping)) {
         p1c.x=x;
         p1c.y=y;
         p1p=p1c;
@@ -672,7 +673,7 @@ void Engine::updateTuioCursor(TuioCursor *tcur) {
             float distanceTravelled = lastFingerDistance-currentFingerDistance;
 
             tempMat = mat3(orientation);  //get the rotation part from the plane's matrix
-            newLocationVector = tempMat*vec3(0,distanceTravelled*10,0); //on the normal to the plane
+            newLocationVector = tempMat*vec3(0,-1*distanceTravelled*10,0); //on the normal to the plane
 
             if (distanceTravelled < 0.2)
             {
@@ -1052,6 +1053,8 @@ void Engine::checkKeyboard() {
         }
         if (glfwGetKey(mainWindow,GLFW_KEY_SPACE)) {
             calibration = glm::inverse(orientation);
+            keyPressOK = false;
+            keyboardPreviousTime =  elapsed_times;
         }
         if (glfwGetKey(mainWindow,'9')) {
             selectedAsset=&cursor;
