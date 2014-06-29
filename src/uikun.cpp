@@ -32,7 +32,7 @@ Engine::Engine(GLFWwindow *window):
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
-    appState(select),
+    appState(rotate),
     selectionTechnique(virtualHand),
     inputStarted(false),
     mouseMove(false),
@@ -151,7 +151,7 @@ void Engine::initResources() {
     cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, false);
     //sr.dynamicsWorld->removeRigidBody(cursor.rigidBody);
     //sr.dynamicsWorld->addRigidBody(cursor.rigidBody, COL_NOTHING, COL_NOTHING);
-    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,-10,-5));
+    cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,-10,-20));
     selectedAsset = &cursor; //when app starts we control the cursor
 
     //floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
@@ -193,8 +193,8 @@ void Engine::initResources() {
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(glm::radians(perspective), (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
-    cameraPosition = vec3(0,-10,0);
-    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10,-1),vec3(0,1,0));
+    cameraPosition = vec3(0,-10,-15);
+    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10,-16),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
     glEnable (GL_BLEND);
@@ -424,6 +424,10 @@ void Engine::addTuioCursor(TuioCursor *tcur) {
 
     //notify flick manager of a new gesture starting
     if (numberOfCursors == 1 && ( appState == translate || appState == select)) {
+        p1c.x=x;
+        p1c.y=y;
+        p1p=p1c;
+        f1id = tcur->getCursorID();
         flicker.newFlick(flickState::translation);
         flicker.stopFlick(flickState::pinchy);
     }
@@ -1064,6 +1068,9 @@ void Engine::checkKeyboard() {
             keyboardPreviousTime =  elapsed_times;
         }
 
+        if (glfwGetKey(mainWindow,'5') == GLFW_PRESS) {
+            appState = select;
+        }
         if (glfwGetKey(mainWindow,GLFW_KEY_END)) {
             perspective -=1.0;
             sr.projectionMatrix = glm::perspective(perspective, (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);

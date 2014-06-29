@@ -68,7 +68,7 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
         float randomx = -1 + (float)rand()/((float)RAND_MAX/(1-(-1)));
 
         btDefaultMotionState* motionState =
-                new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(randomx,10,-45)));
+                new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(randomx,10,-35)));
 
         collisionShape->calculateLocalInertia(mass,fallInertia);
         btRigidBody::btRigidBodyConstructionInfo RigidBodyCI(mass,motionState,collisionShape,fallInertia);
@@ -241,7 +241,7 @@ void pho::Asset::draw() {
     shader->use();
     shader[0]["model"] = modelMatrix*scaleMatrix;
     shader[0]["modelview"] = res->viewMatrix*modelMatrix*scaleMatrix;
-    shader[0]["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix*scaleMatrix;
+    shader[0]["mvp"] = res->projectionMatrix*res->viewMatrix*modelMatrix;
     shader[0]["shadowMatrix"] = res->biasMatrix*res->projectionMatrix*res->light.viewMatrix*modelMatrix*scaleMatrix;
     shader[0]["receiveShadow"] = receiveShadow;
     shader[0]["light_position"] = glm::vec4(res->light.position,1);
