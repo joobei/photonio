@@ -168,7 +168,7 @@ void Engine::initResources() {
     heart.rigidBody->setRestitution(4);
     //heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
-    //heart.receiveShadow = true;
+    heart.receiveShadow = true;
     heart.rigidBody->setUserPointer(&heart);
     sr.dynamicsWorld->addRigidBody(heart.rigidBody);
 
@@ -193,8 +193,9 @@ void Engine::initResources() {
     //Create the perspective matrix
     sr.projectionMatrix = glm::perspective(glm::radians(perspective), (float)WINDOW_SIZE_X/(float)WINDOW_SIZE_Y,0.1f,1000.0f);
 
-    cameraPosition = vec3(0,-10,-15);
-    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10.3,-16),vec3(0,1,0));
+    cameraPosition = vec3(0,-13,-15);
+//    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-10.3,-16),vec3(0,1,0)); //slightly looking down
+    sr.viewMatrix = glm::lookAt(cameraPosition,vec3(0,-13,-16),vec3(0,1,0));
 
     glEnable (GL_DEPTH_TEST);
     glEnable (GL_BLEND);
@@ -212,15 +213,9 @@ void Engine::initResources() {
 //and consumes them all
 void Engine::checkEvents() {
 
-    //renew userpointers
-    //    for(std::vector<pho::Asset>::size_type i = 0; i != boxes.size(); i++) {
-    //        boxes[i].rigidBody->setUserPointer(&boxes[i]);
-    //    }
-
     checkKeyboard();
 
     checkUDP();
-
 
     if (flicker.inFlick(flickState::translation)) {
         glm::mat4 flickTransform = flicker.dampenAndGiveMatrix(glm::mat3(plane.modelMatrix));
@@ -241,8 +236,7 @@ void Engine::checkEvents() {
     }
 
     //Joystick
-//    if(JoystickPresent) { checkSpaceNavigator();}
-    checkSpaceNavigator();
+    if(JoystickPresent) { checkSpaceNavigator();}
 
     if ((appState == select) && (selectionTechnique == twod)) {
         if (rayTest(touchPoint.x,touchPoint.y,intersectedAsset))
@@ -1119,6 +1113,7 @@ void Engine::checkKeyboard() {
         if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {
             for(int i = 0;i<15;++i) {
                 pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
+                newBox.receiveShadow = true;
                 sr.dynamicsWorld->addRigidBody(newBox.rigidBody);
                 boxes.push_back(newBox);
                 newBox.rigidBody->setUserPointer(&boxes.back());
