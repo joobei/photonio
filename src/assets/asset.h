@@ -241,7 +241,7 @@ class Asset {
 public:
     Asset();
     Asset(std::vector<glm::vec3> nvertices);
-    Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared, bool rigid);
+    Asset(const std::string &filename,pho::Shader* tehShader, sharedResources* shared, bool rigid, float scale);
     void draw();
     void drawFlat();
     void drawFromLight();

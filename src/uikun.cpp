@@ -32,7 +32,7 @@ Engine::Engine(GLFWwindow *window):
     eventQueue(),
     udpwork(ioservice),
     _udpserver(ioservice,&eventQueue,&ioMutex),
-    appState(rotate),
+    appState(select),
     selectionTechnique(virtualHand),
     inputStarted(false),
     mouseMove(false),
@@ -74,7 +74,7 @@ Engine::Engine(GLFWwindow *window):
 
     pointerOpacity = 1.0f;
 
-#define	SHADOW_MAP_RATIO 4;
+#define	SHADOW_MAP_RATIO 1;
 }
 
 void Engine::initResources() {
@@ -148,14 +148,14 @@ void Engine::initResources() {
     //*************************************************************
     //********************  Load Assets ***************************
     //*************************************************************
-    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, false);
+    cursor = pho::Asset("cursor.obj", &noTextureShader,&sr, false, 1.0f);
     //sr.dynamicsWorld->removeRigidBody(cursor.rigidBody);
     //sr.dynamicsWorld->addRigidBody(cursor.rigidBody, COL_NOTHING, COL_NOTHING);
     cursor.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,-10,-20));
     selectedAsset = &cursor; //when app starts we control the cursor
 
     //floor = pho::Asset("floor.obj", &singleTexture,&sr,true);
-    floor = pho::Asset("floor.obj", &normalMap,&sr,false);
+    floor = pho::Asset("floor.obj", &normalMap,&sr,false, 1.0f);
     floor.modelMatrix  = glm::translate(glm::mat4(),glm::vec3(0,-20,-60));
     floor.receiveShadow = true;
 
@@ -164,7 +164,7 @@ void Engine::initResources() {
     plane.setScale(15.0f);
     //plane.receiveShadow = true;
 
-    heart = pho::Asset("heart.obj",&normalMap,&sr, true);
+    heart = pho::Asset("heart.obj",&normalMap,&sr, true, 1.0f);
     heart.rigidBody->setRestitution(4);
     //heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(-10,10,-25));
     heart.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
@@ -172,11 +172,12 @@ void Engine::initResources() {
     heart.rigidBody->setUserPointer(&heart);
     sr.dynamicsWorld->addRigidBody(heart.rigidBody);
 
-//    car = pho::Asset("torso.3ds",&normalMap,&sr, false);
-//    car.rigidBody->setRestitution(4);
-//    car.modelMatrix = glm::translate(glm::mat4(),glm::vec3(0,0,-15));
-//    car.rigidBody->setUserPointer(&car);
-//    sr.dynamicsWorld->addRigidBody(car.rigidBody);
+//    pho::Asset bucket = pho::Asset("bucket.obj",&normalMap,&sr, true, 1.0f);
+//    bucket.receiveShadow = true;
+//    bucket.rigidBody->setRestitution(0);
+//    sr.dynamicsWorld->addRigidBody(bucket.rigidBody);
+//    boxes.push_back(bucket);
+//    bucket.rigidBody->setUserPointer(&boxes.back());
 
     glm::vec3 disc = glm::vec3(0.0,0.0,0.0);
     GLuint buffer;
@@ -245,7 +246,7 @@ void Engine::checkEvents() {
         }
     }
 
-    cursor.updateMotionState();
+//    cursor.updateMotionState();
 
     checkPhysics();
 
@@ -1112,7 +1113,7 @@ void Engine::checkKeyboard() {
 
         if(glfwGetKey(mainWindow,'0') == GLFW_PRESS) {
             for(int i = 0;i<15;++i) {
-                pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true);
+                pho::Asset newBox = pho::Asset("box.obj",&normalMap,&sr, true, 1.0f);
                 newBox.receiveShadow = true;
                 sr.dynamicsWorld->addRigidBody(newBox.rigidBody);
                 boxes.push_back(newBox);

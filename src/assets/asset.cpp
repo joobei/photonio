@@ -22,7 +22,7 @@ pho::Asset::Asset(std::vector<glm::vec3> nvertices):receiveShadow(false)
 
 }
 
-pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedResources* shared, bool rigid) :receiveShadow(false), beingIntersected(false)
+pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedResources* shared, bool rigid, float scale) :receiveShadow(true), beingIntersected(false)
 {
     res = shared;
     this->shader = tehShader;
@@ -49,7 +49,8 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
 
     }
     else {
-        std::cout << "imported "+filename;
+        std::cout << std::endl;
+        std::cout << ""+filename;
 
     }
 
@@ -64,8 +65,8 @@ pho::Asset::Asset(const std::string& filename, pho::Shader* tehShader, sharedRes
             collisionShape->addPoint(btVector3(vertices[i].x,vertices[i].y,vertices[i].z));
         }
 
-//        float randomx = -10 + (float)rand()/((float)RAND_MAX/(10-(-10)));
-        float randomx = -1 + (float)rand()/((float)RAND_MAX/(1-(-1)));
+        float randomx = -5 + (float)rand()/((float)RAND_MAX/(5-(-5)));
+//        float randomx = -1 + (float)rand()/((float)RAND_MAX/(1-(-1)));
 
         btDefaultMotionState* motionState =
                 new btDefaultMotionState(btTransform(btQuaternion(0,0,0,1),btVector3(randomx,10,-35)));
@@ -149,7 +150,7 @@ void pho::Asset::upload()
             glVertexAttribPointer(texCoordLoc, 2, GL_FLOAT, 0, 0, 0);
         }
         else {
-            std::cout << "No Texture Coordinates!!!";
+            std::cout << " No Tex Coords!";
         }
 
 
@@ -210,7 +211,6 @@ void pho::Asset::upload()
             tempMesh.material.diffuseColor.w = opacity;
         }
 
-        std::cout << std::endl;
 
         meshes.push_back(tempMesh);
     }
