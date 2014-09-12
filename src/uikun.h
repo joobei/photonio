@@ -84,8 +84,13 @@ namespace pho {
         static const int WINDOW_SIZE_X = 1280;
         static const int WINDOW_SIZE_Y = 720;
 
+        void mouseButtonClicked(int a, int b, int c);
+        void mouseMoved(double x, double y);
+
         static void mouseButtonCallback(GLFWwindow* win, int a, int b, int c);
         static void mouseMoveCallback(GLFWwindow* win, double a, double b);
+
+
 
 		void addTuioObject(TuioObject *tobj);
 		void updateTuioObject(TuioObject *tobj); 

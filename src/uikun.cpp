@@ -78,6 +78,7 @@ Engine::Engine(GLFWwindow *window):
     glfwSetMouseButtonCallback(window, &Engine::mouseButtonCallback);
     glfwSetCursorPosCallback(window, &Engine::mouseMoveCallback);
 
+    glfwSetWindowUserPointer(window, this);
 #define	SHADOW_MAP_RATIO 1;
 }
 
@@ -318,9 +319,10 @@ void Engine::render() {
     glfwSwapBuffers(mainWindow);
 }
 
-void Engine::mouseButtonCallback(GLFWwindow *win, int a, int b, int c)
+
+
+void Engine::mouseButtonClicked(int button, int action, int mods)
 {
-    std::cout << "Test" << std::endl;
 //    //glfwGetMousePos(&cur_mx,&cur_my);
 //    std::cout << "testing testing 123" << std::endl;
 //    boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
@@ -360,7 +362,9 @@ void Engine::mouseButtonCallback(GLFWwindow *win, int a, int b, int c)
 //    }
 }
 
-void Engine::mouseMoveCallback(GLFWwindow* win, double a, double b) {
+
+void Engine::mouseMoved(double x, double y)
+{
 
 //    float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
 //    float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
@@ -1522,4 +1526,14 @@ void Engine::removeTuioObject(TuioObject *tobj) {
 
     if (verbose)
         std::cout << "del obj " << tobj->getSymbolID() << " (" << tobj->getSessionID() << ")" << std::endl;
+}
+
+void Engine::mouseButtonCallback(GLFWwindow *win, int a, int b, int c)
+{
+    static_cast<pho::Engine*>(glfwGetWindowUserPointer(win))->mouseButtonClicked(a,b,c);
+}
+
+void Engine::mouseMoveCallback(GLFWwindow *win, double a, double b)
+{
+    static_cast<pho::Engine*>(glfwGetWindowUserPointer(win))->mouseMoved(a,b);
 }
