@@ -81,16 +81,11 @@ namespace pho {
         static const int TOUCH_SCREEN_SIZE_X = 480;
 		static const int TOUCH_SCREEN_SIZE_Y = 800;
 
-//        static const int WINDOW_SIZE_X = 1680;
-//        static const int WINDOW_SIZE_Y = 1050;
-        static const int WINDOW_SIZE_X = 2560;
-        static const int WINDOW_SIZE_Y = 1440;
+        static const int WINDOW_SIZE_X = 1280;
+        static const int WINDOW_SIZE_Y = 720;
 
-//        static const int WINDOW_SIZE_X = 1280;
-//        static const int WINDOW_SIZE_Y = 720;
-
-		void mouseButtonCallback(int x, int y);
-		void mouseMoveCallback(int x, int y);
+        static void mouseButtonCallback(GLFWwindow* win, int a, int b, int c);
+        static void mouseMoveCallback(GLFWwindow* win, double a, double b);
 
 		void addTuioObject(TuioObject *tobj);
 		void updateTuioObject(TuioObject *tobj); 

@@ -71,8 +71,12 @@ Engine::Engine(GLFWwindow *window):
     last_mx = last_my = cur_mx = cur_my = 0;
 
     consumed = false;
-
     pointerOpacity = 1.0f;
+
+    //set mouse button callback
+
+    glfwSetMouseButtonCallback(window, &Engine::mouseButtonCallback);
+    glfwSetCursorPosCallback(window, &Engine::mouseMoveCallback);
 
 #define	SHADOW_MAP_RATIO 1;
 }
@@ -314,78 +318,79 @@ void Engine::render() {
     glfwSwapBuffers(mainWindow);
 }
 
-void Engine::mouseButtonCallback(int button, int state) {
+void Engine::mouseButtonCallback(GLFWwindow *win, int a, int b, int c)
+{
+    std::cout << "Test" << std::endl;
+//    //glfwGetMousePos(&cur_mx,&cur_my);
+//    std::cout << "testing testing 123" << std::endl;
+//    boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
+//    double difference = elapsed_times.wall-previousTime.wall;
 
-    //glfwGetMousePos(&cur_mx,&cur_my);
+//    if (difference > 150000000) {
+//        doubleClickPerformed = true;
+//    }
 
-    boost::timer::cpu_times const elapsed_times(doubleClick.elapsed());
-    double difference = elapsed_times.wall-previousTime.wall;
-
-    if (difference > 150000000) {
-        doubleClickPerformed = true;
-    }
-
-    previousTime = elapsed_times;
-
-
-    if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_PRESS))
-    {
+//    previousTime = elapsed_times;
 
 
-    }
-    if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_RELEASE))
-    {
-        appState = rotate;
-    }
-    if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_PRESS)) {
+//    if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_PRESS))
+//    {
 
-        mouseMove = true;
-        prevMouseExists = true;
-        prevMousePos = glm::vec2(cur_mx,cur_my);
 
-        appState = translate;
+//    }
+//    if ((button == GLFW_MOUSE_BUTTON_1) && (state == GLFW_RELEASE))
+//    {
+//        appState = rotate;
+//    }
+//    if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_PRESS)) {
 
-    }
-    if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_RELEASE)) {
+//        mouseMove = true;
+//        prevMouseExists = true;
+//        prevMousePos = glm::vec2(cur_mx,cur_my);
 
-        mouseMove = false;
-        prevMouseExists = false;
+//        appState = translate;
 
-        appState = rotate;
-    }
+//    }
+//    if ((button == GLFW_MOUSE_BUTTON_2) && (state == GLFW_RELEASE)) {
+
+//        mouseMove = false;
+//        prevMouseExists = false;
+
+//        appState = rotate;
+//    }
 }
 
-void Engine::mouseMoveCallback(int x, int y) {
+void Engine::mouseMoveCallback(GLFWwindow* win, double a, double b) {
 
-    float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
-    float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
+//    float norm_x = 1.0*x/WINDOW_SIZE_X*2 - 1.0;
+//    float norm_y = -(1.0*y/WINDOW_SIZE_Y*2 - 1.0);
 
-    //glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
-    glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
+//    //glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),0,1);
+//    glm::vec4 mouse_clip = glm::vec4((float)x * 2 / float(WINDOW_SIZE_X) - 1, 1 - float(y) * 2 / float(WINDOW_SIZE_Y),-1,1);
 
-    glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
+//    glm::vec4 mouse_world = glm::inverse(sr.viewMatrix) * glm::inverse(sr.projectionMatrix) * mouse_clip;
 
-    rayOrigin = glm::vec3(sr.viewMatrix[3]);
-    rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
+//    rayOrigin = glm::vec3(sr.viewMatrix[3]);
+//    rayDirection = glm::normalize(glm::vec3(mouse_world)-rayOrigin);
 
-    if (appState == translate) {
-        vec2 MousePt;
+//    if (appState == translate) {
+//        vec2 MousePt;
 
-        MousePt.x = x;
-        MousePt.y = y;
+//        MousePt.x = x;
+//        MousePt.y = y;
 
-        vec2 difference = MousePt-prevMousePos;
-        difference.x /= 50;
-        difference.y /= 50;
-        difference.y = -difference.y;
+//        vec2 difference = MousePt-prevMousePos;
+//        difference.x /= 50;
+//        difference.y /= 50;
+//        difference.y = -difference.y;
 
-        if(prevMouseExists) {
-            selectedAsset->modelMatrix = glm::translate(glm::vec3(difference,0))*selectedAsset->modelMatrix;
-        }
+//        if(prevMouseExists) {
+//            selectedAsset->modelMatrix = glm::translate(glm::vec3(difference,0))*selectedAsset->modelMatrix;
+//        }
 
-        prevMousePos = MousePt;
+//        prevMousePos = MousePt;
 
-    }
+//    }
 }
 
 void Engine::go() {
@@ -405,6 +410,7 @@ void Engine::shutdown() {
     //serialioservice.stop();
     //psmove_disconnect(move);
 }
+
 
 void Engine::addTuioCursor(TuioCursor *tcur) {
     inputStarted = true;

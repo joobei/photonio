@@ -5,6 +5,21 @@
 #include "boost/bind.hpp"
 #include <functional>
 
+//typedef void (*GLFWmousebuttonfun)(int,int);
+//void glfwMouseCallback(GLFWmousebuttonfun f){}
+//std::function<void (int,int)> mouseFunc;
+//void mouseFunkThunk(int x, int y)
+//{
+//    mouseFunc(x, y);
+//}
+
+//typedef void (*GLFWmouseposfun)(int,int);
+//void glfwMouseCallback2(GLFWmouseposfun f){}
+//std::function<void (int,int)> mouseFunc2;
+//void mouseFunkThunk2(int x, int y)
+//{
+//    mouseFunc2(x, y);
+//}
 
 int main()
 {
@@ -49,6 +64,11 @@ int main()
         engine->JoystickPresent = false;
         std::cout << "joystick not present" << std::endl;
     }
+
+//    mouseFunc = std::bind(&pho::Engine::mouseButtonCallback,engine,_1,_2);
+//    glfwSetMouseButtonCallback(&mouseFunkThunk);
+//    mouseFunc2 = std::bind(&pho::Engine::mouseMoveCallback,engine,_1,_2);
+//    glfwSetMousePosCallback(&mouseFunkThunk2);
 
     engine->go();
 
