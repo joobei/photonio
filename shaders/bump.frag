@@ -1,4 +1,4 @@
-/* [FRAG] */ 
+/* [FRAG] - bump mapping shader */ 
 #version 330
 precision highp float;
 
