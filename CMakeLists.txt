@@ -1,9 +1,9 @@
-# Cmake for project UIKUN
+# Cmake for project INSPECT: Extending Plane-Casting for 6-DOF Control.
 # Possible configuration required
 
 cmake_minimum_required (VERSION 2.8)
 
-set(PROJECTNAME "uikun")
+set(PROJECTNAME "inspect")
 
 project(${PROJECTNAME})
 
