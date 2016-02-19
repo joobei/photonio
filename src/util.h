@@ -84,6 +84,7 @@ std::string readTextFile(std::string filename);
 void locationMatch(glm::mat4 &target,const glm::mat4 &source);
 void displace(glm::mat4 &target, const glm::vec3 &displacement);
 
+//manages flicking decay
 class flickManager {
 public:
     flickManager();
@@ -116,7 +117,7 @@ private:
     float decay;
 };
 
-
+ 
 }
 
 
