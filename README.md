@@ -2,8 +2,8 @@
 
 
 
-# Modelview (with Photonio rendering engine)
-C++ OpenGL/GLSL Multi-Threaded engine to View a 3d model controlled by the extended tuiodroid app.
+# Photon.io rendering engine
+C++ OpenGL/GLSL Multi-Threaded engine to View a 3d model controlled by the extended tuiodroid app. Parses various CAD formats for 3D models. 
 
 The android client is based on TUIOdroid by Tobias Schwirten and Martin Kaltenbrunner and can be found at https://github.com/joobei/tuiodroidextend
 
