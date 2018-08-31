@@ -3,7 +3,11 @@
 
 
 # Modelview (with Photonio rendering engine)
-C++ engine to View a 3d model controlled by the extended tuiodroid app.
+C++ OpenGL/GLSL Multi-Threaded engine to View a 3d model controlled by the extended tuiodroid app.
+
+The android client is based on TUIOdroid by Tobias Schwirten and Martin Kaltenbrunner and can be found at https://github.com/joobei/tuiodroidextend
+
+The current CMakeFile.txt is meant for Mac OSX but slight modification will allow it to compile on other platforms.
 
 This is the source code that accompanies this academic paper: 
 
@@ -11,8 +15,3 @@ N.Katzakis, R.J. Teather, K. Kiyokawa, H. Takemura - INSPECT: Extending Plane-Ca
 
 https://hcis-journal.springeropen.com/articles/10.1186/s13673-015-0037-y
 
-The android client is based on TUIOdroid by Tobias Schwirten and Martin Kaltenbrunner and can be found at https://github.com/joobei/tuiodroidextend
-
-The current CMakeFile.txt is meant for Mac OSX but slight modification will let it compile on other platforms.
-
-This engine is written in C++/OpenGL.
